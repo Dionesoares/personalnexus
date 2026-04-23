@@ -18,6 +18,11 @@ import EvolucaoAlunoView from './fitpro/EvolucaoAlunoView';
 import PeriodizacaoView from './fitpro/PeriodizacaoView';
 import ProfessoresView from './fitpro/ProfessoresView';
 import FinanceiroView from './fitpro/FinanceiroView';
+import BibliotecaView from './fitpro/BibliotecaView';
+import ProdutosView from './fitpro/ProdutosView';
+import PedidosView from './fitpro/PedidosView';
+import RelatoriosView from './fitpro/RelatoriosView';
+import LojaView from './fitpro/LojaView';
 
 const BG = '#0a0e1a';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -60,6 +65,11 @@ function AuthenticatedApp() {
     if (activeView === 'periodizacao') return <PeriodizacaoView />;
     if (activeView === 'professores') return <ProfessoresView />;
     if (activeView === 'financeiro') return <FinanceiroView />;
+    if (activeView === 'biblioteca') return <BibliotecaView />;
+    if (activeView === 'shop') return <ProdutosView />;
+    if (activeView === 'pedidos') return <PedidosView />;
+    if (activeView === 'relatorios') return <RelatoriosView />;
+    if (activeView === 'loja') return <LojaView />;
     return <PlaceholderView title={navItems.find(n => n.view === activeView)?.label || activeView} />;
   };
 
