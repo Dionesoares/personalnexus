@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Plus, X, Trash2, Edit2, Search, Filter } from 'lucide-react';
+import { BookOpen, Plus, X, Trash2, Edit2, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { generateId } from '../../lib/fitpro-storage';
@@ -182,10 +182,16 @@ export default function BibliotecaView() {
                     <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block" style={{ background: `${color}15`, color }}>{ex.grupoMuscular}</span>
                   </div>
                   {user?.role !== 'aluno' && (
-                    <button onClick={e => { e.stopPropagation(); if (confirm('Excluir?')) deleteExercicioBiblioteca(ex.id); }}
-                      className="p-1 rounded-lg hover:bg-red-500/10 transition-all" style={{ color: '#ef4444' }}>
-                      <Trash2 size={13} />
-                    </button>
+                    <div className="flex gap-1">
+                      <button onClick={e => { e.stopPropagation(); setForm({ ...ex }); setEditId(ex.id); setSelectedEx(null); setShowForm(true); }}
+                        className="p-1 rounded-lg hover:bg-white/5 transition-all" style={{ color: '#94a3b8' }}>
+                        <Edit2 size={13} />
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); if (confirm('Excluir?')) deleteExercicioBiblioteca(ex.id); }}
+                        className="p-1 rounded-lg hover:bg-red-500/10 transition-all" style={{ color: '#ef4444' }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div className="flex gap-2 text-xs text-slate-500 flex-wrap">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCheck, Plus, X, Trash2, Edit2, ChevronRight, Search, Phone, Mail } from 'lucide-react';
+import { UserCheck, Plus, X, Trash2, Edit2, ChevronRight, Search, Phone, Mail, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { getCredentials, addCredential, deleteCredential } from '../../lib/fitpro-storage';
@@ -7,8 +7,18 @@ import { getCredentials, addCredential, deleteCredential } from '../../lib/fitpr
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
+const PLANOS = [
+  { id: 'basico', nome: 'Básico', preco: 49.90, desc: 'Até 10 alunos, treinos ilimitados, avaliações básicas' },
+  { id: 'profissional', nome: 'Profissional', preco: 99.90, desc: 'Até 50 alunos, todos os recursos, periodização' },
+  { id: 'premium', nome: 'Premium', preco: 179.90, desc: 'Alunos ilimitados, financeiro, relatórios avançados' },
+  { id: 'enterprise', nome: 'Enterprise', preco: 299.90, desc: 'Multi-professor, API, suporte dedicado, white-label' },
+];
+
+const PLANO_COLOR = { basico: '#60a5fa', profissional: '#34d399', premium: '#fbbf24', enterprise: '#a78bfa' };
+
 const emptyForm = {
   nome: '', email: '', telefone: '', cref: '', especialidade: '',
+  planoCobranca: 'profissional', statusPlano: 'ativo', dataVencimento: '',
   endereco: { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' }
 };
 
@@ -20,6 +30,7 @@ export default function ProfessoresView() {
   const [form, setForm] = useState(emptyForm);
   const [saved, setSaved] = useState(false);
   const [selectedProf, setSelectedProf] = useState(null);
+  const [formStep, setFormStep] = useState('dados'); // 'dados' | 'plano'
 
   const filtered = professores.filter(p =>
     p.nome.toLowerCase().includes(search.toLowerCase()) ||
@@ -37,7 +48,14 @@ export default function ProfessoresView() {
       }
     }
     setSaved(true);
-    setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyForm); }, 1200);
+    setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyForm); setFormStep('dados'); }, 1200);
+  };
+
+  const openForm = (prof = null) => {
+    setForm(prof ? { ...emptyForm, ...prof } : emptyForm);
+    setEditId(prof?.id || null);
+    setFormStep('dados');
+    setShowForm(true);
   };
 
   if (selectedProf) {
@@ -45,6 +63,8 @@ export default function ProfessoresView() {
     const meusAlunos = alunos.filter(a => a.professorId === prof.id);
     const avsTotal = avaliacoes.filter(av => meusAlunos.some(a => a.id === av.alunoId)).length;
     const treinosTotal = planosTreino.filter(t => meusAlunos.some(a => a.id === t.alunoId)).length;
+    const plano = PLANOS.find(p => p.id === prof.planoCobranca) || PLANOS[1];
+    const planoColor = PLANO_COLOR[prof.planoCobranca] || '#34d399';
 
     return (
       <div className="space-y-4">
@@ -56,7 +76,7 @@ export default function ProfessoresView() {
             <h2 className="text-lg font-bold text-white">{prof.nome}</h2>
             <p className="text-xs text-slate-500">{prof.especialidade} {prof.cref ? `• CREF: ${prof.cref}` : ''}</p>
           </div>
-          <button onClick={() => { setForm({ ...prof }); setEditId(prof.id); setShowForm(true); }}
+          <button onClick={() => openForm(prof)}
             className="px-3 py-1.5 rounded-xl text-xs font-semibold"
             style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
             <Edit2 size={12} className="inline mr-1" />Editar
@@ -74,6 +94,27 @@ export default function ProfessoresView() {
               <div className="text-xs text-slate-500">{k.label}</div>
             </div>
           ))}
+        </div>
+
+        {/* Plano de cobrança */}
+        <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${planoColor}30` }}>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1"><CreditCard size={12} />Plano de Cobrança</h4>
+            <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: prof.statusPlano === 'ativo' ? '#34d39915' : '#ef444415', color: prof.statusPlano === 'ativo' ? '#34d399' : '#ef4444' }}>
+              {prof.statusPlano === 'ativo' ? 'Ativo' : prof.statusPlano === 'suspenso' ? 'Suspenso' : 'Cancelado'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-base font-bold" style={{ color: planoColor }}>{plano.nome}</div>
+              <div className="text-xs text-slate-500">{plano.desc}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold text-white">R$ {plano.preco.toFixed(2)}</div>
+              <div className="text-xs text-slate-500">/mês</div>
+            </div>
+          </div>
+          {prof.dataVencimento && <div className="text-xs text-slate-500 mt-2">Vencimento: {new Date(prof.dataVencimento).toLocaleDateString('pt-BR')}</div>}
         </div>
 
         <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
@@ -109,7 +150,7 @@ export default function ProfessoresView() {
           <h2 className="text-xl font-bold text-white flex items-center gap-2"><UserCheck size={20} color="#34d399" />Professores</h2>
           <p className="text-xs text-slate-500">{filtered.length} professor(es)</p>
         </div>
-        <button onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}
+        <button onClick={() => openForm()}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
           style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
           <Plus size={14} />Novo Professor
@@ -131,25 +172,30 @@ export default function ProfessoresView() {
             const meusAlunos = alunos.filter(a => a.professorId === prof.id);
             const colors = ['#34d399','#60a5fa','#a78bfa','#fb923c','#f472b6'];
             const color = colors[i % 5];
+            const plano = PLANOS.find(p => p.id === prof.planoCobranca) || PLANOS[1];
+            const planoColor = PLANO_COLOR[prof.planoCobranca] || '#34d399';
             return (
               <motion.div key={prof.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="p-5 rounded-2xl cursor-pointer hover:opacity-90 transition-all"
                 style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-3">
                   <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black text-white"
                     style={{ background: `${color}25` }}>{prof.nome.charAt(0)}</div>
                   <div className="flex-1">
                     <div className="font-bold text-white">{prof.nome}</div>
                     <div className="text-xs text-slate-400">{prof.especialidade} {prof.cref ? `• ${prof.cref}` : ''}</div>
                   </div>
+                  <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: `${planoColor}15`, color: planoColor, border: `1px solid ${planoColor}25` }}>{plano.nome}</span>
                 </div>
-                <div className="flex gap-3 mb-4">
-                  {[{ label: 'Alunos', value: meusAlunos.length, color }].map(s => (
-                    <div key={s.label} className="flex-1 p-2 rounded-xl text-center" style={{ background: `${s.color}08`, border: `1px solid ${s.color}20` }}>
-                      <div className="text-lg font-bold" style={{ color: s.color }}>{s.value}</div>
-                      <div className="text-xs text-slate-500">{s.label}</div>
-                    </div>
-                  ))}
+                <div className="flex gap-3 mb-3">
+                  <div className="flex-1 p-2 rounded-xl text-center" style={{ background: `${color}08`, border: `1px solid ${color}20` }}>
+                    <div className="text-lg font-bold" style={{ color }}>{meusAlunos.length}</div>
+                    <div className="text-xs text-slate-500">Alunos</div>
+                  </div>
+                  <div className="flex-1 p-2 rounded-xl text-center" style={{ background: `${planoColor}08`, border: `1px solid ${planoColor}20` }}>
+                    <div className="text-sm font-bold" style={{ color: planoColor }}>R${plano.preco.toFixed(0)}</div>
+                    <div className="text-xs text-slate-500">/mês</div>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setSelectedProf(prof)} className="flex-1 py-2 rounded-xl text-xs font-semibold"
@@ -170,40 +216,96 @@ export default function ProfessoresView() {
           <div className="w-full max-w-lg rounded-2xl p-6 my-4" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-white">{editId ? 'Editar' : 'Novo'} Professor</h3>
-              <button onClick={() => { setShowForm(false); setEditId(null); }}><X size={18} color="#6b7280" /></button>
+              <button onClick={() => { setShowForm(false); setEditId(null); setFormStep('dados'); }}><X size={18} color="#6b7280" /></button>
             </div>
-            <div className="space-y-3">
-              {[
-                { label: 'Nome', field: 'nome', placeholder: 'Nome completo' },
-                { label: 'Email', field: 'email', placeholder: 'email@exemplo.com' },
-                { label: 'Telefone', field: 'telefone', placeholder: '(11) 99999-9999' },
-                { label: 'CREF', field: 'cref', placeholder: '000000-G/SP' },
-              ].map(f => (
-                <div key={f.field}>
-                  <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
-                  <input value={form[f.field] || ''} onChange={e => setForm(p => ({ ...p, [f.field]: e.target.value }))}
-                    placeholder={f.placeholder} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-4">
+              {[{ id: 'dados', label: 'Dados' }, { id: 'plano', label: 'Plano de Cobrança' }].map(t => (
+                <button key={t.id} onClick={() => setFormStep(t.id)}
+                  className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all"
+                  style={{ background: formStep === t.id ? '#34d39920' : 'rgba(255,255,255,0.04)', color: formStep === t.id ? '#34d399' : '#64748b', border: formStep === t.id ? '1px solid #34d39930' : '1px solid rgba(255,255,255,0.06)' }}>
+                  {t.label}
+                </button>
               ))}
-              <div>
-                <label className="text-xs text-slate-400 block mb-1">Especialidade</label>
-                <select value={form.especialidade || ''} onChange={e => setForm(p => ({ ...p, especialidade: e.target.value }))}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <option value="">Selecionar</option>
-                  {['Musculação','Personal Trainer','Funcional','CrossFit','Pilates','Avaliação Física'].map(e => <option key={e} value={e}>{e}</option>)}
-                </select>
-              </div>
-              {!editId && (
-                <div>
-                  <label className="text-xs text-slate-400 block mb-1">Senha de acesso (opcional)</label>
-                  <input type="password" value={form.senha || ''} onChange={e => setForm(p => ({ ...p, senha: e.target.value }))}
-                    placeholder="Deixe vazio para não criar acesso" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                </div>
-              )}
             </div>
+
+            {formStep === 'dados' && (
+              <div className="space-y-3">
+                {[
+                  { label: 'Nome', field: 'nome', placeholder: 'Nome completo' },
+                  { label: 'Email', field: 'email', placeholder: 'email@exemplo.com' },
+                  { label: 'Telefone', field: 'telefone', placeholder: '(11) 99999-9999' },
+                  { label: 'CREF', field: 'cref', placeholder: '000000-G/SP' },
+                ].map(f => (
+                  <div key={f.field}>
+                    <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
+                    <input value={form[f.field] || ''} onChange={e => setForm(p => ({ ...p, [f.field]: e.target.value }))}
+                      placeholder={f.placeholder} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                  </div>
+                ))}
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Especialidade</label>
+                  <select value={form.especialidade || ''} onChange={e => setForm(p => ({ ...p, especialidade: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <option value="">Selecionar</option>
+                    {['Musculação','Personal Trainer','Funcional','CrossFit','Pilates','Avaliação Física'].map(e => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                </div>
+                {!editId && (
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Senha de acesso (opcional)</label>
+                    <input type="password" value={form.senha || ''} onChange={e => setForm(p => ({ ...p, senha: e.target.value }))}
+                      placeholder="Deixe vazio para não criar acesso" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {formStep === 'plano' && (
+              <div className="space-y-3">
+                <p className="text-xs text-slate-400 mb-3">Selecione o plano de cobrança da plataforma para este professor:</p>
+                <div className="space-y-2">
+                  {PLANOS.map(plano => {
+                    const color = PLANO_COLOR[plano.id];
+                    const selected = form.planoCobranca === plano.id;
+                    return (
+                      <button key={plano.id} onClick={() => setForm(f => ({ ...f, planoCobranca: plano.id }))}
+                        className="w-full p-4 rounded-xl text-left transition-all"
+                        style={{ background: selected ? `${color}15` : 'rgba(255,255,255,0.03)', border: selected ? `1px solid ${color}40` : '1px solid rgba(255,255,255,0.07)' }}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-sm" style={{ color: selected ? color : '#94a3b8' }}>{plano.nome}</span>
+                          <span className="font-bold text-sm" style={{ color: selected ? color : '#64748b' }}>R$ {plano.preco.toFixed(2)}/mês</span>
+                        </div>
+                        <p className="text-xs text-slate-500">{plano.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Status do Plano</label>
+                    <select value={form.statusPlano || 'ativo'} onChange={e => setForm(f => ({ ...f, statusPlano: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <option value="ativo">Ativo</option>
+                      <option value="suspenso">Suspenso</option>
+                      <option value="cancelado">Cancelado</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 block mb-1">Data de Vencimento</label>
+                    <input type="date" value={form.dataVencimento || ''} onChange={e => setForm(f => ({ ...f, dataVencimento: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                      style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white"
               style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #34d399, #059669)' }}>
               {saved ? '✓ Salvo!' : `${editId ? 'Salvar' : 'Cadastrar'} Professor`}

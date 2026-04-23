@@ -197,9 +197,12 @@ export default function ProdutosView() {
                 </div>
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">URL da Imagem</label>
-                <input value={form.imagemUrl} onChange={e => setForm(f => ({ ...f, imagemUrl: e.target.value }))} placeholder="https://..."
+                <label className="text-xs text-slate-400 block mb-1">URL do Produto (imagem)</label>
+                <input value={form.imagemUrl} onChange={e => setForm(f => ({ ...f, imagemUrl: e.target.value }))} placeholder="https://exemplo.com/imagem-produto.jpg"
                   className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                {form.imagemUrl ? (
+                  <img src={form.imagemUrl} alt="preview" className="mt-2 w-full h-28 object-cover rounded-xl" onError={e => e.target.style.display='none'} />
+                ) : null}
               </div>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
