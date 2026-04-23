@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, Bell, LayoutDashboard, Users, UserCheck, Stethoscope, BookOpen, ShoppingBag, ClipboardList, BarChart2, DollarSign, Settings, Activity, Dumbbell, Calendar, TrendingUp, Heart } from 'lucide-react';
+import { Menu, Bell } from 'lucide-react';
 import { FitProAppProvider, FitProAuthProvider, useAuth } from '../context/FitProContext';
 import Sidebar, { adminNav, professorNav, alunoNav } from './fitpro/Sidebar';
 import LoginPage from './fitpro/LoginPage';
@@ -14,32 +14,22 @@ import TreinosView from './fitpro/TreinosView';
 import EspecialistasView from './fitpro/EspecialistasView';
 import GerenciarUsuariosView from './fitpro/GerenciarUsuariosView';
 import MinhasAvaliacoesView from './fitpro/MinhasAvaliacoesView';
+import EvolucaoAlunoView from './fitpro/EvolucaoAlunoView';
+import PeriodizacaoView from './fitpro/PeriodizacaoView';
+import ProfessoresView from './fitpro/ProfessoresView';
+import FinanceiroView from './fitpro/FinanceiroView';
 
 const BG = '#0a0e1a';
 const BORDER = 'rgba(255,255,255,0.07)';
 
-const viewMap = {
-  professores: { title: 'Professores', color: '#34d399' },
-  biblioteca: { title: 'Biblioteca de Exercícios', color: '#f472b6' },
-  shop: { title: 'Cadastro de Produtos', color: '#fb923c' },
-  pedidos: { title: 'Pedidos', color: '#f472b6' },
-  relatorios: { title: 'Relatórios Financeiros', color: '#fbbf24' },
-  financeiro: { title: 'Financeiro', color: '#34d399' },
-  periodizacao: { title: 'Periodização', color: '#fbbf24' },
-  evolucao: { title: 'Minha Evolução', color: '#fbbf24' },
-  loja: { title: 'Loja', color: '#fb923c' },
-  treinos_meus: { title: 'Meus Treinos (Biblioteca)', color: '#f472b6' },
-};
-
-function PlaceholderView({ viewId }) {
-  const v = viewMap[viewId] || { title: viewId, color: '#64748b' };
+function PlaceholderView({ title }) {
   return (
     <div className="flex flex-col items-center justify-center h-64 gap-4">
-      <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: `${v.color}15` }}>
+      <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: '#64748b15' }}>
         <span className="text-3xl">🏗️</span>
       </div>
-      <h2 className="text-xl font-bold text-white">{v.title}</h2>
-      <p className="text-slate-500 text-sm text-center max-w-xs">Módulo implementado no repositório original. Visualize via GitHub: Dionesoares/PERSONAL</p>
+      <h2 className="text-xl font-bold text-white">{title}</h2>
+      <p className="text-slate-500 text-sm text-center max-w-xs">Módulo em desenvolvimento.</p>
     </div>
   );
 }
@@ -66,7 +56,11 @@ function AuthenticatedApp() {
     if (activeView === 'especialistas' || activeView === 'parceiros' || activeView === 'servicos') return <EspecialistasView />;
     if (activeView === 'usuarios') return <GerenciarUsuariosView />;
     if (activeView === 'avaliacoes') return <MinhasAvaliacoesView />;
-    return <PlaceholderView viewId={activeView} />;
+    if (activeView === 'evolucao') return <EvolucaoAlunoView />;
+    if (activeView === 'periodizacao') return <PeriodizacaoView />;
+    if (activeView === 'professores') return <ProfessoresView />;
+    if (activeView === 'financeiro') return <FinanceiroView />;
+    return <PlaceholderView title={navItems.find(n => n.view === activeView)?.label || activeView} />;
   };
 
   return (

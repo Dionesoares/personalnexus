@@ -1,0 +1,387 @@
+import React, { useState } from 'react';
+import { Calendar, Plus, X, Trash2, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useApp, useAuth } from '../../context/FitProContext';
+import { getCredentials, generateId } from '../../lib/fitpro-storage';
+
+const CARD = '#0d1525';
+const BORDER = 'rgba(255,255,255,0.07)';
+
+const TIPOS = ['Linear', 'Ondulatório', 'Bloco', 'Conjugado', 'Reverso'];
+const FASES = ['Adaptação', 'Hipertrofia', 'Força', 'Potência', 'Pico', 'Recuperação', 'Manutenção'];
+const CORES_FASE = {
+  'Adaptação': '#60a5fa', 'Hipertrofia': '#f472b6', 'Força': '#fb923c',
+  'Potência': '#fbbf24', 'Pico': '#ef4444', 'Recuperação': '#34d399', 'Manutenção': '#a78bfa',
+};
+
+function emptyPeriodizacao() {
+  return {
+    nome: '', alunoId: '', tipo: 'Linear', objetivo: '', dataInicio: new Date().toISOString().split('T')[0],
+    duracaoTotal: 12, fases: [], observacoes: '',
+  };
+}
+
+export default function PeriodizacaoView() {
+  const { periodizacoes, alunos, planosTreino, addPeriodizacao, updatePeriodizacao, deletePeriodizacao } = useApp();
+  const { user } = useAuth();
+
+  const creds = getCredentials();
+  const myCred = creds.find(c => c.id === user?.id);
+  const professorId = myCred?.linkedId || '';
+
+  const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
+  const periodizacoesFiltradas = user?.role === 'professor'
+    ? periodizacoes.filter(p => alunosFiltrados.some(a => a.id === p.alunoId))
+    : periodizacoes;
+
+  const [alunoFilter, setAlunoFilter] = useState('');
+  const exibidas = alunoFilter ? periodizacoesFiltradas.filter(p => p.alunoId === alunoFilter) : periodizacoesFiltradas;
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyPeriodizacao());
+  const [editId, setEditId] = useState(null);
+  const [saved, setSaved] = useState(false);
+  const [selectedPer, setSelectedPer] = useState(null);
+
+  const addFase = () => {
+    setForm(f => ({
+      ...f,
+      fases: [...f.fases, { id: generateId(), nome: 'Hipertrofia', duracaoSemanas: 4, intensidade: 'Moderada', volume: 'Alto', objetivo: '', treinoId: '', observacoes: '' }]
+    }));
+  };
+
+  const removeFase = (id) => setForm(f => ({ ...f, fases: f.fases.filter(fa => fa.id !== id) }));
+
+  const updateFase = (id, field, value) => setForm(f => ({
+    ...f, fases: f.fases.map(fa => fa.id === id ? { ...fa, [field]: value } : fa)
+  }));
+
+  const handleSave = () => {
+    if (!form.nome.trim()) return alert('Nome é obrigatório');
+    if (!form.alunoId) return alert('Selecione um aluno');
+    const semanas = form.fases.reduce((acc, f) => acc + (parseInt(f.duracaoSemanas) || 0), 0) || parseInt(form.duracaoTotal) || 1;
+    const data = { ...form, duracaoTotal: semanas };
+    if (editId) updatePeriodizacao(editId, data);
+    else addPeriodizacao(data);
+    setSaved(true);
+    setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyPeriodizacao()); }, 1200);
+  };
+
+  if (selectedPer) {
+    const per = periodizacoes.find(p => p.id === selectedPer.id) || selectedPer;
+    const aluno = alunos.find(a => a.id === per.alunoId);
+    const dataFim = per.dataInicio ? new Date(new Date(per.dataInicio).getTime() + per.duracaoTotal * 7 * 24 * 60 * 60 * 1000) : null;
+
+    // Build timeline weeks
+    let semanaAtual = 1;
+    const timeline = (per.fases || []).map(fase => {
+      const start = semanaAtual;
+      semanaAtual += parseInt(fase.duracaoSemanas) || 1;
+      return { ...fase, startWeek: start, endWeek: semanaAtual - 1 };
+    });
+    const totalSemanas = per.duracaoTotal || semanaAtual - 1;
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setSelectedPer(null)} className="p-2 rounded-xl hover:bg-white/5">
+            <ChevronRight size={18} color="#9ca3af" className="rotate-180" />
+          </button>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-white">{per.nome}</h2>
+            <p className="text-xs text-slate-500">{aluno?.nome} • {per.tipo} • {per.duracaoTotal} semanas</p>
+          </div>
+        </div>
+
+        {/* Info cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: 'Tipo', value: per.tipo, color: '#60a5fa' },
+            { label: 'Duração', value: `${per.duracaoTotal} semanas`, color: '#fbbf24' },
+            { label: 'Fases', value: per.fases?.length || 0, color: '#a78bfa' },
+            { label: 'Início', value: per.dataInicio ? new Date(per.dataInicio).toLocaleDateString('pt-BR') : '—', color: '#34d399' },
+          ].map((k, i) => (
+            <div key={i} className="p-3 rounded-xl text-center" style={{ background: `${k.color}10`, border: `1px solid ${k.color}25` }}>
+              <div className="text-sm font-bold" style={{ color: k.color }}>{k.value}</div>
+              <div className="text-xs text-slate-500">{k.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Timeline visual */}
+        {timeline.length > 0 && (
+          <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            <h3 className="font-semibold text-white mb-4">Linha do Tempo</h3>
+            <div className="flex gap-1 mb-3 overflow-x-auto pb-2">
+              {timeline.map((fase, i) => {
+                const cor = CORES_FASE[fase.nome] || '#64748b';
+                const pct = ((parseInt(fase.duracaoSemanas) || 1) / totalSemanas) * 100;
+                return (
+                  <div key={fase.id} className="flex-shrink-0 rounded-lg p-2 text-center"
+                    style={{ width: `${Math.max(pct, 8)}%`, minWidth: 60, background: `${cor}20`, border: `1px solid ${cor}40` }}>
+                    <div className="text-xs font-bold truncate" style={{ color: cor }}>{fase.nome}</div>
+                    <div className="text-xs text-slate-500">{fase.duracaoSemanas}sem</div>
+                    <div className="text-xs text-slate-600">S{fase.startWeek}–S{fase.endWeek}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="space-y-3 mt-4">
+              {timeline.map((fase, i) => {
+                const cor = CORES_FASE[fase.nome] || '#64748b';
+                const treino = planosTreino.find(t => t.id === fase.treinoId);
+                return (
+                  <div key={fase.id} className="p-3 rounded-xl" style={{ background: `${cor}08`, border: `1px solid ${cor}20` }}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cor }} />
+                      <span className="text-sm font-semibold text-white">{fase.nome}</span>
+                      <span className="text-xs text-slate-500">Semana {fase.startWeek}–{fase.endWeek} ({fase.duracaoSemanas} sem)</span>
+                    </div>
+                    <div className="flex gap-2 flex-wrap text-xs mt-1">
+                      <span style={{ color: cor }}>Intensidade: {fase.intensidade}</span>
+                      <span className="text-slate-500">•</span>
+                      <span className="text-slate-400">Volume: {fase.volume}</span>
+                      {treino && <><span className="text-slate-500">•</span><span className="text-slate-400">Treino: {treino.nome}</span></>}
+                    </div>
+                    {fase.objetivo && <p className="text-xs text-slate-500 mt-1">🎯 {fase.objetivo}</p>}
+                    {fase.observacoes && <p className="text-xs text-slate-600 mt-0.5">📝 {fase.observacoes}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {per.observacoes && (
+          <div className="p-4 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Observações Gerais</h4>
+            <p className="text-sm text-slate-300">{per.observacoes}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2"><Calendar size={20} color="#fbbf24" />Periodização</h2>
+          <p className="text-xs text-slate-500">{exibidas.length} periodização(ões)</p>
+        </div>
+        {user?.role !== 'admin' && (
+          <button onClick={() => { setForm({ ...emptyPeriodizacao(), alunoId: alunosFiltrados[0]?.id || '' }); setEditId(null); setShowForm(true); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+            style={{ background: '#fbbf2420', color: '#fbbf24', border: '1px solid #fbbf2430' }}>
+            <Plus size={14} />Nova Periodização
+          </button>
+        )}
+      </div>
+
+      {alunosFiltrados.length > 0 && (
+        <select value={alunoFilter} onChange={e => setAlunoFilter(e.target.value)}
+          className="px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+          style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <option value="">Todos os alunos</option>
+          {alunosFiltrados.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+        </select>
+      )}
+
+      {exibidas.length === 0 ? (
+        <div className="text-center py-16 text-slate-500">
+          <Calendar size={40} className="mx-auto mb-3 opacity-30" />
+          <p>Nenhuma periodização criada</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {exibidas.map((per, i) => {
+            const aluno = alunos.find(a => a.id === per.alunoId);
+            const colors = ['#fbbf24', '#a78bfa', '#60a5fa', '#34d399', '#f472b6', '#fb923c'];
+            const color = colors[i % 6];
+            return (
+              <motion.div key={per.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="font-bold text-white">{per.nome}</h3>
+                    <p className="text-xs text-slate-500">{aluno?.nome} • {per.tipo}</p>
+                  </div>
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${color}15`, color }}>
+                    {per.duracaoTotal} sem
+                  </span>
+                </div>
+                {/* Mini timeline */}
+                {(per.fases || []).length > 0 && (
+                  <div className="flex gap-1 mb-3 overflow-hidden rounded-lg h-5">
+                    {(per.fases || []).map(fase => {
+                      const cor = CORES_FASE[fase.nome] || '#64748b';
+                      const pct = ((parseInt(fase.duracaoSemanas) || 1) / per.duracaoTotal) * 100;
+                      return (
+                        <div key={fase.id} className="h-full rounded-sm" title={`${fase.nome} (${fase.duracaoSemanas}sem)`}
+                          style={{ width: `${pct}%`, minWidth: 6, background: cor }} />
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="flex gap-2 flex-wrap mb-3">
+                  <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    {per.fases?.length || 0} fases
+                  </span>
+                  {per.dataInicio && (
+                    <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      Início: {new Date(per.dataInicio).toLocaleDateString('pt-BR')}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setSelectedPer(per)} className="flex-1 py-2 rounded-xl text-xs font-semibold"
+                    style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
+                    Ver Timeline
+                  </button>
+                  {user?.role !== 'admin' && (
+                    <button onClick={() => { if (confirm('Excluir esta periodização?')) deletePeriodizacao(per.id); }}
+                      className="px-3 py-2 rounded-xl text-xs hover:bg-red-500/10" style={{ color: '#ef4444' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Form modal */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.85)' }}>
+          <div className="w-full max-w-2xl rounded-2xl p-6 my-4" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-white">Nova Periodização</h3>
+              <button onClick={() => setShowForm(false)}><X size={18} color="#6b7280" /></button>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Aluno</label>
+                <select value={form.alunoId} onChange={e => setForm(f => ({ ...f, alunoId: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <option value="">Selecionar aluno</option>
+                  {alunosFiltrados.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Nome da Periodização</label>
+                <input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                  placeholder="Ex: Macrociclo Verão 2025" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Tipo</label>
+                  <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Data de Início</label>
+                  <input type="date" value={form.dataInicio} onChange={e => setForm(f => ({ ...f, dataInicio: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Objetivo</label>
+                <input value={form.objetivo} onChange={e => setForm(f => ({ ...f, objetivo: e.target.value }))}
+                  placeholder="Ex: Aumentar massa magra e reduzir gordura" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Observações</label>
+                <textarea value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))}
+                  rows={2} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none resize-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+            </div>
+
+            {/* Fases */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-white text-sm">Fases da Periodização</h4>
+                <button onClick={addFase} className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold"
+                  style={{ background: '#fbbf2420', color: '#fbbf24', border: '1px solid #fbbf2430' }}>
+                  <Plus size={12} />Adicionar Fase
+                </button>
+              </div>
+              <div className="space-y-3">
+                {form.fases.map((fase, fi) => {
+                  const cor = CORES_FASE[fase.nome] || '#64748b';
+                  return (
+                    <div key={fase.id} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${cor}30` }}>
+                      <div className="flex items-center gap-2 p-3" style={{ background: `${cor}10` }}>
+                        <span className="text-xs font-bold" style={{ color: cor }}>Fase {fi + 1}</span>
+                        <select value={fase.nome} onChange={e => updateFase(fase.id, 'nome', e.target.value)}
+                          className="flex-1 px-2 py-1 rounded-lg text-xs text-white outline-none"
+                          style={{ background: 'rgba(0,0,0,0.3)' }}>
+                          {FASES.map(f => <option key={f} value={f}>{f}</option>)}
+                        </select>
+                        <button onClick={() => removeFase(fase.id)} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+                      </div>
+                      <div className="p-3 grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs text-slate-500 block mb-1">Duração (semanas)</label>
+                          <input type="number" value={fase.duracaoSemanas} onChange={e => updateFase(fase.id, 'duracaoSemanas', parseInt(e.target.value) || 1)}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500 block mb-1">Intensidade</label>
+                          <select value={fase.intensidade} onChange={e => updateFase(fase.id, 'intensidade', e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            {['Baixa', 'Moderada', 'Alta', 'Máxima'].map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500 block mb-1">Volume</label>
+                          <select value={fase.volume} onChange={e => updateFase(fase.id, 'volume', e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            {['Baixo', 'Moderado', 'Alto', 'Muito Alto'].map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500 block mb-1">Treino vinculado</label>
+                          <select value={fase.treinoId} onChange={e => updateFase(fase.id, 'treinoId', e.target.value)}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            <option value="">Nenhum</option>
+                            {planosTreino.filter(t => t.alunoId === form.alunoId).map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-xs text-slate-500 block mb-1">Objetivo da fase</label>
+                          <input value={fase.objetivo} onChange={e => updateFase(fase.id, 'objetivo', e.target.value)}
+                            placeholder="Ex: Aumentar volume de treino" className="w-full px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {form.fases.length === 0 && <p className="text-xs text-slate-500 text-center py-4">Adicione fases para estruturar a periodização</p>}
+              </div>
+            </div>
+
+            <button onClick={handleSave} className="w-full py-3 rounded-xl font-semibold text-sm text-white"
+              style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #fbbf24, #d97706)' }}>
+              {saved ? '✓ Salvo!' : 'Salvar Periodização'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

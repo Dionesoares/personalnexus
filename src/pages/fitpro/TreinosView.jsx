@@ -129,7 +129,7 @@ export default function TreinosView() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div><h2 className="text-xl font-bold text-white">Planos de Treino</h2><p className="text-xs text-slate-500">{treinosExibidos.length} plano(s)</p></div>
-        {user?.role !== 'admin' && (
+        {user?.role === 'professor' && (
           <button onClick={() => { setForm({ ...emptyTreino, alunoId: alunosFiltrados[0]?.id || '' }); setEditId(null); setShowForm(true); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
             style={{ background: '#f472b620', color: '#f472b6', border: '1px solid #f472b630' }}>
