@@ -27,6 +27,7 @@ export const professorNav = [
   { icon: Activity, label: 'Avaliações', color: '#fb923c', view: 'avaliacao' },
   { icon: Dumbbell, label: 'Meus Treinos', color: '#f472b6', view: 'treinos' },
   { icon: Calendar, label: 'Periodização', color: '#fbbf24', view: 'periodizacao' },
+  { icon: BookOpen, label: 'Biblioteca', color: '#f472b6', view: 'biblioteca' },
   { icon: Stethoscope, label: 'Parceiros', color: '#34d399', view: 'parceiros' },
   { icon: ClipboardList, label: 'Meus Pedidos', color: '#60a5fa', view: 'meus-pedidos' },
   { icon: DollarSign, label: 'Financeiro', color: '#60a5fa', view: 'financeiro' },

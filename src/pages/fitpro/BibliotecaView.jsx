@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { BookOpen, Plus, X, Trash2, Edit2, Search, ImagePlus, Loader2 } from 'lucide-react';
+import { BookOpen, Plus, X, Trash2, Edit2, Search, ImagePlus, Loader2, Folder, FolderOpen, ChevronDown, ChevronRight, FolderPlus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { generateId } from '../../lib/fitpro-storage';
 
@@ -23,13 +22,63 @@ function emptyEx() {
   return {
     nome: '', grupoMuscular: 'Peito', musculosSecundarios: [], tipo: 'Força', nivel: 'Intermediário',
     equipamento: 'Barra', descricao: '', execucao: '', dicas: '', errosComuns: '',
-    series: '3-4', repeticoes: '10-12', descanso: 75, videoUrl: '', gifUrl: '', publico: true,
+    series: '3-4', repeticoes: '10-12', descanso: 75, videoUrl: '', gifUrl: '', publico: true, pastaId: '',
   };
 }
 
+// Componente de item de exercício em formato lista
+function ExerciseListItem({ ex, canEdit, onSelect, onEdit, onDelete }) {
+  const color = GROUP_COLORS[ex.grupoMuscular] || '#64748b';
+  return (
+    <div
+      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/5 transition-all"
+      style={{ border: '1px solid rgba(255,255,255,0.05)' }}
+      onClick={() => onSelect(ex)}
+    >
+      {/* GIF / placeholder */}
+      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"
+        style={{ background: ex.gifUrl ? '#0a0e1a' : `${color}15` }}>
+        {ex.gifUrl
+          ? <img src={ex.gifUrl} alt={ex.nome} className="w-full h-full object-cover" />
+          : <span className="text-lg">{ex.grupoMuscular === 'Cardio' ? '🏃' : '💪'}</span>
+        }
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-semibold text-white truncate">{ex.nome}</div>
+        <div className="flex gap-2 text-xs text-slate-500 flex-wrap">
+          <span className="px-1.5 py-0.5 rounded-full" style={{ background: `${color}15`, color }}>{ex.grupoMuscular}</span>
+          <span>{ex.equipamento}</span>
+          <span>•</span>
+          <span>{ex.nivel}</span>
+          <span>•</span>
+          <span style={{ color }}>{ex.series}×{ex.repeticoes}</span>
+        </div>
+      </div>
+
+      {/* Actions */}
+      {canEdit && (
+        <div className="flex gap-1 flex-shrink-0">
+          <button onClick={e => { e.stopPropagation(); onEdit(ex); }}
+            className="p-1.5 rounded-lg hover:bg-white/5" style={{ color: '#94a3b8' }}>
+            <Edit2 size={13} />
+          </button>
+          <button onClick={e => { e.stopPropagation(); if (confirm('Excluir?')) onDelete(ex.id); }}
+            className="p-1.5 rounded-lg hover:bg-red-500/10" style={{ color: '#ef4444' }}>
+            <Trash2 size={13} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BibliotecaView() {
-  const { exerciciosBiblioteca, addExercicioBiblioteca, updateExercicioBiblioteca, deleteExercicioBiblioteca } = useApp();
+  const { exerciciosBiblioteca, addExercicioBiblioteca, updateExercicioBiblioteca, deleteExercicioBiblioteca,
+    pastasTreino, addPastaTreino, updatePastaTreino, deletePastaTreino } = useApp();
   const { user } = useAuth();
+  const canEdit = user?.role === 'admin' || user?.role === 'professor';
 
   const [search, setSearch] = useState('');
   const [filtroGrupo, setFiltroGrupo] = useState('');
@@ -42,10 +91,39 @@ export default function BibliotecaView() {
   const [uploadingGif, setUploadingGif] = useState(false);
   const gifInputRef = useRef(null);
 
+  // Pastas
+  const [pastas, setPastas] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('fitpro_pastas_biblioteca') || '[]'); } catch { return []; }
+  });
+  const [expandedPastas, setExpandedPastas] = useState({});
+  const [editingPastaId, setEditingPastaId] = useState(null);
+  const [editingPastaNome, setEditingPastaNome] = useState('');
+  const [filtroPasta, setFiltroPasta] = useState('todas');
+
+  const savePastas = (list) => {
+    setPastas(list);
+    localStorage.setItem('fitpro_pastas_biblioteca', JSON.stringify(list));
+  };
+
+  const addPasta = () => {
+    const nome = prompt('Nome da pasta:');
+    if (!nome?.trim()) return;
+    savePastas([...pastas, { id: generateId(), nome: nome.trim(), createdAt: new Date().toISOString() }]);
+  };
+
+  const renamePasta = (id) => {
+    savePastas(pastas.map(p => p.id === id ? { ...p, nome: editingPastaNome } : p));
+    setEditingPastaId(null);
+  };
+
+  const removePasta = (id) => {
+    if (!confirm('Excluir pasta? Os exercícios não serão apagados.')) return;
+    savePastas(pastas.filter(p => p.id !== id));
+  };
+
   const handleGifUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.includes('gif') && !file.type.includes('image')) return alert('Selecione um arquivo de imagem ou GIF.');
     setUploadingGif(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     setForm(f => ({ ...f, gifUrl: file_url }));
@@ -57,7 +135,8 @@ export default function BibliotecaView() {
     const matchSearch = e.nome.toLowerCase().includes(search.toLowerCase()) || (e.grupoMuscular || '').toLowerCase().includes(search.toLowerCase());
     const matchGrupo = !filtroGrupo || e.grupoMuscular === filtroGrupo;
     const matchNivel = !filtroNivel || e.nivel === filtroNivel;
-    return matchSearch && matchGrupo && matchNivel;
+    const matchPasta = filtroPasta === 'todas' ? true : filtroPasta === 'sem-pasta' ? !e.pastaId : e.pastaId === filtroPasta;
+    return matchSearch && matchGrupo && matchNivel && matchPasta;
   });
 
   const handleSave = () => {
@@ -69,6 +148,14 @@ export default function BibliotecaView() {
     setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyEx()); }, 1200);
   };
 
+  const openEdit = (ex) => {
+    setForm({ ...emptyEx(), ...ex });
+    setEditId(ex.id);
+    setSelectedEx(null);
+    setShowForm(true);
+  };
+
+  // ── DETAIL VIEW ──────────────────────────────────────────────────────────
   if (selectedEx) {
     const ex = exercicios.find(e => e.id === selectedEx.id) || selectedEx;
     const color = GROUP_COLORS[ex.grupoMuscular] || '#64748b';
@@ -76,18 +163,26 @@ export default function BibliotecaView() {
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <button onClick={() => setSelectedEx(null)} className="p-2 rounded-xl hover:bg-white/5">
-            <BookOpen size={18} color="#9ca3af" />
+            <ChevronRight size={18} color="#9ca3af" className="rotate-180" />
           </button>
           <div className="flex-1">
             <h2 className="text-lg font-bold text-white">{ex.nome}</h2>
             <p className="text-xs text-slate-500">{ex.grupoMuscular} • {ex.nivel} • {ex.equipamento}</p>
           </div>
-          <button onClick={() => { setForm({ ...ex }); setEditId(ex.id); setSelectedEx(null); setShowForm(true); }}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold"
-            style={{ background: `${color}20`, color, border: `1px solid ${color}30` }}>
-            <Edit2 size={12} className="inline mr-1" />Editar
-          </button>
+          {canEdit && (
+            <button onClick={() => openEdit(ex)}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold"
+              style={{ background: `${color}20`, color, border: `1px solid ${color}30` }}>
+              <Edit2 size={12} className="inline mr-1" />Editar
+            </button>
+          )}
         </div>
+
+        {ex.gifUrl && (
+          <div className="rounded-2xl overflow-hidden" style={{ background: '#0a0e1a' }}>
+            <img src={ex.gifUrl} alt="Demonstração" className="w-full max-h-72 object-contain mx-auto" />
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -113,12 +208,6 @@ export default function BibliotecaView() {
           {ex.execucao && <div><h4 className="text-xs font-semibold text-slate-400 uppercase mb-1">Execução</h4><p className="text-sm text-slate-300 whitespace-pre-line">{ex.execucao}</p></div>}
           {ex.dicas && <div><h4 className="text-xs font-semibold text-slate-400 uppercase mb-1">💡 Dicas</h4><p className="text-sm text-slate-300">{ex.dicas}</p></div>}
           {ex.errosComuns && <div><h4 className="text-xs font-semibold text-slate-400 uppercase mb-1">⚠️ Erros Comuns</h4><p className="text-sm text-slate-300">{ex.errosComuns}</p></div>}
-          {ex.gifUrl && (
-            <div>
-              <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Demonstração</h4>
-              <img src={ex.gifUrl} alt="Demonstração do exercício" className="w-full max-h-64 object-contain rounded-xl" style={{ background: '#0a0e1a' }} />
-            </div>
-          )}
           {ex.videoUrl && (
             <div>
               <h4 className="text-xs font-semibold text-slate-400 uppercase mb-1">Vídeo</h4>
@@ -130,20 +219,34 @@ export default function BibliotecaView() {
     );
   }
 
+  // ── MAIN LIST VIEW ───────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2"><BookOpen size={20} color="#f472b6" />Biblioteca de Exercícios</h2>
           <p className="text-xs text-slate-500">{filtered.length} exercício(s)</p>
         </div>
-        <button onClick={() => { setForm(emptyEx()); setEditId(null); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-          style={{ background: '#f472b620', color: '#f472b6', border: '1px solid #f472b630' }}>
-          <Plus size={14} />Novo Exercício
-        </button>
+        <div className="flex gap-2">
+          {canEdit && (
+            <>
+              <button onClick={addPasta}
+                className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: '#fbbf2415', color: '#fbbf24', border: '1px solid #fbbf2430' }}>
+                <FolderPlus size={14} />Pasta
+              </button>
+              <button onClick={() => { setForm(emptyEx()); setEditId(null); setShowForm(true); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: '#f472b620', color: '#f472b6', border: '1px solid #f472b630' }}>
+                <Plus size={14} />Exercício
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
+      {/* Filtros */}
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-48">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -165,71 +268,93 @@ export default function BibliotecaView() {
         </select>
       </div>
 
-      {/* Grupos pills */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <button onClick={() => setFiltroGrupo('')}
-          className="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0"
-          style={{ background: !filtroGrupo ? '#f472b620' : 'rgba(255,255,255,0.03)', color: !filtroGrupo ? '#f472b6' : '#64748b', border: !filtroGrupo ? '1px solid #f472b630' : '1px solid rgba(255,255,255,0.06)' }}>
-          Todos
-        </button>
-        {GRUPOS.filter(g => exercicios.some(e => e.grupoMuscular === g)).map(g => {
-          const color = GROUP_COLORS[g] || '#64748b';
-          return (
-            <button key={g} onClick={() => setFiltroGrupo(filtroGrupo === g ? '' : g)}
-              className="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all"
-              style={{ background: filtroGrupo === g ? `${color}20` : 'rgba(255,255,255,0.03)', color: filtroGrupo === g ? color : '#64748b', border: filtroGrupo === g ? `1px solid ${color}30` : '1px solid rgba(255,255,255,0.06)' }}>
-              {g}
-            </button>
-          );
-        })}
-      </div>
+      {/* Pastas + exercícios sem pasta */}
+      {pastas.length > 0 && (
+        <div className="space-y-2">
+          {/* Botão "Todas" */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {[{ id: 'todas', nome: 'Todas' }, { id: 'sem-pasta', nome: 'Sem pasta' }, ...pastas].map(p => (
+              <button key={p.id} onClick={() => setFiltroPasta(p.id)}
+                className="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap flex-shrink-0 transition-all flex items-center gap-1"
+                style={{ background: filtroPasta === p.id ? '#fbbf2420' : 'rgba(255,255,255,0.03)', color: filtroPasta === p.id ? '#fbbf24' : '#64748b', border: filtroPasta === p.id ? '1px solid #fbbf2430' : '1px solid rgba(255,255,255,0.06)' }}>
+                {p.id !== 'todas' && p.id !== 'sem-pasta' && <Folder size={11} />}
+                {p.nome}
+              </button>
+            ))}
+          </div>
 
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-slate-500"><BookOpen size={40} className="mx-auto mb-3 opacity-30" /><p>Nenhum exercício encontrado</p></div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-          {filtered.map((ex, i) => {
-            const color = GROUP_COLORS[ex.grupoMuscular] || '#64748b';
-            return (
-              <motion.div key={ex.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="p-4 rounded-2xl hover:opacity-90 transition-all cursor-pointer"
-                style={{ background: CARD, border: `1px solid ${BORDER}` }}
-                onClick={() => setSelectedEx(ex)}>
-                {ex.gifUrl && (
-                  <img src={ex.gifUrl} alt={ex.nome} className="w-full h-36 object-contain rounded-xl mb-3" style={{ background: '#0a0e1a' }} />
-                )}
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="font-semibold text-white text-sm">{ex.nome}</div>
-                    <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block" style={{ background: `${color}15`, color }}>{ex.grupoMuscular}</span>
-                  </div>
-                  {user?.role !== 'aluno' && (
-                    <div className="flex gap-1">
-                      <button onClick={e => { e.stopPropagation(); setForm({ ...ex }); setEditId(ex.id); setSelectedEx(null); setShowForm(true); }}
-                        className="p-1 rounded-lg hover:bg-white/5 transition-all" style={{ color: '#94a3b8' }}>
-                        <Edit2 size={13} />
+          {/* Pastas expansíveis (somente quando "Todas" selecionado e sem busca) */}
+          {filtroPasta === 'todas' && !search && !filtroGrupo && !filtroNivel && (
+            <div className="space-y-2">
+              {pastas.map(pasta => {
+                const exsNaPasta = exercicios.filter(e => e.pastaId === pasta.id);
+                const expanded = expandedPastas[pasta.id];
+                return (
+                  <div key={pasta.id} className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid rgba(251,191,36,0.15)` }}>
+                    <div className="flex items-center gap-2 px-4 py-3">
+                      <button onClick={() => setExpandedPastas(p => ({ ...p, [pasta.id]: !p[pasta.id] }))}
+                        className="flex items-center gap-2 flex-1 text-left">
+                        {expanded ? <FolderOpen size={16} color="#fbbf24" /> : <Folder size={16} color="#fbbf24" />}
+                        {editingPastaId === pasta.id ? (
+                          <input value={editingPastaNome} onChange={e => setEditingPastaNome(e.target.value)}
+                            onBlur={() => renamePasta(pasta.id)}
+                            onKeyDown={e => { if (e.key === 'Enter') renamePasta(pasta.id); }}
+                            className="flex-1 bg-transparent text-white text-sm outline-none border-b border-yellow-400/40"
+                            autoFocus onClick={e => e.stopPropagation()} />
+                        ) : (
+                          <span className="text-sm font-semibold text-white">{pasta.nome}</span>
+                        )}
+                        <span className="text-xs text-slate-500 ml-1">({exsNaPasta.length})</span>
                       </button>
-                      <button onClick={e => { e.stopPropagation(); if (confirm('Excluir?')) deleteExercicioBiblioteca(ex.id); }}
-                        className="p-1 rounded-lg hover:bg-red-500/10 transition-all" style={{ color: '#ef4444' }}>
-                        <Trash2 size={13} />
-                      </button>
+                      {canEdit && (
+                        <div className="flex gap-1">
+                          <button onClick={() => { setEditingPastaId(pasta.id); setEditingPastaNome(pasta.nome); }}
+                            className="p-1.5 rounded-lg hover:bg-white/5" style={{ color: '#94a3b8' }}>
+                            <Edit2 size={12} />
+                          </button>
+                          <button onClick={() => removePasta(pasta.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-500/10" style={{ color: '#ef4444' }}>
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
+                      {expanded ? <ChevronDown size={14} color="#6b7280" /> : <ChevronRight size={14} color="#6b7280" />}
                     </div>
-                  )}
-                </div>
-                <div className="flex gap-2 text-xs text-slate-500 flex-wrap">
-                  <span>{ex.equipamento}</span>
-                  <span>•</span>
-                  <span>{ex.nivel}</span>
-                  <span>•</span>
-                  <span style={{ color }}>{ex.series}×{ex.repeticoes}</span>
-                </div>
-                {ex.descricao && <p className="text-xs text-slate-600 mt-2 line-clamp-2">{ex.descricao}</p>}
-              </motion.div>
-            );
-          })}
+                    {expanded && (
+                      <div className="px-3 pb-3 space-y-1">
+                        {exsNaPasta.length === 0
+                          ? <p className="text-xs text-slate-600 text-center py-2">Nenhum exercício nesta pasta</p>
+                          : exsNaPasta.map(ex => (
+                            <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
+                              onSelect={setSelectedEx}
+                              onEdit={openEdit}
+                              onDelete={deleteExercicioBiblioteca} />
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
+      {/* Lista de exercícios filtrados */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-slate-500"><BookOpen size={40} className="mx-auto mb-3 opacity-30" /><p>Nenhum exercício encontrado</p></div>
+      ) : (
+        <div className="rounded-2xl overflow-hidden space-y-1 p-2" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+          {filtered.map(ex => (
+            <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
+              onSelect={setSelectedEx}
+              onEdit={openEdit}
+              onDelete={deleteExercicioBiblioteca} />
+          ))}
+        </div>
+      )}
+
+      {/* FORM MODAL */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.85)' }}>
           <div className="w-full max-w-xl rounded-2xl p-6 my-4" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
@@ -243,6 +368,16 @@ export default function BibliotecaView() {
                 <input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Supino Reto com Barra"
                   className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
+              {pastas.length > 0 && (
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Pasta</label>
+                  <select value={form.pastaId || ''} onChange={e => setForm(f => ({ ...f, pastaId: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <option value="">Sem pasta</option>
+                    {pastas.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                  </select>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-slate-400 block mb-1">Grupo Muscular</label>
