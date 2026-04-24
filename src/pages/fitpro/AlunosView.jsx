@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter } from 'lucide-react';
+import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter, MessageCircle, Eye, EyeOff } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
-import { getCredentials } from '../../lib/fitpro-storage';
+import { getCredentials, addCredential } from '../../lib/fitpro-storage';
 import { calcularIdade, calcularIMC, classificarIMC } from '../../lib/fitpro-calculations';
 
 const CARD = '#0d1525';
@@ -41,12 +41,31 @@ export default function AlunosView({ roleOverride }) {
 
   const objetivos = [...new Set(alunosFiltrados.map(a => a.objetivo).filter(Boolean))];
 
+  const [senhaNovo, setSenhaNovo] = useState('');
+  const [showSenha, setShowSenha] = useState(false);
+
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     const data = { ...form, peso: parseFloat(form.peso) || 0, altura: parseFloat(form.altura) || 0, professorId: form.professorId || professorId || '' };
     if (editId) { updateAluno(editId, data); setSelectedAluno({ ...selectedAluno, ...data }); }
-    else { const id = addAluno(data); }
-    setShowForm(false); setEditId(null); setForm(emptyAluno);
+    else {
+      const id = addAluno(data);
+      if (form.email && senhaNovo) {
+        addCredential({ email: form.email, password: senhaNovo, role: 'aluno', nome: form.nome, linkedId: id, ativo: true, autoRegistrado: false });
+      }
+    }
+    setShowForm(false); setEditId(null); setForm(emptyAluno); setSenhaNovo('');
+  };
+
+  const handleEnviarWhatsApp = () => {
+    const tel = (form.telefone || '').replace(/\D/g, '');
+    if (!tel) return alert('Informe o telefone do aluno para enviar via WhatsApp.');
+    if (!form.email) return alert('Informe o email do aluno.');
+    if (!senhaNovo) return alert('Defina uma senha para enviar ao aluno.');
+    const msg = encodeURIComponent(
+      `Olá, ${form.nome}! 🏋️\n\nSeu acesso à plataforma FitPro foi criado!\n\n*Login:* ${form.email}\n*Senha:* ${senhaNovo}\n\nBons treinos! 💪`
+    );
+    window.open(`https://wa.me/55${tel}?text=${msg}`, '_blank');
   };
 
   const handleEdit = (aluno) => {
@@ -358,6 +377,35 @@ export default function AlunosView({ roleOverride }) {
                   {['Emagrecimento','Hipertrofia','Condicionamento','Saúde','Reabilitação','Performance'].map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
+
+              {/* Senha de acesso */}
+              <div className="pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <label className="text-xs text-slate-400 block mb-1">Senha de Acesso (opcional)</label>
+                <div className="relative">
+                  <input
+                    type={showSenha ? 'text' : 'password'}
+                    value={senhaNovo}
+                    onChange={e => setSenhaNovo(e.target.value)}
+                    placeholder="Crie uma senha para o aluno"
+                    className="w-full px-3 py-2.5 pr-10 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
+                  />
+                  <button type="button" onClick={() => setShowSenha(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                    {showSenha ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600 mt-1">Se informada, o aluno poderá fazer login com o email e esta senha.</p>
+              </div>
+
+              {/* Botão enviar WhatsApp */}
+              {form.telefone && senhaNovo && form.email && (
+                <button type="button" onClick={handleEnviarWhatsApp}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background: '#25d36615', color: '#25d366', border: '1px solid #25d36630' }}>
+                  <MessageCircle size={15} />Enviar credenciais via WhatsApp
+                </button>
+              )}
             </div>
             <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white" style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}>Cadastrar Aluno</button>
           </div>
