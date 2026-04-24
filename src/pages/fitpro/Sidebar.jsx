@@ -28,6 +28,7 @@ export const professorNav = [
   { icon: Dumbbell, label: 'Meus Treinos', color: '#f472b6', view: 'treinos' },
   { icon: Calendar, label: 'Periodização', color: '#fbbf24', view: 'periodizacao' },
   { icon: Stethoscope, label: 'Parceiros', color: '#34d399', view: 'parceiros' },
+  { icon: ClipboardList, label: 'Meus Pedidos', color: '#60a5fa', view: 'meus-pedidos' },
   { icon: DollarSign, label: 'Financeiro', color: '#60a5fa', view: 'financeiro' },
   { icon: ShoppingBag, label: 'Loja', color: '#fb923c', view: 'loja' },
 ];
@@ -38,6 +39,7 @@ export const alunoNav = [
   { icon: Dumbbell, label: 'Meus Treinos', color: '#f472b6', view: 'treinos' },
   { icon: TrendingUp, label: 'Minha Evolução', color: '#fbbf24', view: 'evolucao' },
   { icon: Stethoscope, label: 'Serviços Parceiros', color: '#60a5fa', view: 'servicos' },
+  { icon: ClipboardList, label: 'Meus Pedidos', color: '#60a5fa', view: 'meus-pedidos' },
   { icon: ShoppingBag, label: 'Loja', color: '#fb923c', view: 'loja' },
 ];
 
