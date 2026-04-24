@@ -145,37 +145,36 @@ export default function TreinosView() {
                     const gifUrl = ex.gifUrl || gifMap[ex.nome?.toLowerCase()];
                     const bibEx = (exerciciosBiblioteca || []).find(b => b.nome?.toLowerCase() === ex.nome?.toLowerCase());
                     return (
-                    <div key={ex.id} className="rounded-xl overflow-hidden" style={{ background: `${cor}08`, border: `1px solid ${cor}15` }}>
-                      {/* GIF em destaque */}
-                      {gifUrl ? (
-                        <button onClick={() => setGifModal({ nome: ex.nome, gifUrl, series: ex.series, repeticoes: ex.repeticoes, descanso: ex.descanso, carga: ex.carga, tecnica: ex.tecnica, observacoes: ex.observacoes, dicas: bibEx?.dicas, execucao: bibEx?.execucao, errosComuns: bibEx?.errosComuns, cor })}
-                          className="w-full relative group">
-                          <img src={gifUrl} alt={ex.nome} className="w-full object-cover" style={{ maxHeight: 200, background: '#0a0e1a' }} />
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.4)' }}>
-                            <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: `${cor}80` }}>
-                              <Play size={14} fill="white" />Ver execução
+                    <div key={ex.id} className="p-3 rounded-xl flex items-center gap-3" style={{ background: `${cor}08`, border: `1px solid ${cor}15` }}>
+                      {/* Thumbnail GIF pequeno — clica para expandir */}
+                      <button
+                        onClick={() => gifUrl && setGifModal({ nome: ex.nome, gifUrl, series: ex.series, repeticoes: ex.repeticoes, descanso: ex.descanso, carga: ex.carga, tecnica: ex.tecnica, observacoes: ex.observacoes, dicas: bibEx?.dicas, execucao: bibEx?.execucao, errosComuns: bibEx?.errosComuns, cor })}
+                        className="flex-shrink-0 relative rounded-lg overflow-hidden"
+                        style={{ width: 56, height: 56, background: gifUrl ? '#0a0e1a' : `${cor}15`, cursor: gifUrl ? 'pointer' : 'default' }}>
+                        {gifUrl ? (
+                          <>
+                            <img src={gifUrl} alt={ex.nome} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                              <Play size={16} color="#fff" fill="#fff" />
                             </div>
-                          </div>
-                        </button>
-                      ) : (
-                        <div className="w-full h-20 flex items-center justify-center" style={{ background: `${cor}10` }}>
-                          <span className="text-3xl">💪</span>
-                        </div>
-                      )}
-                      {/* Info */}
-                      <div className="p-3">
-                        <div className="flex items-center gap-2 mb-2">
+                          </>
+                        ) : (
+                          <span className="w-full h-full flex items-center justify-center text-xl">💪</span>
+                        )}
+                      </button>
+                      {/* Info do exercício */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
                           <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: `${cor}25`, color: cor }}>{ei + 1}</span>
-                          <span className="text-sm font-semibold text-white">{ex.nome}</span>
-                          {ex.grupoMuscular && <span className="text-xs text-slate-500 ml-auto">{ex.grupoMuscular}</span>}
+                          <span className="text-sm font-semibold text-white truncate">{ex.nome}</span>
                         </div>
                         <div className="flex gap-2 flex-wrap text-xs">
-                          <span className="px-2 py-1 rounded-lg font-bold" style={{ background: `${cor}20`, color: cor }}>{ex.series}×{ex.repeticoes}</span>
-                          {ex.carga > 0 && <span className="px-2 py-1 rounded-lg text-slate-300" style={{ background: 'rgba(255,255,255,0.06)' }}>{ex.carga}kg</span>}
-                          <span className="px-2 py-1 rounded-lg text-slate-400" style={{ background: 'rgba(255,255,255,0.04)' }}>⏱ {ex.descanso}s</span>
-                          {ex.tecnica && ex.tecnica !== 'Normal' && <span className="px-2 py-1 rounded-lg" style={{ background: `${cor}15`, color: cor }}>{ex.tecnica}</span>}
+                          <span className="px-2 py-0.5 rounded-lg font-bold" style={{ background: `${cor}20`, color: cor }}>{ex.series}×{ex.repeticoes}</span>
+                          {ex.carga > 0 && <span className="px-2 py-0.5 rounded-lg text-slate-300" style={{ background: 'rgba(255,255,255,0.06)' }}>{ex.carga}kg</span>}
+                          <span className="px-2 py-0.5 rounded-lg text-slate-400" style={{ background: 'rgba(255,255,255,0.04)' }}>⏱ {ex.descanso}s</span>
+                          {ex.tecnica && ex.tecnica !== 'Normal' && <span className="px-2 py-0.5 rounded-lg" style={{ background: `${cor}15`, color: cor }}>{ex.tecnica}</span>}
                         </div>
-                        {ex.observacoes && <p className="text-xs text-slate-500 mt-2">📝 {ex.observacoes}</p>}
+                        {ex.observacoes && <p className="text-xs text-slate-500 mt-1 truncate">📝 {ex.observacoes}</p>}
                       </div>
                     </div>
                   );})}
