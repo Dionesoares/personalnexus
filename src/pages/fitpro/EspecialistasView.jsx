@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Stethoscope, Plus, X, Star, Phone, Mail, Edit2, Trash2, Percent } from 'lucide-react';
+import { Stethoscope, Plus, X, Star, Edit2, Trash2, Percent, ShoppingCart } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
+import ModalPagamentoParceiro from '../../components/fitpro/ModalPagamentoParceiro';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -26,6 +27,7 @@ export default function EspecialistasView() {
   const [form, setForm] = useState(emptyEsp);
   const [filtro, setFiltro] = useState('todos');
   const [saved, setSaved] = useState(false);
+  const [espPagamento, setEspPagamento] = useState(null);
 
   const especialidadesUnicas = [...new Set(especialistas.map(e => e.especialidade))];
   const filtrados = filtro === 'todos' ? especialistas
@@ -106,9 +108,23 @@ export default function EspecialistasView() {
 
             {esp.disponibilidade && <p className="text-xs text-slate-500 mb-3">{esp.disponibilidade}</p>}
 
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-2 justify-end items-center">
+              {esp.parceiro && !isAdmin && (
+                <button onClick={() => setEspPagamento(esp)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg, #34d399, #059669)', color: '#fff' }}>
+                  <ShoppingCart size={14} />Contratar
+                </button>
+              )}
               {isAdmin && (
                 <>
+                  {esp.parceiro && (
+                    <button onClick={() => setEspPagamento(esp)}
+                      className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+                      style={{ background: '#34d39915', color: '#34d399', border: '1px solid #34d39930' }}>
+                      <ShoppingCart size={13} />Simular
+                    </button>
+                  )}
                   <button onClick={() => { setForm({ ...esp, valorConsulta: String(esp.valorConsulta) }); setEditId(esp.id); setShowForm(true); }}
                     className="px-3 py-2 rounded-xl hover:bg-white/5 transition-all" style={{ color: '#94a3b8' }}>
                     <Edit2 size={14} />
@@ -126,6 +142,14 @@ export default function EspecialistasView() {
 
       {filtrados.length === 0 && (
         <div className="text-center py-16 text-slate-500"><Stethoscope size={40} className="mx-auto mb-3 opacity-30" /><p>Nenhum especialista encontrado</p></div>
+      )}
+
+      {espPagamento && (
+        <ModalPagamentoParceiro
+          especialista={espPagamento}
+          onClose={() => setEspPagamento(null)}
+          onSuccess={() => { setTimeout(() => setEspPagamento(null), 3000); }}
+        />
       )}
 
       {showForm && (
