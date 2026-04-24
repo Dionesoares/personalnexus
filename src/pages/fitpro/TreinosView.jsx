@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
+import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
+import { TREINO_TEMPLATES, aplicarTemplate } from '../../lib/treinoTemplates';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -219,6 +220,40 @@ export default function TreinosView() {
               </div>
               <div><label className="text-xs text-slate-400 block mb-1">Duração (semanas)</label><input type="number" value={form.duracaoSemanas} onChange={e => setForm(f => ({ ...f, duracaoSemanas: parseInt(e.target.value) || 1 }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
             </div>
+
+            {/* Treino Padrão Automático */}
+            {TREINO_TEMPLATES[form.nivel] && (
+              <div className="mb-4 p-4 rounded-2xl" style={{ background: '#a78bfa08', border: '1px solid #a78bfa25' }}>
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#a78bfa20' }}>
+                    <Sparkles size={16} color="#a78bfa" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-white mb-0.5">Treino Padrão para {form.nivel}</div>
+                    <div className="text-xs text-slate-400 mb-1">{TREINO_TEMPLATES[form.nivel].descricao}</div>
+                    <div className="flex gap-2 flex-wrap mb-3">
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#a78bfa15', color: '#a78bfa' }}>{TREINO_TEMPLATES[form.nivel].sessoes.length} sessões</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>{TREINO_TEMPLATES[form.nivel].duracaoSemanas} semanas</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>{TREINO_TEMPLATES[form.nivel].objetivo}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {TREINO_TEMPLATES[form.nivel].sessoes.map((s, i) => (
+                        <span key={i} className="text-xs px-2 py-0.5 rounded-lg text-slate-300" style={{ background: 'rgba(255,255,255,0.06)' }}>{s.nome.split('—')[0].trim()}</span>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => {
+                        const template = aplicarTemplate(form.nivel, form.alunoId);
+                        if (template) setForm(f => ({ ...f, nome: template.nome, objetivo: template.objetivo, duracaoSemanas: template.duracaoSemanas, sessoes: template.sessoes }));
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
+                      style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', color: '#fff' }}>
+                      <Sparkles size={12} />Aplicar Treino Padrão Automático
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Sessões */}
             <div className="mb-4">
