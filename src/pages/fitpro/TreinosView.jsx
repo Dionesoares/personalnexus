@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles } from 'lucide-react';
+import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
 import { TREINO_TEMPLATES, aplicarTemplate } from '../../lib/treinoTemplates';
@@ -26,6 +26,7 @@ export default function TreinosView() {
   const [form, setForm] = useState(emptyTreino);
   const [collapsedSessoes, setCollapsedSessoes] = useState({});
   const [saved, setSaved] = useState(false);
+  const [gifModal, setGifModal] = useState(null); // { nome, gifUrl, series, repeticoes, descanso, observacoes, dicas, cor }
 
   const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
   const treinosFiltrados = user?.role === 'professor' ? planosTreino.filter(t => alunosFiltrados.some(a => a.id === t.alunoId)) : planosTreino;
@@ -85,6 +86,45 @@ export default function TreinosView() {
           ))}
         </div>
 
+        {/* Modal GIF execução */}
+        {gifModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.9)' }}
+            onClick={() => setGifModal(null)}>
+            <div className="w-full max-w-sm rounded-2xl overflow-hidden" style={{ background: '#0d1525', border: `1px solid ${gifModal.cor}40` }}
+              onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid rgba(255,255,255,0.07)` }}>
+                <h3 className="font-bold text-white text-sm">{gifModal.nome}</h3>
+                <button onClick={() => setGifModal(null)}><X size={18} color="#6b7280" /></button>
+              </div>
+              <img src={gifModal.gifUrl} alt={gifModal.nome} className="w-full object-contain" style={{ maxHeight: 280, background: '#0a0e1a' }} />
+              <div className="p-4 space-y-3">
+                <div className="flex gap-2 flex-wrap">
+                  <span className="px-3 py-1.5 rounded-xl text-sm font-bold" style={{ background: `${gifModal.cor}20`, color: gifModal.cor }}>{gifModal.series}×{gifModal.repeticoes}</span>
+                  {gifModal.carga > 0 && <span className="px-3 py-1.5 rounded-xl text-sm text-white" style={{ background: 'rgba(255,255,255,0.06)' }}>{gifModal.carga}kg</span>}
+                  <span className="px-3 py-1.5 rounded-xl text-sm text-slate-400" style={{ background: 'rgba(255,255,255,0.04)' }}>⏱ {gifModal.descanso}s descanso</span>
+                </div>
+                {gifModal.execucao && (
+                  <div>
+                    <div className="text-xs font-semibold text-slate-400 uppercase mb-1">Execução</div>
+                    <p className="text-xs text-slate-300 whitespace-pre-line">{gifModal.execucao}</p>
+                  </div>
+                )}
+                {gifModal.dicas && (
+                  <div className="px-3 py-2 rounded-xl text-xs text-yellow-300" style={{ background: '#fbbf2410', border: '1px solid #fbbf2420' }}>
+                    💡 {gifModal.dicas}
+                  </div>
+                )}
+                {gifModal.errosComuns && (
+                  <div className="px-3 py-2 rounded-xl text-xs text-red-300" style={{ background: '#ef444410', border: '1px solid #ef444420' }}>
+                    ⚠️ {gifModal.errosComuns}
+                  </div>
+                )}
+                {gifModal.observacoes && <p className="text-xs text-slate-500">📝 {gifModal.observacoes}</p>}
+              </div>
+            </div>
+          </div>
+        )}
+
         {treino.sessoes?.map((sessao, si) => {
           const cor = COR_SESSAO[si % COR_SESSAO.length];
           const collapsed = collapsedSessoes[sessao.id];
@@ -103,29 +143,40 @@ export default function TreinosView() {
                 <div className="px-4 pb-4 space-y-3">
                   {sessao.exercicios.map((ex, ei) => {
                     const gifUrl = ex.gifUrl || gifMap[ex.nome?.toLowerCase()];
+                    const bibEx = (exerciciosBiblioteca || []).find(b => b.nome?.toLowerCase() === ex.nome?.toLowerCase());
                     return (
-                    <div key={ex.id} className="p-3 rounded-xl" style={{ background: `${cor}08`, border: `1px solid ${cor}15` }}>
-                      <div className="flex items-center gap-3 mb-2">
-                        {gifUrl ? (
-                          <img src={gifUrl} alt={ex.nome} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" style={{ background: '#0a0e1a' }} />
-                        ) : (
-                          <span className="w-12 h-12 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{ background: `${cor}15` }}>💪</span>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: `${cor}25`, color: cor }}>{ei + 1}</span>
-                            <span className="text-sm font-semibold text-white truncate">{ex.nome}</span>
+                    <div key={ex.id} className="rounded-xl overflow-hidden" style={{ background: `${cor}08`, border: `1px solid ${cor}15` }}>
+                      {/* GIF em destaque */}
+                      {gifUrl ? (
+                        <button onClick={() => setGifModal({ nome: ex.nome, gifUrl, series: ex.series, repeticoes: ex.repeticoes, descanso: ex.descanso, carga: ex.carga, tecnica: ex.tecnica, observacoes: ex.observacoes, dicas: bibEx?.dicas, execucao: bibEx?.execucao, errosComuns: bibEx?.errosComuns, cor })}
+                          className="w-full relative group">
+                          <img src={gifUrl} alt={ex.nome} className="w-full object-cover" style={{ maxHeight: 200, background: '#0a0e1a' }} />
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'rgba(0,0,0,0.4)' }}>
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: `${cor}80` }}>
+                              <Play size={14} fill="white" />Ver execução
+                            </div>
                           </div>
-                          <span className="text-xs text-slate-500">{ex.grupoMuscular}</span>
+                        </button>
+                      ) : (
+                        <div className="w-full h-20 flex items-center justify-center" style={{ background: `${cor}10` }}>
+                          <span className="text-3xl">💪</span>
                         </div>
+                      )}
+                      {/* Info */}
+                      <div className="p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: `${cor}25`, color: cor }}>{ei + 1}</span>
+                          <span className="text-sm font-semibold text-white">{ex.nome}</span>
+                          {ex.grupoMuscular && <span className="text-xs text-slate-500 ml-auto">{ex.grupoMuscular}</span>}
+                        </div>
+                        <div className="flex gap-2 flex-wrap text-xs">
+                          <span className="px-2 py-1 rounded-lg font-bold" style={{ background: `${cor}20`, color: cor }}>{ex.series}×{ex.repeticoes}</span>
+                          {ex.carga > 0 && <span className="px-2 py-1 rounded-lg text-slate-300" style={{ background: 'rgba(255,255,255,0.06)' }}>{ex.carga}kg</span>}
+                          <span className="px-2 py-1 rounded-lg text-slate-400" style={{ background: 'rgba(255,255,255,0.04)' }}>⏱ {ex.descanso}s</span>
+                          {ex.tecnica && ex.tecnica !== 'Normal' && <span className="px-2 py-1 rounded-lg" style={{ background: `${cor}15`, color: cor }}>{ex.tecnica}</span>}
+                        </div>
+                        {ex.observacoes && <p className="text-xs text-slate-500 mt-2">📝 {ex.observacoes}</p>}
                       </div>
-                      <div className="flex gap-3 text-xs text-slate-400 flex-wrap">
-                        <span style={{ color: cor }}>{ex.series}×{ex.repeticoes}</span>
-                        {ex.carga > 0 && <span>{ex.carga}kg</span>}
-                        <span>{ex.descanso}s descanso</span>
-                        {ex.tecnica !== 'Normal' && <span className="px-1.5 py-0.5 rounded-full text-xs" style={{ background: `${cor}15`, color: cor }}>{ex.tecnica}</span>}
-                      </div>
-                      {ex.observacoes && <p className="text-xs text-slate-500 mt-1">📝 {ex.observacoes}</p>}
                     </div>
                   );})}
                   {sessao.exercicios.length === 0 && <p className="text-xs text-slate-600 text-center py-4">Nenhum exercício nesta sessão</p>}
