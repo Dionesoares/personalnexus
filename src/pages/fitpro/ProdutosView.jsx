@@ -12,7 +12,7 @@ const CATEGORIA_COLOR = {
 };
 
 function emptyProduto() {
-  return { nome: '', descricao: '', categoria: 'Suplementos', preco: '', precoPromocional: '', estoque: '', unidade: 'un', imagemUrl: '', ativo: true, destaque: false };
+  return { nome: '', descricao: '', categoria: 'Suplementos', preco: '', precoPromocional: '', estoque: '', unidade: 'un', imagemUrl: '', linkLoja: '', ativo: true, destaque: false };
 }
 
 export default function ProdutosView() {
@@ -203,6 +203,12 @@ export default function ProdutosView() {
                 {form.imagemUrl ? (
                   <img src={form.imagemUrl} alt="preview" className="mt-2 w-full h-28 object-cover rounded-xl" onError={e => e.target.style.display='none'} />
                 ) : null}
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">🔗 Link da Loja Parceira</label>
+                <input value={form.linkLoja || ''} onChange={e => setForm(f => ({ ...f, linkLoja: e.target.value }))} placeholder="https://lojaparceira.com.br/produto"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <p className="text-xs text-slate-600 mt-1">Ao clicar em "Comprar na loja parceira", o usuário será redirecionado para este link.</p>
               </div>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
