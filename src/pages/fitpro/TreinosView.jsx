@@ -66,6 +66,7 @@ export default function TreinosView() {
   if (selectedTreino) {
     const treino = planosTreino.find(t => t.id === selectedTreino.id) || selectedTreino;
     const aluno = alunos.find(a => a.id === treino.alunoId);
+    const gifMap = Object.fromEntries((exerciciosBiblioteca || []).filter(e => e.gifUrl).map(e => [e.nome?.toLowerCase(), e.gifUrl]));
     const totalExs = treino.sessoes?.reduce((a, s) => a + s.exercicios.length, 0) || 0;
 
     return (
@@ -100,12 +101,23 @@ export default function TreinosView() {
               </button>
               {!collapsed && (
                 <div className="px-4 pb-4 space-y-3">
-                  {sessao.exercicios.map((ex, ei) => (
+                  {sessao.exercicios.map((ex, ei) => {
+                    const gifUrl = ex.gifUrl || gifMap[ex.nome?.toLowerCase()];
+                    return (
                     <div key={ex.id} className="p-3 rounded-xl" style={{ background: `${cor}08`, border: `1px solid ${cor}15` }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: `${cor}25`, color: cor }}>{ei + 1}</span>
-                        <span className="text-sm font-semibold text-white">{ex.nome}</span>
-                        <span className="text-xs text-slate-500 ml-1">{ex.grupoMuscular}</span>
+                      <div className="flex items-center gap-3 mb-2">
+                        {gifUrl ? (
+                          <img src={gifUrl} alt={ex.nome} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" style={{ background: '#0a0e1a' }} />
+                        ) : (
+                          <span className="w-12 h-12 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{ background: `${cor}15` }}>💪</span>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: `${cor}25`, color: cor }}>{ei + 1}</span>
+                            <span className="text-sm font-semibold text-white truncate">{ex.nome}</span>
+                          </div>
+                          <span className="text-xs text-slate-500">{ex.grupoMuscular}</span>
+                        </div>
                       </div>
                       <div className="flex gap-3 text-xs text-slate-400 flex-wrap">
                         <span style={{ color: cor }}>{ex.series}×{ex.repeticoes}</span>
@@ -115,7 +127,7 @@ export default function TreinosView() {
                       </div>
                       {ex.observacoes && <p className="text-xs text-slate-500 mt-1">📝 {ex.observacoes}</p>}
                     </div>
-                  ))}
+                  );})}
                   {sessao.exercicios.length === 0 && <p className="text-xs text-slate-600 text-center py-4">Nenhum exercício nesta sessão</p>}
                 </div>
               )}
