@@ -108,20 +108,8 @@ export default function LojaView() {
                 style={{ background: `${color}20`, color, border: `1px solid ${color}30` }}>
                 <ShoppingCart size={12} />Comprar na loja parceira
               </a>
-            ) : qtdNoCarrinho > 0 ? (
-              <div className="flex items-center gap-2">
-                <button onClick={() => updateQtd(carrinho.find(i => i.produtoId === prod.id)?.id, -1)}
-                  className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: `${color}20`, color }}><Minus size={12} /></button>
-                <span className="text-sm font-bold" style={{ color }}>{qtdNoCarrinho}</span>
-                <button onClick={() => addCarrinho(prod)}
-                  className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: `${color}20`, color }}><Plus size={12} /></button>
-              </div>
             ) : (
-              <button onClick={() => addCarrinho(prod)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
-                style={{ background: `${color}20`, color, border: `1px solid ${color}30` }}>
-                <Plus size={12} />Adicionar
-              </button>
+              <span className="text-xs text-slate-600 italic">Sem link cadastrado</span>
             )}
           </div>
         </div>
