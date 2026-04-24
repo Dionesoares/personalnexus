@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ClipboardList, Plus, X, Search, CheckCircle2, Clock, Truck, XCircle, ChevronDown, ChevronUp, Stethoscope, Percent } from 'lucide-react';
+import { ClipboardList, Plus, X, Search, CheckCircle2, Clock, Truck, XCircle, ChevronDown, ChevronUp, Stethoscope, Percent, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { generateId } from '../../lib/fitpro-storage';
@@ -17,15 +17,19 @@ const STATUS = {
 const EMOJIS = { Médico: '👨‍⚕️', Nutricionista: '🥗', Fisioterapeuta: '🏥', Psicólogo: '🧠', Cardiologista: '❤️', Ortopedista: '🦴', 'Professor de Educação Física': '💪', 'Personal Trainer': '🏋️' };
 
 export default function PedidosView() {
-  const { alunos, professores, especialistas } = useApp();
+  const { alunos, professores, especialistas, produtos } = useApp();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
   const [pedidosEsp, setPedidosEsp] = useState(() => {
     try { return JSON.parse(localStorage.getItem('fitpro_pedidos_especialistas') || '[]'); } catch { return []; }
   });
+  const [pedidosLoja] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('fitpro_pedidos') || '[]'); } catch { return []; }
+  });
   const savePedidos = (p) => { setPedidosEsp(p); localStorage.setItem('fitpro_pedidos_especialistas', JSON.stringify(p)); };
 
+  const [aba, setAba] = useState('especialistas'); // especialistas | loja
   const [search, setSearch] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [showForm, setShowForm] = useState(false);
@@ -66,26 +70,33 @@ export default function PedidosView() {
   const totalRealizados = pedidosEsp.filter(p => p.status === 'realizado').reduce((acc, p) => acc + (p.valorConsulta || 0), 0);
   const totalComissao = pedidosEsp.filter(p => p.status === 'realizado').reduce((acc, p) => acc + ((p.valorConsulta || 0) * (p.comissaoPlataforma || 0) / 100), 0);
 
+  const filtradosLoja = pedidosLoja.filter(p => {
+    const usuario = todosUsuarios.find(u => u.id === p.alunoId);
+    return !search || (usuario?.nome || '').toLowerCase().includes(search.toLowerCase());
+  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2"><Stethoscope size={20} color="#60a5fa" />Agendamentos de Especialistas</h2>
-          <p className="text-xs text-slate-500">{filtrados.length} agendamento(s) — serviços dos parceiros</p>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2"><ClipboardList size={20} color="#60a5fa" />Pedidos & Agendamentos</h2>
+          <p className="text-xs text-slate-500">Todos os pedidos realizados na plataforma</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-          style={{ background: '#60a5fa20', color: '#60a5fa', border: '1px solid #60a5fa30' }}>
-          <Plus size={14} />Novo Agendamento
-        </button>
+        {aba === 'especialistas' && (
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+            style={{ background: '#60a5fa20', color: '#60a5fa', border: '1px solid #60a5fa30' }}>
+            <Plus size={14} />Novo Agendamento
+          </button>
+        )}
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total', value: pedidosEsp.length, color: '#60a5fa' },
-          { label: 'Pendentes', value: pedidosEsp.filter(p => p.status === 'pendente').length, color: '#fbbf24' },
-          { label: 'Realizados', value: pedidosEsp.filter(p => p.status === 'realizado').length, color: '#34d399' },
-          { label: isAdmin ? 'Comissão Plat.' : 'Volume', value: isAdmin ? `R$${totalComissao.toFixed(0)}` : `R$${totalRealizados.toFixed(0)}`, color: isAdmin ? '#a78bfa' : '#34d399' },
+          { label: 'Agendamentos', value: pedidosEsp.length, color: '#60a5fa' },
+          { label: 'Pedidos Loja', value: pedidosLoja.length, color: '#fb923c' },
+          { label: 'Confirmados', value: pedidosEsp.filter(p => p.status === 'confirmado' || p.status === 'realizado').length, color: '#34d399' },
+          { label: 'Comissão Plat.', value: `R$${totalComissao.toFixed(0)}`, color: '#a78bfa' },
         ].map((k, i) => (
           <div key={i} className="p-3 rounded-xl text-center" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
             <div className="text-xl font-bold" style={{ color: k.color }}>{k.value}</div>
@@ -94,37 +105,95 @@ export default function PedidosView() {
         ))}
       </div>
 
-      {especialistasParceiros.length === 0 && (
-        <div className="p-4 rounded-2xl text-center" style={{ background: '#fbbf2408', border: '1px solid #fbbf2420' }}>
-          <p className="text-sm text-yellow-400">⚠️ Nenhum especialista parceiro cadastrado. Cadastre especialistas marcados como "Parceiro conveniado" para habilitar agendamentos.</p>
-        </div>
-      )}
+      {/* Abas */}
+      <div className="flex gap-2">
+        {[
+          { id: 'especialistas', label: '🏥 Agendamentos Parceiros', color: '#60a5fa' },
+          { id: 'loja', label: '🛒 Pedidos da Loja', color: '#fb923c' },
+        ].map(t => (
+          <button key={t.id} onClick={() => { setAba(t.id); setSearch(''); setFiltroStatus('todos'); }}
+            className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{ background: aba === t.id ? `${t.color}20` : 'rgba(255,255,255,0.04)', color: aba === t.id ? t.color : '#64748b', border: aba === t.id ? `1px solid ${t.color}30` : '1px solid rgba(255,255,255,0.06)' }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
       {/* Filtros */}
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-48">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por aluno ou especialista..."
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder={aba === 'especialistas' ? 'Buscar por aluno ou especialista...' : 'Buscar por aluno...'}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white outline-none"
             style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
         </div>
-        <div className="flex gap-1 flex-wrap">
-          {['todos', ...Object.keys(STATUS)].map(s => {
-            const color = s === 'todos' ? '#64748b' : STATUS[s].color;
-            return (
-              <button key={s} onClick={() => setFiltroStatus(s)}
-                className="px-3 py-2 rounded-xl text-xs font-medium transition-all"
-                style={{ background: filtroStatus === s ? `${color}20` : 'rgba(255,255,255,0.03)', color: filtroStatus === s ? color : '#64748b', border: filtroStatus === s ? `1px solid ${color}30` : '1px solid rgba(255,255,255,0.06)' }}>
-                {s === 'todos' ? 'Todos' : STATUS[s].label}
-              </button>
-            );
-          })}
-        </div>
+        {aba === 'especialistas' && (
+          <div className="flex gap-1 flex-wrap">
+            {['todos', ...Object.keys(STATUS)].map(s => {
+              const color = s === 'todos' ? '#64748b' : STATUS[s].color;
+              return (
+                <button key={s} onClick={() => setFiltroStatus(s)}
+                  className="px-3 py-2 rounded-xl text-xs font-medium transition-all"
+                  style={{ background: filtroStatus === s ? `${color}20` : 'rgba(255,255,255,0.03)', color: filtroStatus === s ? color : '#64748b', border: filtroStatus === s ? `1px solid ${color}30` : '1px solid rgba(255,255,255,0.06)' }}>
+                  {s === 'todos' ? 'Todos' : STATUS[s].label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {filtrados.length === 0 ? (
+      {/* ABA LOJA */}
+      {aba === 'loja' && (
+        filtradosLoja.length === 0 ? (
+          <div className="text-center py-16 text-slate-500"><ShoppingBag size={40} className="mx-auto mb-3 opacity-30" /><p>Nenhum pedido da loja encontrado</p></div>
+        ) : (
+          <div className="space-y-3">
+            {filtradosLoja.map((pedido) => {
+              const usuario = todosUsuarios.find(u => u.id === pedido.alunoId);
+              const stColor = pedido.status === 'pago' ? '#34d399' : pedido.status === 'cancelado' ? '#ef4444' : '#fbbf24';
+              return (
+                <motion.div key={pedido.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="p-4 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#fb923c20' }}>
+                      <ShoppingBag size={16} color="#fb923c" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold text-white">{usuario?.nome || 'Usuário'} <span className="text-xs text-slate-500">({usuario?.tipo || 'aluno'})</span></div>
+                      <div className="text-xs text-slate-500">
+                        {pedido.itens?.length || 0} item(s) • {pedido.formaPagamento} • {new Date(pedido.dataPedido).toLocaleDateString('pt-BR')}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-green-400">R$ {parseFloat(pedido.total || 0).toFixed(2)}</div>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${stColor}15`, color: stColor }}>{pedido.status}</span>
+                    </div>
+                  </div>
+                  {pedido.itens?.length > 0 && (
+                    <div className="mt-3 flex gap-1 flex-wrap">
+                      {pedido.itens.map((item, ii) => {
+                        const prod = (produtos || []).find(p => p.id === item.produtoId);
+                        return prod ? (
+                          <span key={ii} className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                            {prod.nome} ×{item.quantidade}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        )
+      )}
+
+      {/* ABA ESPECIALISTAS */}
+      {aba === 'especialistas' && filtrados.length === 0 ? (
         <div className="text-center py-16 text-slate-500"><Stethoscope size={40} className="mx-auto mb-3 opacity-30" /><p>Nenhum agendamento encontrado</p></div>
-      ) : (
+      ) : aba === 'especialistas' && (
         <div className="space-y-3">
           {filtrados.map((pedido) => {
             const usuario = todosUsuarios.find(u => u.id === pedido.solicitanteId);

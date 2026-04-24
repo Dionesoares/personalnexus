@@ -21,7 +21,7 @@ function formatExpiry(v) {
   return v.replace(/\D/g, '').slice(0, 4).replace(/(\d{2})(\d)/, '$1/$2');
 }
 
-export default function ModalPagamentoParceiro({ especialista, onClose, onSuccess }) {
+export default function ModalPagamentoParceiro({ especialista, usuario, tipoUsuario = 'aluno', onClose, onSuccess }) {
   const [step, setStep] = useState('metodo'); // metodo | dados | processando | sucesso
   const [metodo, setMetodo] = useState('pix');
   const [card, setCard] = useState({ numero: '', nome: '', validade: '', cvv: '' });
@@ -37,14 +37,38 @@ export default function ModalPagamentoParceiro({ especialista, onClose, onSucces
     setTimeout(() => setPixCopiado(false), 2500);
   };
 
+  const salvarAgendamento = (metodoUsado) => {
+    const pedidoId = generateId();
+    const novo = {
+      id: pedidoId,
+      solicitanteId: usuario?.id || '',
+      tipoSolicitante: tipoUsuario,
+      especialistaId: especialista.id,
+      dataAgendamento: new Date().toISOString().split('T')[0],
+      horario: '',
+      status: 'confirmado',
+      observacoes: `Pago via ${metodoUsado} — contratado pelo app`,
+      valorConsulta: valor,
+      comissaoPlataforma: parseFloat(especialista.percentualComissao) || 0,
+      formaPagamento: metodoUsado,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      const existentes = JSON.parse(localStorage.getItem('fitpro_pedidos_especialistas') || '[]');
+      localStorage.setItem('fitpro_pedidos_especialistas', JSON.stringify([novo, ...existentes]));
+    } catch {}
+    return pedidoId;
+  };
+
   const handlePagar = () => {
     if (metodo !== 'pix') {
       if (!card.numero || !card.nome || !card.validade || !card.cvv) return alert('Preencha todos os dados do cartão');
     }
     setStep('processando');
     setTimeout(() => {
+      const id = salvarAgendamento(metodo);
       setStep('sucesso');
-      if (onSuccess) onSuccess({ metodo, valor, comissao, id: generateId() });
+      if (onSuccess) onSuccess({ metodo, valor, comissao, id });
     }, 2200);
   };
 

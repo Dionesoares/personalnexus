@@ -18,9 +18,14 @@ const ESPECIALIDADES = ['Médico', 'Nutricionista', 'Fisioterapeuta', 'Psicólog
 const EMOJIS = { Médico: '👨‍⚕️', Nutricionista: '🥗', Fisioterapeuta: '🏥', Psicólogo: '🧠', Cardiologista: '❤️', Ortopedista: '🦴', 'Professor de Educação Física': '💪', 'Personal Trainer': '🏋️' };
 
 export default function EspecialistasView() {
-  const { especialistas, addEspecialista, updateEspecialista, deleteEspecialista } = useApp();
+  const { especialistas, addEspecialista, updateEspecialista, deleteEspecialista, alunos, professores } = useApp();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+
+  // Resolve o perfil real do usuário logado (aluno ou professor)
+  const usuarioPerfil = alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase())
+    || professores.find(p => p.email?.toLowerCase() === user?.email?.toLowerCase());
+  const tipoUsuario = alunos.some(a => a.email?.toLowerCase() === user?.email?.toLowerCase()) ? 'aluno' : 'professor';
 
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -147,6 +152,8 @@ export default function EspecialistasView() {
       {espPagamento && (
         <ModalPagamentoParceiro
           especialista={espPagamento}
+          usuario={usuarioPerfil}
+          tipoUsuario={tipoUsuario}
           onClose={() => setEspPagamento(null)}
           onSuccess={() => { setTimeout(() => setEspPagamento(null), 3000); }}
         />
