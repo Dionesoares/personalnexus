@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { BookOpen, Plus, X, Trash2, Edit2, Search } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { BookOpen, Plus, X, Trash2, Edit2, Search, ImagePlus, Loader2 } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { generateId } from '../../lib/fitpro-storage';
@@ -22,7 +23,7 @@ function emptyEx() {
   return {
     nome: '', grupoMuscular: 'Peito', musculosSecundarios: [], tipo: 'Força', nivel: 'Intermediário',
     equipamento: 'Barra', descricao: '', execucao: '', dicas: '', errosComuns: '',
-    series: '3-4', repeticoes: '10-12', descanso: 75, videoUrl: '', publico: true,
+    series: '3-4', repeticoes: '10-12', descanso: 75, videoUrl: '', gifUrl: '', publico: true,
   };
 }
 
@@ -38,6 +39,18 @@ export default function BibliotecaView() {
   const [form, setForm] = useState(emptyEx());
   const [saved, setSaved] = useState(false);
   const [selectedEx, setSelectedEx] = useState(null);
+  const [uploadingGif, setUploadingGif] = useState(false);
+  const gifInputRef = useRef(null);
+
+  const handleGifUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.includes('gif') && !file.type.includes('image')) return alert('Selecione um arquivo de imagem ou GIF.');
+    setUploadingGif(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(f => ({ ...f, gifUrl: file_url }));
+    setUploadingGif(false);
+  };
 
   const exercicios = exerciciosBiblioteca || [];
   const filtered = exercicios.filter(e => {
@@ -100,6 +113,12 @@ export default function BibliotecaView() {
           {ex.execucao && <div><h4 className="text-xs font-semibold text-slate-400 uppercase mb-1">Execução</h4><p className="text-sm text-slate-300 whitespace-pre-line">{ex.execucao}</p></div>}
           {ex.dicas && <div><h4 className="text-xs font-semibold text-slate-400 uppercase mb-1">💡 Dicas</h4><p className="text-sm text-slate-300">{ex.dicas}</p></div>}
           {ex.errosComuns && <div><h4 className="text-xs font-semibold text-slate-400 uppercase mb-1">⚠️ Erros Comuns</h4><p className="text-sm text-slate-300">{ex.errosComuns}</p></div>}
+          {ex.gifUrl && (
+            <div>
+              <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Demonstração</h4>
+              <img src={ex.gifUrl} alt="Demonstração do exercício" className="w-full max-h-64 object-contain rounded-xl" style={{ background: '#0a0e1a' }} />
+            </div>
+          )}
           {ex.videoUrl && (
             <div>
               <h4 className="text-xs font-semibold text-slate-400 uppercase mb-1">Vídeo</h4>
@@ -292,6 +311,26 @@ export default function BibliotecaView() {
                 <label className="text-xs text-slate-400 block mb-1">URL do Vídeo (opcional)</label>
                 <input value={form.videoUrl} onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="https://youtube.com/..."
                   className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">GIF do Exercício (opcional)</label>
+                <input ref={gifInputRef} type="file" accept="image/gif,image/*" className="hidden" onChange={handleGifUpload} />
+                {form.gifUrl ? (
+                  <div className="relative">
+                    <img src={form.gifUrl} alt="GIF do exercício" className="w-full max-h-48 object-contain rounded-xl" style={{ background: '#1e2a3a' }} />
+                    <button onClick={() => setForm(f => ({ ...f, gifUrl: '' }))}
+                      className="absolute top-2 right-2 p-1 rounded-full bg-red-500/80 hover:bg-red-500">
+                      <X size={12} color="#fff" />
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => gifInputRef.current?.click()} disabled={uploadingGif}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all"
+                    style={{ background: '#1e2a3a', border: '1px dashed rgba(255,255,255,0.15)', color: '#64748b' }}>
+                    {uploadingGif ? <Loader2 size={16} className="animate-spin" /> : <ImagePlus size={16} />}
+                    {uploadingGif ? 'Enviando...' : 'Clique para anexar imagem/GIF'}
+                  </button>
+                )}
               </div>
             </div>
             <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white"
