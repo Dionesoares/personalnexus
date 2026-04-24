@@ -355,13 +355,18 @@ export default function TreinosView() {
                         <button onClick={() => addExercicio(sessao.id)} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs" style={{ background: `${cor}10`, color: cor }}>
                           <Plus size={10} />Exercício
                         </button>
-                        {exerciciosBiblioteca?.length > 0 && (
-                          <select onChange={e => { if (e.target.value) { const bEx = exerciciosBiblioteca.find(b => b.id === e.target.value); if (bEx) addFromBiblioteca(sessao.id, bEx); e.target.value = ''; }}}
-                            className="flex-1 px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                            <option value="">+ Da biblioteca...</option>
-                            {exerciciosBiblioteca.slice(0, 20).map(b => <option key={b.id} value={b.id}>{b.nome}</option>)}
-                          </select>
-                        )}
+                        {(() => {
+                          const bibDoProf = (exerciciosBiblioteca || []).filter(b =>
+                            user?.role === 'admin' ? true : b.professorId === user?.id
+                          );
+                          return bibDoProf.length > 0 ? (
+                            <select onChange={e => { if (e.target.value) { const bEx = bibDoProf.find(b => b.id === e.target.value); if (bEx) addFromBiblioteca(sessao.id, bEx); e.target.value = ''; }}}
+                              className="flex-1 px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                              <option value="">+ Da biblioteca...</option>
+                              {bibDoProf.slice(0, 50).map(b => <option key={b.id} value={b.id}>{b.nome}</option>)}
+                            </select>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </div>

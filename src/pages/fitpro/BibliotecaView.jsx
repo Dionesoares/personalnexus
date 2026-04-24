@@ -80,6 +80,11 @@ export default function BibliotecaView() {
   const { user } = useAuth();
   const canEdit = user?.role === 'admin' || user?.role === 'professor';
 
+  // Professores só veem seus próprios exercícios; admin vê todos
+  const exerciciosFiltradosPorProfessor = (exerciciosBiblioteca || []).filter(e =>
+    user?.role === 'admin' ? true : e.professorId === user?.id
+  );
+
   const [search, setSearch] = useState('');
   const [filtroGrupo, setFiltroGrupo] = useState('');
   const [filtroNivel, setFiltroNivel] = useState('');
@@ -130,7 +135,7 @@ export default function BibliotecaView() {
     setUploadingGif(false);
   };
 
-  const exercicios = exerciciosBiblioteca || [];
+  const exercicios = exerciciosFiltradosPorProfessor;
   const filtered = exercicios.filter(e => {
     const matchSearch = e.nome.toLowerCase().includes(search.toLowerCase()) || (e.grupoMuscular || '').toLowerCase().includes(search.toLowerCase());
     const matchGrupo = !filtroGrupo || e.grupoMuscular === filtroGrupo;
