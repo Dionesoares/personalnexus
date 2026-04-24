@@ -195,6 +195,9 @@ export default function BibliotecaView() {
                 className="p-4 rounded-2xl hover:opacity-90 transition-all cursor-pointer"
                 style={{ background: CARD, border: `1px solid ${BORDER}` }}
                 onClick={() => setSelectedEx(ex)}>
+                {ex.gifUrl && (
+                  <img src={ex.gifUrl} alt={ex.nome} className="w-full h-36 object-contain rounded-xl mb-3" style={{ background: '#0a0e1a' }} />
+                )}
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div className="font-semibold text-white text-sm">{ex.nome}</div>
