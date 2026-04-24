@@ -356,16 +356,22 @@ export default function TreinosView() {
                           <Plus size={10} />Exercício
                         </button>
                         {(() => {
-                          const bibDoProf = (exerciciosBiblioteca || []).filter(b =>
-                            user?.role === 'admin' ? true : b.professorId === user?.id
-                          );
-                          return bibDoProf.length > 0 ? (
-                            <select onChange={e => { if (e.target.value) { const bEx = bibDoProf.find(b => b.id === e.target.value); if (bEx) addFromBiblioteca(sessao.id, bEx); e.target.value = ''; }}}
+                          const all = exerciciosBiblioteca || [];
+                          // Professor vê: biblioteca padrão (admin/system) + seus próprios
+                          const bibDisponivel = user?.role === 'admin'
+                            ? all
+                            : all.filter(b => !b.professorId || b.professorId === 'system' || b.professorId === 'admin' || b.professorId === user?.id);
+                          if (bibDisponivel.length === 0) return null;
+                          const padrao = bibDisponivel.filter(b => !b.professorId || b.professorId === 'system' || b.professorId === 'admin');
+                          const meus = bibDisponivel.filter(b => b.professorId === user?.id);
+                          return (
+                            <select onChange={e => { if (e.target.value) { const bEx = bibDisponivel.find(b => b.id === e.target.value); if (bEx) addFromBiblioteca(sessao.id, bEx); e.target.value = ''; }}}
                               className="flex-1 px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                               <option value="">+ Da biblioteca...</option>
-                              {bibDoProf.slice(0, 50).map(b => <option key={b.id} value={b.id}>{b.nome}</option>)}
+                              {padrao.length > 0 && <optgroup label="📚 Biblioteca Padrão">{padrao.slice(0, 50).map(b => <option key={b.id} value={b.id}>{b.nome}</option>)}</optgroup>}
+                              {meus.length > 0 && <optgroup label="⭐ Meus Exercícios">{meus.slice(0, 50).map(b => <option key={b.id} value={b.id}>{b.nome}</option>)}</optgroup>}
                             </select>
-                          ) : null;
+                          );
                         })()}
                       </div>
                     </div>

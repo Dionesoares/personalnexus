@@ -75,15 +75,22 @@ function ExerciseListItem({ ex, canEdit, onSelect, onEdit, onDelete }) {
 }
 
 export default function BibliotecaView() {
-  const { exerciciosBiblioteca, addExercicioBiblioteca, updateExercicioBiblioteca, deleteExercicioBiblioteca,
-    pastasTreino, addPastaTreino, updatePastaTreino, deletePastaTreino } = useApp();
+  const { exerciciosBiblioteca, addExercicioBiblioteca, updateExercicioBiblioteca, deleteExercicioBiblioteca } = useApp();
   const { user } = useAuth();
-  const canEdit = user?.role === 'admin' || user?.role === 'professor';
+  const isProfessor = user?.role === 'professor';
+  const isAdmin = user?.role === 'admin';
 
-  // Professores só veem seus próprios exercícios; admin vê todos
-  const exerciciosFiltradosPorProfessor = (exerciciosBiblioteca || []).filter(e =>
-    user?.role === 'admin' ? true : e.professorId === user?.id
-  );
+  // Todos os exercícios
+  const todosExercicios = exerciciosBiblioteca || [];
+
+  // Biblioteca padrão: criados pelo admin (sem professorId ou professorId === 'system' ou role admin)
+  const bibliotecaPadrao = todosExercicios.filter(e => !e.professorId || e.professorId === 'system' || e.professorId === 'admin');
+
+  // Exercícios do professor logado
+  const meusExercicios = todosExercicios.filter(e => e.professorId === user?.id);
+
+  // Para admin: vê tudo na lista principal
+  const exerciciosParaAdmin = todosExercicios;
 
   const [search, setSearch] = useState('');
   const [filtroGrupo, setFiltroGrupo] = useState('');
@@ -96,7 +103,10 @@ export default function BibliotecaView() {
   const [uploadingGif, setUploadingGif] = useState(false);
   const gifInputRef = useRef(null);
 
-  // Pastas
+  // Aba ativa no painel do professor
+  const [abaProf, setAbaProf] = useState('padrao'); // 'padrao' | 'meus'
+
+  // Pastas (apenas para admin)
   const [pastas, setPastas] = useState(() => {
     try { return JSON.parse(localStorage.getItem('fitpro_pastas_biblioteca') || '[]'); } catch { return []; }
   });
@@ -135,8 +145,12 @@ export default function BibliotecaView() {
     setUploadingGif(false);
   };
 
-  const exercicios = exerciciosFiltradosPorProfessor;
-  const filtered = exercicios.filter(e => {
+  // Lista ativa de exercícios conforme contexto
+  const exerciciosAtivos = isAdmin
+    ? exerciciosParaAdmin
+    : (abaProf === 'padrao' ? bibliotecaPadrao : meusExercicios);
+
+  const applyFilters = (list) => list.filter(e => {
     const matchSearch = e.nome.toLowerCase().includes(search.toLowerCase()) || (e.grupoMuscular || '').toLowerCase().includes(search.toLowerCase());
     const matchGrupo = !filtroGrupo || e.grupoMuscular === filtroGrupo;
     const matchNivel = !filtroNivel || e.nivel === filtroNivel;
@@ -144,9 +158,15 @@ export default function BibliotecaView() {
     return matchSearch && matchGrupo && matchNivel && matchPasta;
   });
 
+  const filtered = applyFilters(exerciciosAtivos);
+
+  // Professor só pode editar/excluir na aba "Meus Exercícios"
+  const canEdit = isAdmin || (isProfessor && abaProf === 'meus');
+
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
-    const data = { ...form, professorId: user?.id || 'system', updatedAt: new Date().toISOString() };
+    // Exercícios do professor sempre ficam marcados com professorId
+    const data = { ...form, professorId: user?.id, updatedAt: new Date().toISOString() };
     if (editId) updateExercicioBiblioteca(editId, data);
     else addExercicioBiblioteca({ ...data, createdAt: new Date().toISOString() });
     setSaved(true);
@@ -162,7 +182,7 @@ export default function BibliotecaView() {
 
   // ── DETAIL VIEW ──────────────────────────────────────────────────────────
   if (selectedEx) {
-    const ex = exercicios.find(e => e.id === selectedEx.id) || selectedEx;
+    const ex = todosExercicios.find(e => e.id === selectedEx.id) || selectedEx;
     const color = GROUP_COLORS[ex.grupoMuscular] || '#64748b';
     return (
       <div className="space-y-4">
@@ -234,7 +254,7 @@ export default function BibliotecaView() {
           <p className="text-xs text-slate-500">{filtered.length} exercício(s)</p>
         </div>
         <div className="flex gap-2">
-          {canEdit && (
+          {isAdmin && (
             <>
               <button onClick={addPasta}
                 className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold"
@@ -248,8 +268,32 @@ export default function BibliotecaView() {
               </button>
             </>
           )}
+          {isProfessor && abaProf === 'meus' && (
+            <button onClick={() => { setForm(emptyEx()); setEditId(null); setShowForm(true); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: '#f472b620', color: '#f472b6', border: '1px solid #f472b630' }}>
+              <Plus size={14} />Novo Exercício
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Abas para professor */}
+      {isProfessor && (
+        <div className="flex gap-2">
+          {[
+            { id: 'padrao', label: '📚 Biblioteca Padrão', count: bibliotecaPadrao.length },
+            { id: 'meus', label: '⭐ Meus Exercícios', count: meusExercicios.length },
+          ].map(aba => (
+            <button key={aba.id} onClick={() => { setAbaProf(aba.id); setSearch(''); setFiltroGrupo(''); setFiltroNivel(''); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: abaProf === aba.id ? '#f472b620' : 'rgba(255,255,255,0.04)', color: abaProf === aba.id ? '#f472b6' : '#64748b', border: abaProf === aba.id ? '1px solid #f472b630' : '1px solid rgba(255,255,255,0.06)' }}>
+              {aba.label}
+              <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }}>{aba.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="flex gap-2 flex-wrap">
@@ -273,8 +317,8 @@ export default function BibliotecaView() {
         </select>
       </div>
 
-      {/* Pastas + exercícios sem pasta */}
-      {pastas.length > 0 && (
+      {/* Pastas + exercícios sem pasta (admin only) */}
+      {isAdmin && pastas.length > 0 && (
         <div className="space-y-2">
           {/* Botão "Todas" */}
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -292,7 +336,7 @@ export default function BibliotecaView() {
           {filtroPasta === 'todas' && !search && !filtroGrupo && !filtroNivel && (
             <div className="space-y-2">
               {pastas.map(pasta => {
-                const exsNaPasta = exercicios.filter(e => e.pastaId === pasta.id);
+                const exsNaPasta = exerciciosAtivos.filter(e => e.pastaId === pasta.id);
                 const expanded = expandedPastas[pasta.id];
                 return (
                   <div key={pasta.id} className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid rgba(251,191,36,0.15)` }}>
@@ -347,7 +391,17 @@ export default function BibliotecaView() {
 
       {/* Lista de exercícios filtrados */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-slate-500"><BookOpen size={40} className="mx-auto mb-3 opacity-30" /><p>Nenhum exercício encontrado</p></div>
+        <div className="text-center py-16 text-slate-500">
+          <BookOpen size={40} className="mx-auto mb-3 opacity-30" />
+          <p>{isProfessor && abaProf === 'meus' ? 'Você ainda não criou nenhum exercício' : 'Nenhum exercício encontrado'}</p>
+          {isProfessor && abaProf === 'meus' && (
+            <button onClick={() => { setForm(emptyEx()); setEditId(null); setShowForm(true); }}
+              className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold mx-auto"
+              style={{ background: '#f472b620', color: '#f472b6', border: '1px solid #f472b630' }}>
+              <Plus size={14} />Criar meu primeiro exercício
+            </button>
+          )}
+        </div>
       ) : (
         <div className="rounded-2xl overflow-hidden space-y-1 p-2" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
           {filtered.map(ex => (
