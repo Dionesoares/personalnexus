@@ -114,7 +114,7 @@ export default function LojaView() {
               <button onClick={() => addCarrinho(prod)}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
                 style={{ background: `${color}20`, color, border: `1px solid ${color}30` }}>
-                <Plus size={12} />Adicionar
+                <ShoppingCart size={12} />Comprar na loja parceira
               </button>
             )}
           </div>
