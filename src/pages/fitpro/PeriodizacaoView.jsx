@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Calendar, Plus, X, Trash2, ChevronRight, ChevronDown, ChevronUp, Moon } from 'lucide-react';
+import { Calendar, Plus, X, Trash2, ChevronRight, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
+import PeriodizacaoChart from '../../components/fitpro/PeriodizacaoChart';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -128,14 +129,13 @@ export default function PeriodizacaoView() {
     const aluno = alunos.find(a => a.id === per.alunoId);
     const dataFim = per.dataInicio ? new Date(new Date(per.dataInicio).getTime() + per.duracaoTotal * 7 * 24 * 60 * 60 * 1000) : null;
 
-    // Build timeline weeks
-    let semanaAtual = 1;
+    // Build timeline
+    let _s = 1;
     const timeline = (per.fases || []).map(fase => {
-      const start = semanaAtual;
-      semanaAtual += parseInt(fase.duracaoSemanas) || 1;
-      return { ...fase, startWeek: start, endWeek: semanaAtual - 1 };
+      const start = _s;
+      _s += parseInt(fase.duracaoSemanas) || 1;
+      return { ...fase, startWeek: start, endWeek: _s - 1 };
     });
-    const totalSemanas = per.duracaoTotal || semanaAtual - 1;
 
     return (
       <div className="space-y-4">
@@ -164,53 +164,44 @@ export default function PeriodizacaoView() {
           ))}
         </div>
 
-        {/* Timeline visual */}
+        {/* Gráfico completo */}
         {timeline.length > 0 && (
           <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-            <h3 className="font-semibold text-white mb-4">Linha do Tempo</h3>
-            <div className="flex gap-1 mb-3 overflow-x-auto pb-2">
-              {timeline.map((fase, i) => {
-                const cor = CORES_FASE[fase.nome] || '#64748b';
-                const pct = ((parseInt(fase.duracaoSemanas) || 1) / totalSemanas) * 100;
-                return (
-                  <div key={fase.id} className="flex-shrink-0 rounded-lg p-2 text-center"
-                    style={{ width: `${Math.max(pct, 8)}%`, minWidth: 60, background: `${cor}20`, border: `1px solid ${cor}40` }}>
-                    <div className="text-xs font-bold truncate" style={{ color: cor }}>{fase.nome}</div>
-                    <div className="text-xs text-slate-500">{fase.duracaoSemanas}sem</div>
-                    <div className="text-xs text-slate-600">S{fase.startWeek}–S{fase.endWeek}</div>
+            <PeriodizacaoChart periodizacao={per} planosTreino={planosTreino} />
+          </div>
+        )}
+
+        {/* Detalhe por fase */}
+        {timeline.length > 0 && (
+          <div className="p-5 rounded-2xl space-y-3" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            <h3 className="font-semibold text-white text-sm">Detalhes por Fase</h3>
+            {timeline.map((fase) => {
+              const cor = CORES_FASE[fase.nome] || '#64748b';
+              const treino = planosTreino.find(t => t.id === fase.treinoId);
+              return (
+                <div key={fase.id} className="p-3 rounded-xl" style={{ background: `${cor}08`, border: `1px solid ${cor}20` }}>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cor }} />
+                    <span className="text-sm font-semibold text-white">{fase.nome}</span>
+                    <span className="text-xs text-slate-500">S{fase.startWeek}–S{fase.endWeek} ({fase.duracaoSemanas} sem)</span>
+                    {fase.tpmAjuste && (
+                      <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{ background: '#f472b615', color: '#f472b6', border: '1px solid #f472b625' }}>
+                        <Moon size={10} />TPM
+                      </span>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-            <div className="space-y-3 mt-4">
-              {timeline.map((fase, i) => {
-                const cor = CORES_FASE[fase.nome] || '#64748b';
-                const treino = planosTreino.find(t => t.id === fase.treinoId);
-                return (
-                  <div key={fase.id} className="p-3 rounded-xl" style={{ background: `${cor}08`, border: `1px solid ${cor}20` }}>
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cor }} />
-                      <span className="text-sm font-semibold text-white">{fase.nome}</span>
-                      <span className="text-xs text-slate-500">Semana {fase.startWeek}–{fase.endWeek} ({fase.duracaoSemanas} sem)</span>
-                      {fase.tpmAjuste && (
-                        <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ background: '#f472b615', color: '#f472b6', border: '1px solid #f472b625' }}>
-                          <Moon size={10} />TPM
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2 flex-wrap text-xs mt-1">
-                      <span style={{ color: cor }}>Intensidade: {fase.intensidade}</span>
-                      <span className="text-slate-500">•</span>
-                      <span className="text-slate-400">Volume: {fase.volume}</span>
-                      {treino && <><span className="text-slate-500">•</span><span className="text-slate-400">Treino: {treino.nome}</span></>}
-                    </div>
-                    {fase.objetivo && <p className="text-xs text-slate-500 mt-1">🎯 {fase.objetivo}</p>}
-                    {fase.observacoes && <p className="text-xs text-slate-600 mt-0.5">📝 {fase.observacoes}</p>}
+                  <div className="flex gap-2 flex-wrap text-xs mt-1">
+                    <span style={{ color: cor }}>Intensidade: {fase.intensidade}</span>
+                    <span className="text-slate-500">•</span>
+                    <span className="text-slate-400">Volume: {fase.volume}</span>
+                    {treino && <><span className="text-slate-500">•</span><span className="text-slate-400">Treino: {treino.nome}</span></>}
                   </div>
-                );
-              })}
-            </div>
+                  {fase.objetivo && <p className="text-xs text-slate-500 mt-1">🎯 {fase.objetivo}</p>}
+                  {fase.observacoes && <p className="text-xs text-slate-600 mt-0.5">📝 {fase.observacoes}</p>}
+                </div>
+              );
+            })}
           </div>
         )}
 
