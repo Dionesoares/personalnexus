@@ -77,13 +77,16 @@ export default function LojaView() {
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
         className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-        {prod.imagemUrl ? (
-          <img src={prod.imagemUrl} alt={prod.nome} className="w-full h-40 object-cover" />
-        ) : (
-          <div className="w-full h-40 flex items-center justify-center" style={{ background: `${color}10` }}>
+        <div className="w-full overflow-hidden flex items-center justify-center"
+          style={{ aspectRatio: '1/1', background: prod.imagemUrl ? '#f8f8f8' : `${color}10` }}>
+          {prod.imagemUrl ? (
+            <img src={prod.imagemUrl} alt={prod.nome}
+              className="w-full h-full"
+              style={{ objectFit: 'contain', objectPosition: 'center' }} />
+          ) : (
             <ShoppingBag size={36} style={{ color }} />
-          </div>
-        )}
+          )}
+        </div>
         <div className="p-4">
           <div className="flex items-start justify-between mb-1">
             <h3 className="font-bold text-white text-sm flex-1 leading-tight">{prod.nome}</h3>

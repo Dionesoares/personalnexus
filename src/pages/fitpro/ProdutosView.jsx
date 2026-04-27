@@ -113,13 +113,16 @@ export default function ProdutosView() {
             return (
               <motion.div key={prod.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${prod.ativo ? BORDER : 'rgba(255,255,255,0.03)'}`, opacity: prod.ativo ? 1 : 0.6 }}>
-                {prod.imagemUrl ? (
-                  <img src={prod.imagemUrl} alt={prod.nome} className="w-full h-32 object-cover rounded-xl mb-3" />
-                ) : (
-                  <div className="w-full h-32 rounded-xl mb-3 flex items-center justify-center" style={{ background: `${color}10` }}>
-                    <Package size={32} style={{ color }} />
-                  </div>
-                )}
+                <div className="w-full rounded-xl mb-3 overflow-hidden flex items-center justify-center"
+                  style={{ aspectRatio: '1/1', background: prod.imagemUrl ? '#f8f8f8' : `${color}10` }}>
+                  {prod.imagemUrl ? (
+                    <img src={prod.imagemUrl} alt={prod.nome}
+                      className="w-full h-full"
+                      style={{ objectFit: 'contain', objectPosition: 'center' }} />
+                  ) : (
+                    <Package size={36} style={{ color }} />
+                  )}
+                </div>
                 <div className="flex items-start justify-between mb-1">
                   <h3 className="font-bold text-white text-sm flex-1">{prod.nome}</h3>
                   {prod.destaque && <span className="text-xs px-1.5 py-0.5 rounded-full ml-2 flex-shrink-0" style={{ background: '#fbbf2415', color: '#fbbf24' }}>⭐</span>}
@@ -212,11 +215,19 @@ export default function ProdutosView() {
                 <label className="text-xs text-slate-400 block mb-1">Imagem do Produto</label>
                 <input ref={imgInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                 {form.imagemUrl ? (
-                  <div className="relative mb-2">
-                    <img src={form.imagemUrl} alt="preview" className="w-full h-36 object-cover rounded-xl" />
+                  <div className="relative mb-2 rounded-xl overflow-hidden" style={{ background: '#f8f8f8', aspectRatio: '1/1' }}>
+                    <img src={form.imagemUrl} alt="preview"
+                      className="w-full h-full"
+                      style={{ objectFit: 'contain', objectPosition: 'center' }} />
                     <button onClick={() => setForm(f => ({ ...f, imagemUrl: '' }))}
                       className="absolute top-2 right-2 p-1 rounded-full bg-red-500/80 hover:bg-red-500">
                       <X size={12} color="#fff" />
+                    </button>
+                    <button onClick={() => imgInputRef.current?.click()} disabled={uploadingImg}
+                      className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium"
+                      style={{ background: 'rgba(0,0,0,0.55)', color: '#fff' }}>
+                      {uploadingImg ? <Loader2 size={12} className="animate-spin" /> : <ImagePlus size={12} />}
+                      Trocar
                     </button>
                   </div>
                 ) : (
