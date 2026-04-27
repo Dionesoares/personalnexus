@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Plus, X, Trash2, ChevronRight, Moon, Sparkles, Loader2 } from 'lucide-react';
+import { Calendar, Plus, X, Trash2, ChevronRight, Moon, Sparkles, Loader2, Edit2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
@@ -284,6 +284,18 @@ export default function PeriodizacaoView() {
             <h2 className="text-lg font-bold text-white">{per.nome}</h2>
             <p className="text-xs text-slate-500">{aluno?.nome} • {per.tipo} • {per.duracaoTotal} semanas</p>
           </div>
+          {user?.role !== 'admin' && (
+            <button
+              onClick={() => {
+                setForm({ ...per, fases: per.fases || [] });
+                setEditId(per.id);
+                setShowForm(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold"
+              style={{ background: '#fbbf2420', color: '#fbbf24', border: '1px solid #fbbf2430' }}>
+              <Edit2 size={13} />Editar
+            </button>
+          )}
         </div>
 
         {/* Info cards */}
@@ -429,10 +441,17 @@ export default function PeriodizacaoView() {
                     Ver Timeline
                   </button>
                   {user?.role !== 'admin' && (
-                    <button onClick={() => { if (confirm('Excluir esta periodização?')) deletePeriodizacao(per.id); }}
-                      className="px-3 py-2 rounded-xl text-xs hover:bg-red-500/10" style={{ color: '#ef4444' }}>
-                      <Trash2 size={14} />
-                    </button>
+                    <>
+                      <button
+                        onClick={() => { setForm({ ...per, fases: per.fases || [] }); setEditId(per.id); setShowForm(true); }}
+                        className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" style={{ color: '#fbbf24' }}>
+                        <Edit2 size={14} />
+                      </button>
+                      <button onClick={() => { if (confirm('Excluir esta periodização?')) deletePeriodizacao(per.id); }}
+                        className="px-3 py-2 rounded-xl text-xs hover:bg-red-500/10" style={{ color: '#ef4444' }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </>
                   )}
                 </div>
               </motion.div>
@@ -446,7 +465,7 @@ export default function PeriodizacaoView() {
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.85)' }}>
           <div className="w-full max-w-2xl rounded-2xl p-6 my-4" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-white">Nova Periodização</h3>
+              <h3 className="font-bold text-white">{editId ? 'Editar Periodização' : 'Nova Periodização'}</h3>
               <button onClick={() => setShowForm(false)}><X size={18} color="#6b7280" /></button>
             </div>
 
