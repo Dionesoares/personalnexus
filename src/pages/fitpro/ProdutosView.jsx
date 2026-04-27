@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { ShoppingBag, Plus, X, Trash2, Edit2, Search, Tag, Package } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { ShoppingBag, Plus, X, Trash2, Edit2, Search, Tag, Package, ImagePlus, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
+import { base44 } from '@/api/base44Client';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -26,6 +27,17 @@ export default function ProdutosView() {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyProduto());
   const [saved, setSaved] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const imgInputRef = useRef(null);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingImg(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(f => ({ ...f, imagemUrl: file_url }));
+    setUploadingImg(false);
+  };
 
   const lista = (produtos || []);
   const filtered = lista.filter(p => {
@@ -197,12 +209,26 @@ export default function ProdutosView() {
                 </div>
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">URL do Produto (imagem)</label>
-                <input value={form.imagemUrl} onChange={e => setForm(f => ({ ...f, imagemUrl: e.target.value }))} placeholder="https://exemplo.com/imagem-produto.jpg"
-                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <label className="text-xs text-slate-400 block mb-1">Imagem do Produto</label>
+                <input ref={imgInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                 {form.imagemUrl ? (
-                  <img src={form.imagemUrl} alt="preview" className="mt-2 w-full h-28 object-cover rounded-xl" onError={e => e.target.style.display='none'} />
-                ) : null}
+                  <div className="relative mb-2">
+                    <img src={form.imagemUrl} alt="preview" className="w-full h-36 object-cover rounded-xl" />
+                    <button onClick={() => setForm(f => ({ ...f, imagemUrl: '' }))}
+                      className="absolute top-2 right-2 p-1 rounded-full bg-red-500/80 hover:bg-red-500">
+                      <X size={12} color="#fff" />
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => imgInputRef.current?.click()} disabled={uploadingImg}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all mb-2"
+                    style={{ background: '#1e2a3a', border: '1px dashed rgba(255,255,255,0.15)', color: '#64748b' }}>
+                    {uploadingImg ? <Loader2 size={16} className="animate-spin" /> : <ImagePlus size={16} />}
+                    {uploadingImg ? 'Enviando...' : 'Clique para anexar imagem'}
+                  </button>
+                )}
+                <input value={form.imagemUrl} onChange={e => setForm(f => ({ ...f, imagemUrl: e.target.value }))} placeholder="Ou cole uma URL de imagem..."
+                  className="w-full px-3 py-2 rounded-xl text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">🔗 Link da Loja Parceira</label>
