@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Plus, X, Trash2, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, Plus, X, Trash2, ChevronRight, ChevronDown, ChevronUp, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
@@ -18,8 +18,30 @@ function emptyPeriodizacao() {
   return {
     nome: '', alunoId: '', tipo: 'Linear', objetivo: '', dataInicio: new Date().toISOString().split('T')[0],
     duracaoTotal: 12, fases: [], observacoes: '',
+    tpmAtivo: false, tpmDiaInicio: 21, tpmDuracao: 7, cicloDias: 28,
   };
 }
+
+// Retorna os números das semanas (1-based) que contêm o período de TPM dentro de um ciclo
+// cicloDias: duração do ciclo (ex: 28), tpmDiaInicio: dia do ciclo em que começa a TPM (ex: 21), tpmDuracao: duração em dias (ex: 7)
+function calcularSemanasTpm(totalSemanas, dataInicio, cicloDias, tpmDiaInicio, tpmDuracao) {
+  const semanasTpm = new Set();
+  if (!dataInicio) return semanasTpm;
+  const inicio = new Date(dataInicio);
+  for (let semana = 1; semana <= totalSemanas; semana++) {
+    const diaInicioSemana = (semana - 1) * 7; // dias desde o início
+    for (let d = 0; d < 7; d++) {
+      const diaAbsoluto = diaInicioSemana + d;
+      const diaNoFase = (diaAbsoluto % cicloDias) + 1; // dia dentro do ciclo (1-based)
+      if (diaNoFase >= tpmDiaInicio && diaNoFase < tpmDiaInicio + tpmDuracao) {
+        semanasTpm.add(semana);
+      }
+    }
+  }
+  return semanasTpm;
+}
+
+const FASES_FORCA = ['Força', 'Potência', 'Pico'];
 
 export default function PeriodizacaoView() {
   const { periodizacoes, alunos, planosTreino, addPeriodizacao, updatePeriodizacao, deletePeriodizacao } = useApp();
@@ -60,7 +82,41 @@ export default function PeriodizacaoView() {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     if (!form.alunoId) return alert('Selecione um aluno');
     const semanas = form.fases.reduce((acc, f) => acc + (parseInt(f.duracaoSemanas) || 0), 0) || parseInt(form.duracaoTotal) || 1;
-    const data = { ...form, duracaoTotal: semanas };
+
+    // Aplica ajuste automático de TPM: semanas com TPM e fase de Força → Recuperação
+    let fasesAjustadas = form.fases;
+    const alunoSelecionado = alunos.find(a => a.id === form.alunoId);
+    const isFeminino = alunoSelecionado?.sexo === 'F';
+
+    if (form.tpmAtivo && isFeminino && form.fases.length > 0) {
+      const totalSemanas = semanas;
+      let semanaAtual = 1;
+      const faseComSemanas = form.fases.map(f => {
+        const start = semanaAtual;
+        semanaAtual += parseInt(f.duracaoSemanas) || 1;
+        return { ...f, _startWeek: start, _endWeek: semanaAtual - 1 };
+      });
+      const semanasTpm = calcularSemanasTpm(
+        totalSemanas, form.dataInicio,
+        parseInt(form.cicloDias) || 28,
+        parseInt(form.tpmDiaInicio) || 21,
+        parseInt(form.tpmDuracao) || 7
+      );
+      fasesAjustadas = faseComSemanas.map(f => {
+        const { _startWeek, _endWeek, ...fase } = f;
+        // Se TODAS as semanas da fase estão na janela TPM e é fase de força → Recuperação
+        let dentroTpm = false;
+        for (let s = _startWeek; s <= _endWeek; s++) {
+          if (semanasTpm.has(s)) { dentroTpm = true; break; }
+        }
+        if (dentroTpm && FASES_FORCA.includes(fase.nome)) {
+          return { ...fase, nome: 'Recuperação', intensidade: 'Baixa', volume: 'Baixo', tpmAjuste: true, observacoes: (fase.observacoes ? fase.observacoes + ' | ' : '') + '🌙 Ajustado automaticamente pelo período de TPM' };
+        }
+        return { ...fase, tpmAjuste: false };
+      });
+    }
+
+    const data = { ...form, duracaoTotal: semanas, fases: fasesAjustadas };
     if (editId) updatePeriodizacao(editId, data);
     else addPeriodizacao(data);
     setSaved(true);
@@ -132,10 +188,16 @@ export default function PeriodizacaoView() {
                 const treino = planosTreino.find(t => t.id === fase.treinoId);
                 return (
                   <div key={fase.id} className="p-3 rounded-xl" style={{ background: `${cor}08`, border: `1px solid ${cor}20` }}>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cor }} />
                       <span className="text-sm font-semibold text-white">{fase.nome}</span>
                       <span className="text-xs text-slate-500">Semana {fase.startWeek}–{fase.endWeek} ({fase.duracaoSemanas} sem)</span>
+                      {fase.tpmAjuste && (
+                        <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
+                          style={{ background: '#f472b615', color: '#f472b6', border: '1px solid #f472b625' }}>
+                          <Moon size={10} />TPM
+                        </span>
+                      )}
                     </div>
                     <div className="flex gap-2 flex-wrap text-xs mt-1">
                       <span style={{ color: cor }}>Intensidade: {fase.intensidade}</span>
@@ -304,6 +366,56 @@ export default function PeriodizacaoView() {
                   rows={2} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none resize-none"
                   style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
+
+              {/* TPM — só mostra se aluno for feminino */}
+              {alunos.find(a => a.id === form.alunoId)?.sexo === 'F' && (
+                <div className="rounded-xl p-4 space-y-3" style={{ background: '#f472b608', border: '1px solid #f472b625' }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Moon size={15} color="#f472b6" />
+                      <span className="text-sm font-semibold text-white">Período de TPM</span>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <div
+                        onClick={() => setForm(f => ({ ...f, tpmAtivo: !f.tpmAtivo }))}
+                        className="relative w-9 h-5 rounded-full transition-all cursor-pointer"
+                        style={{ background: form.tpmAtivo ? '#f472b6' : '#334155' }}>
+                        <div className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all"
+                          style={{ left: form.tpmAtivo ? '18px' : '2px' }} />
+                      </div>
+                      <span className="text-xs text-slate-400">{form.tpmAtivo ? 'Ativo' : 'Inativo'}</span>
+                    </label>
+                  </div>
+                  {form.tpmAtivo && (
+                    <>
+                      <p className="text-xs text-slate-400">As fases de <strong className="text-white">Força, Potência e Pico</strong> que coincidirem com o período de TPM serão automaticamente ajustadas para <strong className="text-white">Recuperação</strong> (intensidade e volume baixos).</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-xs text-slate-500 block mb-1">Duração do ciclo (dias)</label>
+                          <input type="number" value={form.cicloDias} min={20} max={45}
+                            onChange={e => setForm(f => ({ ...f, cicloDias: parseInt(e.target.value) || 28 }))}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500 block mb-1">Início da TPM (dia do ciclo)</label>
+                          <input type="number" value={form.tpmDiaInicio} min={1} max={35}
+                            onChange={e => setForm(f => ({ ...f, tpmDiaInicio: parseInt(e.target.value) || 21 }))}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-500 block mb-1">Duração da TPM (dias)</label>
+                          <input type="number" value={form.tpmDuracao} min={1} max={14}
+                            onChange={e => setForm(f => ({ ...f, tpmDuracao: parseInt(e.target.value) || 7 }))}
+                            className="w-full px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                            style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Fases */}
