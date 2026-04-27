@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Plus, X, Trash2, ChevronRight, Moon } from 'lucide-react';
+import { Calendar, Plus, X, Trash2, ChevronRight, Moon, Sparkles, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
@@ -65,6 +65,7 @@ export default function PeriodizacaoView() {
   const [editId, setEditId] = useState(null);
   const [saved, setSaved] = useState(false);
   const [selectedPer, setSelectedPer] = useState(null);
+  const [gerando, setGerando] = useState(false);
 
   const addFase = () => {
     setForm(f => ({
@@ -78,6 +79,142 @@ export default function PeriodizacaoView() {
   const updateFase = (id, field, value) => setForm(f => ({
     ...f, fases: f.fases.map(fa => fa.id === id ? { ...fa, [field]: value } : fa)
   }));
+
+  const gerarFasesAutomaticas = () => {
+    if (!form.alunoId) return alert('Selecione um aluno primeiro');
+    if (!form.duracaoTotal || form.duracaoTotal < 4) return alert('Informe uma duração mínima de 4 semanas');
+
+    const aluno = alunos.find(a => a.id === form.alunoId);
+    const nivel = aluno?.nivel || 'Intermediário';
+    const objetivo = (form.objetivo || '').toLowerCase();
+    const total = parseInt(form.duracaoTotal) || 12;
+    const tipo = form.tipo;
+
+    setGerando(true);
+
+    setTimeout(() => {
+      let fases = [];
+
+      // Detecta objetivo por palavras-chave
+      const isEmagrecer = objetivo.includes('emagrec') || objetivo.includes('gordura') || objetivo.includes('peso') || objetivo.includes('defin');
+      const isForca = objetivo.includes('força') || objetivo.includes('force') || objetivo.includes('potên');
+      const isResistencia = objetivo.includes('resistên') || objetivo.includes('condicion') || objetivo.includes('cardio');
+
+      if (tipo === 'Linear') {
+        if (isEmagrecer) {
+          fases = [
+            { nome: 'Adaptação', dur: Math.round(total * 0.17), int: 'Baixa', vol: 'Moderado', obj: 'Adaptar o corpo ao treinamento' },
+            { nome: 'Hipertrofia', dur: Math.round(total * 0.33), int: 'Moderada', vol: 'Alto', obj: 'Aumentar metabolismo basal com hipertrofia' },
+            { nome: 'Força', dur: Math.round(total * 0.25), int: 'Alta', vol: 'Moderado', obj: 'Aumentar força e preservar massa magra' },
+            { nome: 'Manutenção', dur: Math.round(total * 0.17), int: 'Moderada', vol: 'Moderado', obj: 'Consolidar resultados' },
+            { nome: 'Recuperação', dur: Math.max(1, total - Math.round(total * 0.92)), int: 'Baixa', vol: 'Baixo', obj: 'Recuperação ativa' },
+          ];
+        } else if (isForca) {
+          fases = [
+            { nome: 'Adaptação', dur: Math.round(total * 0.15), int: 'Baixa', vol: 'Moderado', obj: 'Adaptar tendões e articulações' },
+            { nome: 'Hipertrofia', dur: Math.round(total * 0.25), int: 'Moderada', vol: 'Alto', obj: 'Base muscular para força' },
+            { nome: 'Força', dur: Math.round(total * 0.30), int: 'Alta', vol: 'Moderado', obj: 'Desenvolver força máxima' },
+            { nome: 'Potência', dur: Math.round(total * 0.20), int: 'Máxima', vol: 'Baixo', obj: 'Explosão e potência' },
+            { nome: 'Pico', dur: Math.round(total * 0.08), int: 'Máxima', vol: 'Baixo', obj: 'Pico de performance' },
+            { nome: 'Recuperação', dur: Math.max(1, total - Math.round(total * 0.98)), int: 'Baixa', vol: 'Baixo', obj: 'Descanso ativo' },
+          ];
+        } else if (isResistencia) {
+          fases = [
+            { nome: 'Adaptação', dur: Math.round(total * 0.20), int: 'Baixa', vol: 'Moderado', obj: 'Adaptação aeróbica' },
+            { nome: 'Hipertrofia', dur: Math.round(total * 0.25), int: 'Moderada', vol: 'Alto', obj: 'Base de resistência muscular' },
+            { nome: 'Força', dur: Math.round(total * 0.25), int: 'Alta', vol: 'Moderado', obj: 'Resistência de força' },
+            { nome: 'Manutenção', dur: Math.round(total * 0.20), int: 'Moderada', vol: 'Moderado', obj: 'Manutenção do condicionamento' },
+            { nome: 'Recuperação', dur: Math.max(1, total - Math.round(total * 0.90)), int: 'Baixa', vol: 'Baixo', obj: 'Recuperação' },
+          ];
+        } else {
+          // Hipertrofia padrão
+          fases = [
+            { nome: 'Adaptação', dur: Math.round(total * 0.17), int: 'Baixa', vol: 'Moderado', obj: 'Adaptar o organismo' },
+            { nome: 'Hipertrofia', dur: Math.round(total * 0.42), int: 'Moderada', vol: 'Alto', obj: 'Foco principal em ganho de massa' },
+            { nome: 'Força', dur: Math.round(total * 0.25), int: 'Alta', vol: 'Moderado', obj: 'Consolidar ganhos de força' },
+            { nome: 'Recuperação', dur: Math.max(1, total - Math.round(total * 0.84)), int: 'Baixa', vol: 'Baixo', obj: 'Recuperação e descanso ativo' },
+          ];
+        }
+      } else if (tipo === 'Ondulatório') {
+        // Ciclos ondulantes curtos
+        const ciclo = Math.round(total / 3);
+        fases = [
+          { nome: 'Hipertrofia', dur: ciclo, int: 'Moderada', vol: 'Alto', obj: 'Semanas de volume alto' },
+          { nome: 'Força', dur: ciclo, int: 'Alta', vol: 'Moderado', obj: 'Semanas de intensidade alta' },
+          { nome: 'Recuperação', dur: Math.max(1, total - ciclo * 2), int: 'Baixa', vol: 'Baixo', obj: 'Deload e recuperação' },
+        ];
+        if (total >= 12) {
+          fases = [
+            { nome: 'Adaptação', dur: Math.round(total * 0.15), int: 'Baixa', vol: 'Moderado', obj: 'Base inicial' },
+            { nome: 'Hipertrofia', dur: Math.round(total * 0.28), int: 'Moderada', vol: 'Alto', obj: 'Volume alto — ondulação 1' },
+            { nome: 'Força', dur: Math.round(total * 0.22), int: 'Alta', vol: 'Moderado', obj: 'Intensidade alta — ondulação 2' },
+            { nome: 'Hipertrofia', dur: Math.round(total * 0.22), int: 'Moderada', vol: 'Muito Alto', obj: 'Volume máximo — ondulação 3' },
+            { nome: 'Recuperação', dur: Math.max(1, total - Math.round(total * 0.87)), int: 'Baixa', vol: 'Baixo', obj: 'Deload final' },
+          ];
+        }
+      } else if (tipo === 'Bloco') {
+        fases = [
+          { nome: 'Adaptação', dur: Math.round(total * 0.20), int: 'Baixa', vol: 'Alto', obj: 'Bloco acumulação — volume base' },
+          { nome: 'Hipertrofia', dur: Math.round(total * 0.25), int: 'Moderada', vol: 'Alto', obj: 'Bloco de transformação — hipertrofia' },
+          { nome: 'Força', dur: Math.round(total * 0.25), int: 'Alta', vol: 'Moderado', obj: 'Bloco de realização — força' },
+          { nome: 'Potência', dur: Math.round(total * 0.17), int: 'Máxima', vol: 'Baixo', obj: 'Bloco de pico — potência' },
+          { nome: 'Recuperação', dur: Math.max(1, total - Math.round(total * 0.87)), int: 'Baixa', vol: 'Baixo', obj: 'Deload' },
+        ];
+      } else if (tipo === 'Conjugado') {
+        const bloco = Math.round(total / 4);
+        fases = [
+          { nome: 'Adaptação', dur: bloco, int: 'Moderada', vol: 'Alto', obj: 'Máximo esforço + esforço dinâmico' },
+          { nome: 'Força', dur: bloco, int: 'Alta', vol: 'Moderado', obj: 'Força máxima conjugada' },
+          { nome: 'Potência', dur: bloco, int: 'Máxima', vol: 'Moderado', obj: 'Velocidade e explosão conjugada' },
+          { nome: 'Recuperação', dur: Math.max(1, total - bloco * 3), int: 'Baixa', vol: 'Baixo', obj: 'Recuperação ativa' },
+        ];
+      } else if (tipo === 'Reverso') {
+        fases = [
+          { nome: 'Pico', dur: Math.round(total * 0.15), int: 'Máxima', vol: 'Baixo', obj: 'Alta intensidade inicial' },
+          { nome: 'Potência', dur: Math.round(total * 0.20), int: 'Alta', vol: 'Moderado', obj: 'Reduzir intensidade gradualmente' },
+          { nome: 'Força', dur: Math.round(total * 0.25), int: 'Alta', vol: 'Moderado', obj: 'Consolidar força' },
+          { nome: 'Hipertrofia', dur: Math.round(total * 0.25), int: 'Moderada', vol: 'Alto', obj: 'Fase de volume final' },
+          { nome: 'Recuperação', dur: Math.max(1, total - Math.round(total * 0.85)), int: 'Baixa', vol: 'Baixo', obj: 'Deload final' },
+        ];
+      } else {
+        // Fallback genérico
+        fases = [
+          { nome: 'Adaptação', dur: Math.round(total * 0.20), int: 'Baixa', vol: 'Moderado', obj: '' },
+          { nome: 'Hipertrofia', dur: Math.round(total * 0.40), int: 'Moderada', vol: 'Alto', obj: '' },
+          { nome: 'Força', dur: Math.round(total * 0.25), int: 'Alta', vol: 'Moderado', obj: '' },
+          { nome: 'Recuperação', dur: Math.max(1, total - Math.round(total * 0.85)), int: 'Baixa', vol: 'Baixo', obj: '' },
+        ];
+      }
+
+      // Garante que a soma das semanas = duracaoTotal (ajusta última fase)
+      const somaAtual = fases.reduce((acc, f) => acc + f.dur, 0);
+      if (somaAtual !== total && fases.length > 0) {
+        fases[fases.length - 1].dur = Math.max(1, fases[fases.length - 1].dur + (total - somaAtual));
+      }
+
+      // Converte para o formato do form
+      const fasesFormatadas = fases
+        .filter(f => f.dur > 0)
+        .map(f => ({
+          id: generateId(),
+          nome: f.nome,
+          duracaoSemanas: f.dur,
+          intensidade: f.int,
+          volume: f.vol,
+          objetivo: f.obj,
+          treinoId: '',
+          observacoes: '',
+        }));
+
+      setForm(prev => ({
+        ...prev,
+        fases: fasesFormatadas,
+        nome: prev.nome || `Periodização ${tipo} — ${total} semanas`,
+      }));
+
+      setGerando(false);
+    }, 600);
+  };
 
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
@@ -329,7 +466,7 @@ export default function PeriodizacaoView() {
                   placeholder="Ex: Macrociclo Verão 2025" className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                   style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="text-xs text-slate-400 block mb-1">Tipo</label>
                   <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
@@ -337,6 +474,13 @@ export default function PeriodizacaoView() {
                     style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                     {TIPOS.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Duração (semanas)</label>
+                  <input type="number" min={4} max={52} value={form.duracaoTotal}
+                    onChange={e => setForm(f => ({ ...f, duracaoTotal: parseInt(e.target.value) || 12 }))}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
                 </div>
                 <div>
                   <label className="text-xs text-slate-400 block mb-1">Data de Início</label>
@@ -407,6 +551,29 @@ export default function PeriodizacaoView() {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Botão Gerar Periodização Automática */}
+            <div className="rounded-xl p-4" style={{ background: '#a78bfa08', border: '1px solid #a78bfa25' }}>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#a78bfa20' }}>
+                  <Sparkles size={15} color="#a78bfa" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-white mb-0.5">Gerar Periodização Automaticamente</div>
+                  <div className="text-xs text-slate-400 mb-3">
+                    Com base no <strong className="text-white">tipo</strong>, <strong className="text-white">objetivo</strong> e <strong className="text-white">duração</strong> informados acima, o sistema monta as fases ideais para o aluno.
+                  </div>
+                  <button
+                    onClick={gerarFasesAutomaticas}
+                    disabled={gerando}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', color: '#fff' }}>
+                    {gerando ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                    {gerando ? 'Gerando...' : 'Gerar Periodização'}
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Fases */}
