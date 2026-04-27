@@ -24,6 +24,8 @@ import PedidosView from './fitpro/PedidosView';
 import RelatoriosView from './fitpro/RelatoriosView';
 import LojaView from './fitpro/LojaView';
 import MeusPedidosView from './fitpro/MeusPedidosView';
+import ConsultoriaCorridaView from './fitpro/ConsultoriaCorridaView';
+import TreinoCorridaAlunoView from './fitpro/TreinoCorridaAlunoView';
 
 const BG = '#0a0e1a';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -72,6 +74,8 @@ function AuthenticatedApp() {
     if (activeView === 'relatorios') return <RelatoriosView />;
     if (activeView === 'loja') return <LojaView />;
     if (activeView === 'meus-pedidos') return <MeusPedidosView />;
+    if (activeView === 'consultoria-corrida') return <ConsultoriaCorridaView />;
+    if (activeView === 'treino-corrida') return <TreinoCorridaAlunoView />;
     return <PlaceholderView title={navItems.find(n => n.view === activeView)?.label || activeView} />;
   };
 

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, UserCheck, Stethoscope, BookOpen,
   X, Zap, LogOut, Shield, Settings, BarChart2, DollarSign,
   ShoppingBag, ClipboardList, Activity, Dumbbell, Calendar,
-  TrendingUp, Heart, ChevronRight
+  TrendingUp, Heart, ChevronRight, Footprints
 } from 'lucide-react';
 import { useAuth } from '../../context/FitProContext';
 
@@ -27,6 +27,7 @@ export const professorNav = [
   { icon: Activity, label: 'Avaliações', color: '#fb923c', view: 'avaliacao' },
   { icon: Dumbbell, label: 'Meus Treinos', color: '#f472b6', view: 'treinos' },
   { icon: Calendar, label: 'Periodização', color: '#fbbf24', view: 'periodizacao' },
+  { icon: Footprints, label: 'Consultoria de Corrida', color: '#34d399', view: 'consultoria-corrida' },
   { icon: BookOpen, label: 'Biblioteca', color: '#f472b6', view: 'biblioteca' },
   { icon: Stethoscope, label: 'Parceiros', color: '#34d399', view: 'parceiros' },
   { icon: ClipboardList, label: 'Meus Pedidos', color: '#60a5fa', view: 'meus-pedidos' },
@@ -38,6 +39,7 @@ export const alunoNav = [
   { icon: LayoutDashboard, label: 'Dashboard', color: '#00d4ff', view: 'dashboard' },
   { icon: Activity, label: 'Minhas Avaliações', color: '#fb923c', view: 'avaliacoes' },
   { icon: Dumbbell, label: 'Meus Treinos', color: '#f472b6', view: 'treinos' },
+  { icon: Footprints, label: 'Treino de Corrida', color: '#34d399', view: 'treino-corrida' },
   { icon: TrendingUp, label: 'Minha Evolução', color: '#fbbf24', view: 'evolucao' },
   { icon: Stethoscope, label: 'Serviços Parceiros', color: '#60a5fa', view: 'servicos' },
   { icon: ClipboardList, label: 'Meus Pedidos', color: '#60a5fa', view: 'meus-pedidos' },
