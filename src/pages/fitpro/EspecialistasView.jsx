@@ -123,13 +123,7 @@ export default function EspecialistasView() {
               )}
               {isAdmin && (
                 <>
-                  {esp.parceiro && (
-                    <button onClick={() => setEspPagamento(esp)}
-                      className="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-                      style={{ background: '#34d39915', color: '#34d399', border: '1px solid #34d39930' }}>
-                      <ShoppingCart size={13} />Simular
-                    </button>
-                  )}
+
                   <button onClick={() => { setForm({ ...esp, valorConsulta: String(esp.valorConsulta) }); setEditId(esp.id); setShowForm(true); }}
                     className="px-3 py-2 rounded-xl hover:bg-white/5 transition-all" style={{ color: '#94a3b8' }}>
                     <Edit2 size={14} />
