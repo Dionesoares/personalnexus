@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClipboardList, CheckCircle2, Clock, XCircle, ChevronDown, ChevronUp, Stethoscope } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -27,10 +27,13 @@ export default function MeusPedidosView() {
   const [expandedId, setExpandedId] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState('todos');
 
-  // Resolve o ID real do perfil do usuário logado
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const linkedId = myCred?.linkedId;
+  const [linkedId, setLinkedId] = useState('');
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      setLinkedId(myCred?.linkedId || '');
+    });
+  }, [user?.id]);
 
   const alunoAtual = alunos.find(a =>
     a.id === linkedId || a.email?.toLowerCase() === user?.email?.toLowerCase()
