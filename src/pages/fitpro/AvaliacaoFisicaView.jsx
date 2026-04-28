@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Save, ArrowLeft, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -16,9 +16,13 @@ export default function AvaliacaoFisicaView() {
   const { alunos, addAvaliacao, avaliacoes } = useApp();
   const { user } = useAuth();
 
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const professorId = myCred?.linkedId || '';
+  const [professorId, setProfessorId] = useState('');
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      setProfessorId(myCred?.linkedId || '');
+    });
+  }, [user?.id]);
 
   const [alunoId, setAlunoId] = useState('');
   const [protocolo, setProtocolo] = useState('7');
