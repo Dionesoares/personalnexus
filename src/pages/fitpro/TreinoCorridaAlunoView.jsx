@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Footprints, ChevronDown, ChevronUp, Calendar, Clock, Target, Zap, CheckCircle2 } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
-
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -21,11 +20,15 @@ export default function TreinoCorridaAlunoView() {
   const { user } = useAuth();
   const [expandedSessao, setExpandedSessao] = useState({});
   const [sessoesFeitas, setSessoesFeitas] = useState({});
+  const [linkedId, setLinkedId] = useState('');
 
-  // Resolve aluno logado
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const linkedId = myCred?.linkedId;
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      setLinkedId(myCred?.linkedId || '');
+    });
+  }, [user?.id]);
+
   const alunoAtual = alunos.find(a => a.id === linkedId || a.email?.toLowerCase() === user?.email?.toLowerCase());
 
   const { planosCorrida } = useApp();
