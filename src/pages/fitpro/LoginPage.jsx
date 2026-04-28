@@ -135,15 +135,7 @@ export default function LoginPage({ onCadastro }) {
             <p className="text-xs text-slate-500 mt-2">Aluno ou Professor? Cadastre-se gratuitamente.</p>
           </div>
 
-          <div className="mt-6 p-4 rounded-xl" style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-xs text-slate-500 mb-2">Credenciais de demonstração</p>
-            {demoAccounts.map(acc => (
-              <div key={acc.role} className="flex items-center gap-2 text-xs mb-1">
-                <span className="font-semibold" style={{ color: acc.color }}>{acc.role}</span>
-                <span className="text-slate-400">{acc.email} / {acc.password}</span>
-              </div>
-            ))}
-          </div>
+
         </div>
       </div>
     </div>
