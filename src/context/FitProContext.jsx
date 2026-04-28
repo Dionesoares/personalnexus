@@ -98,6 +98,10 @@ export function FitProAppProvider({ children }) {
     const updated = await base44.entities.Avaliacao.update(id, av);
     setAvaliacoes(s => s.map(a => a.id === id ? updated : a));
   }, []);
+  const deleteAvaliacao = useCallback(async (id) => {
+    await base44.entities.Avaliacao.delete(id);
+    setAvaliacoes(s => s.filter(a => a.id !== id));
+  }, []);
 
   // ── Planos de Treino ──
   const addPlanoTreino = useCallback(async (plano) => {
@@ -221,7 +225,7 @@ export function FitProAppProvider({ children }) {
     // professores
     addProfessor, updateProfessor, deleteProfessor,
     // avaliacoes
-    addAvaliacao, updateAvaliacao,
+    addAvaliacao, updateAvaliacao, deleteAvaliacao,
     // treinos
     addPlanoTreino, updatePlanoTreino, deletePlanoTreino,
     // periodizacao

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Save, ArrowLeft, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
+import { Activity, Save, ArrowLeft, ChevronDown, ChevronUp, TrendingUp, Trash2 } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import {
@@ -13,7 +13,7 @@ const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
 export default function AvaliacaoFisicaView() {
-  const { alunos, addAvaliacao, avaliacoes } = useApp();
+  const { alunos, addAvaliacao, deleteAvaliacao, avaliacoes } = useApp();
   const { user } = useAuth();
 
   const [professorId, setProfessorId] = useState('');
@@ -250,6 +250,33 @@ export default function AvaliacaoFisicaView() {
               <Area type="monotone" dataKey="gordura" stroke="#fb923c" fill="#fb923c20" name="% Gordura" />
             </AreaChart>
           </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Histórico de avaliações com opção de excluir */}
+      {historico.length > 0 && (
+        <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+          <h3 className="font-semibold text-white mb-3 text-sm">Histórico de Avaliações</h3>
+          <div className="space-y-2">
+            {[...historico].reverse().map((av) => (
+              <div key={av.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#fb923c08', border: '1px solid #fb923c20' }}>
+                <div className="flex-1">
+                  <div className="text-sm text-white">{new Date(av.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+                  <div className="flex gap-3 text-xs mt-0.5">
+                    {av.percentualGordura != null && <span style={{ color: '#fb923c' }}>{av.percentualGordura.toFixed(1)}% gordura</span>}
+                    {av.massaMagra != null && <span style={{ color: '#34d399' }}>{av.massaMagra.toFixed(1)}kg magra</span>}
+                    {av.peso && <span className="text-slate-500">{av.peso}kg</span>}
+                  </div>
+                </div>
+                <button
+                  onClick={() => { if (confirm('Excluir esta avaliação?')) deleteAvaliacao(av.id); }}
+                  className="p-2 rounded-xl hover:bg-red-500/10 transition-all flex-shrink-0"
+                  style={{ color: '#ef4444' }}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
