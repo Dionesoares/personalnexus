@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserCheck, Plus, X, Trash2, Edit2, ChevronRight, Search, Phone, Mail, CreditCard } from 'lucide-react';
+import { UserCheck, Plus, X, Trash2, Edit2, ChevronRight, Search, Phone, Mail, CreditCard, Pencil, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { getCredentials, addCredential, deleteCredential } from '../../lib/fitpro-storage';
@@ -7,12 +7,19 @@ import { getCredentials, addCredential, deleteCredential } from '../../lib/fitpr
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
-const PLANOS = [
+const PLANOS_DEFAULT = [
   { id: 'basico', nome: 'Básico', preco: 49.90, desc: 'Até 10 alunos, treinos ilimitados, avaliações básicas' },
   { id: 'profissional', nome: 'Profissional', preco: 99.90, desc: 'Até 50 alunos, todos os recursos, periodização' },
   { id: 'premium', nome: 'Premium', preco: 179.90, desc: 'Alunos ilimitados, financeiro, relatórios avançados' },
   { id: 'enterprise', nome: 'Enterprise', preco: 299.90, desc: 'Multi-professor, API, suporte dedicado, white-label' },
 ];
+
+function loadPlanos() {
+  try { return JSON.parse(localStorage.getItem('fitpro_planos')) || PLANOS_DEFAULT; } catch { return PLANOS_DEFAULT; }
+}
+function savePlanos(planos) {
+  localStorage.setItem('fitpro_planos', JSON.stringify(planos));
+}
 
 const PLANO_COLOR = { basico: '#60a5fa', profissional: '#34d399', premium: '#fbbf24', enterprise: '#a78bfa' };
 
@@ -31,6 +38,9 @@ export default function ProfessoresView() {
   const [saved, setSaved] = useState(false);
   const [selectedProf, setSelectedProf] = useState(null);
   const [formStep, setFormStep] = useState('dados'); // 'dados' | 'plano'
+  const [planos, setPlanos] = useState(loadPlanos);
+  const [editingPlanoId, setEditingPlanoId] = useState(null);
+  const [editingPlanoData, setEditingPlanoData] = useState({});
 
   const filtered = professores.filter(p =>
     p.nome.toLowerCase().includes(search.toLowerCase()) ||
@@ -63,7 +73,7 @@ export default function ProfessoresView() {
     const meusAlunos = alunos.filter(a => a.professorId === prof.id);
     const avsTotal = avaliacoes.filter(av => meusAlunos.some(a => a.id === av.alunoId)).length;
     const treinosTotal = planosTreino.filter(t => meusAlunos.some(a => a.id === t.alunoId)).length;
-    const plano = PLANOS.find(p => p.id === prof.planoCobranca) || PLANOS[1];
+    const plano = planos.find(p => p.id === prof.planoCobranca) || planos[1];
     const planoColor = PLANO_COLOR[prof.planoCobranca] || '#34d399';
 
     return (
@@ -172,7 +182,7 @@ export default function ProfessoresView() {
             const meusAlunos = alunos.filter(a => a.professorId === prof.id);
             const colors = ['#34d399','#60a5fa','#a78bfa','#fb923c','#f472b6'];
             const color = colors[i % 5];
-            const plano = PLANOS.find(p => p.id === prof.planoCobranca) || PLANOS[1];
+            const plano = planos.find(p => p.id === prof.planoCobranca) || planos[1];
             const planoColor = PLANO_COLOR[prof.planoCobranca] || '#34d399';
             return (
               <motion.div key={prof.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -267,21 +277,63 @@ export default function ProfessoresView() {
 
             {formStep === 'plano' && (
               <div className="space-y-3">
-                <p className="text-xs text-slate-400 mb-3">Selecione o plano de cobrança da plataforma para este professor:</p>
+                <p className="text-xs text-slate-400 mb-1">Selecione e personalize os planos de cobrança:</p>
                 <div className="space-y-2">
-                  {PLANOS.map(plano => {
+                  {planos.map(plano => {
                     const color = PLANO_COLOR[plano.id];
                     const selected = form.planoCobranca === plano.id;
+                    const isEditing = editingPlanoId === plano.id;
                     return (
-                      <button key={plano.id} onClick={() => setForm(f => ({ ...f, planoCobranca: plano.id }))}
-                        className="w-full p-4 rounded-xl text-left transition-all"
-                        style={{ background: selected ? `${color}15` : 'rgba(255,255,255,0.03)', border: selected ? `1px solid ${color}40` : '1px solid rgba(255,255,255,0.07)' }}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-bold text-sm" style={{ color: selected ? color : '#94a3b8' }}>{plano.nome}</span>
-                          <span className="font-bold text-sm" style={{ color: selected ? color : '#64748b' }}>R$ {plano.preco.toFixed(2)}/mês</span>
-                        </div>
-                        <p className="text-xs text-slate-500">{plano.desc}</p>
-                      </button>
+                      <div key={plano.id} className="rounded-xl overflow-hidden"
+                        style={{ background: selected ? `${color}12` : 'rgba(255,255,255,0.03)', border: selected ? `1px solid ${color}40` : '1px solid rgba(255,255,255,0.07)' }}>
+                        {isEditing ? (
+                          <div className="p-3 space-y-2">
+                            <div className="flex gap-2">
+                              <input value={editingPlanoData.nome} onChange={e => setEditingPlanoData(d => ({ ...d, nome: e.target.value }))}
+                                className="flex-1 px-2 py-1.5 rounded-lg text-sm text-white outline-none font-bold"
+                                style={{ background: '#1e2a3a', border: `1px solid ${color}40` }} placeholder="Nome" />
+                              <div className="relative flex items-center">
+                                <span className="absolute left-2 text-xs text-slate-400">R$</span>
+                                <input type="number" step="0.01" value={editingPlanoData.preco} onChange={e => setEditingPlanoData(d => ({ ...d, preco: parseFloat(e.target.value) || 0 }))}
+                                  className="w-24 pl-7 pr-2 py-1.5 rounded-lg text-sm text-white outline-none font-bold"
+                                  style={{ background: '#1e2a3a', border: `1px solid ${color}40` }} />
+                              </div>
+                            </div>
+                            <input value={editingPlanoData.desc} onChange={e => setEditingPlanoData(d => ({ ...d, desc: e.target.value }))}
+                              className="w-full px-2 py-1.5 rounded-lg text-xs text-slate-300 outline-none"
+                              style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} placeholder="Descrição" />
+                            <div className="flex gap-2 justify-end">
+                              <button onClick={() => setEditingPlanoId(null)}
+                                className="px-3 py-1 rounded-lg text-xs text-slate-400 hover:text-white" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                                Cancelar
+                              </button>
+                              <button onClick={() => {
+                                const updated = planos.map(p => p.id === plano.id ? { ...p, ...editingPlanoData } : p);
+                                setPlanos(updated);
+                                savePlanos(updated);
+                                setEditingPlanoId(null);
+                              }} className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold"
+                                style={{ background: `${color}20`, color }}>
+                                <Check size={11} />Salvar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 p-3">
+                            <button onClick={() => setForm(f => ({ ...f, planoCobranca: plano.id }))} className="flex-1 text-left">
+                              <div className="flex items-center justify-between mb-0.5">
+                                <span className="font-bold text-sm" style={{ color: selected ? color : '#94a3b8' }}>{plano.nome}</span>
+                                <span className="font-bold text-sm" style={{ color: selected ? color : '#64748b' }}>R$ {plano.preco.toFixed(2)}/mês</span>
+                              </div>
+                              <p className="text-xs text-slate-500">{plano.desc}</p>
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); setEditingPlanoId(plano.id); setEditingPlanoData({ nome: plano.nome, preco: plano.preco, desc: plano.desc }); }}
+                              className="p-1.5 rounded-lg flex-shrink-0 hover:bg-white/10 transition-all" style={{ color: '#64748b' }}>
+                              <Pencil size={12} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
