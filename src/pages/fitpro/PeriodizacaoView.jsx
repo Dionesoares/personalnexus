@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, X, Trash2, ChevronRight, Moon, Sparkles, Loader2, Edit2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -48,9 +48,13 @@ export default function PeriodizacaoView() {
   const { periodizacoes, alunos, planosTreino, addPeriodizacao, updatePeriodizacao, deletePeriodizacao } = useApp();
   const { user } = useAuth();
 
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const professorId = myCred?.linkedId || '';
+  const [professorId, setProfessorId] = useState('');
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      setProfessorId(myCred?.linkedId || '');
+    });
+  }, [user?.id]);
 
   const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
   const periodizacoesFiltradas = user?.role === 'professor'
