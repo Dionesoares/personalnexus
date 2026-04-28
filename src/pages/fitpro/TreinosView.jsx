@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2 } from 'lucide-react';
+import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
@@ -257,6 +257,10 @@ export default function TreinosView() {
                       <button onClick={(e) => { e.stopPropagation(); setForm({ ...treino, sessoes: treino.sessoes || [] }); setEditId(treino.id); setShowForm(true); }}
                         className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" style={{ color: '#fbbf24' }}>
                         <Edit2 size={14} />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); const clone = { ...treino, id: undefined, nome: `${treino.nome} (cópia)`, sessoes: (treino.sessoes || []).map(s => ({ ...s, id: generateId(), exercicios: (s.exercicios || []).map(ex => ({ ...ex, id: generateId() })) })) }; addPlanoTreino(clone); }}
+                        className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" title="Clonar treino" style={{ color: '#60a5fa' }}>
+                        <Copy size={14} />
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir este treino?')) deletePlanoTreino(treino.id); }}
                         className="px-3 py-2 rounded-xl text-xs hover:bg-red-500/10 transition-all" style={{ color: '#ef4444' }}>
