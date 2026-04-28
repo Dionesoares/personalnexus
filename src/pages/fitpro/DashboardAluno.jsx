@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight } from 'lucide-react';
+import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { calcularIdade } from '../../lib/fitpro-calculations';
+import ModalEditarPerfil from '../../components/fitpro/ModalEditarPerfil';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -11,6 +12,7 @@ const BORDER = 'rgba(255,255,255,0.07)';
 export default function DashboardAluno({ onNav }) {
   const { alunos, avaliacoes, planosTreino, periodizacoes, especialistas } = useApp();
   const { user } = useAuth();
+  const [showEditarPerfil, setShowEditarPerfil] = useState(false);
 
   const creds = getCredentials();
   const myCred = creds.find(c => c.id === user?.id);
@@ -39,10 +41,19 @@ export default function DashboardAluno({ onNav }) {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #a78bfa, transparent)' }} />
         </div>
-        <p className="text-slate-400 text-sm mb-1">Bem-vindo 👋</p>
-        <h2 className="text-2xl font-black text-white">{aluno?.nome?.split(' ')[0] || user?.nome?.split(' ')[0]}</h2>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-slate-400 text-sm mb-1">Bem-vindo 👋</p>
+            <h2 className="text-2xl font-black text-white">{aluno?.nome?.split(' ')[0] || user?.nome?.split(' ')[0]}</h2>
+          </div>
+          <button onClick={() => setShowEditarPerfil(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+            style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
+            <Settings size={13} />Editar Perfil
+          </button>
+        </div>
         {aluno && (
-          <div className="flex gap-2 mt-2 flex-wrap">
+          <div className="flex gap-2 mt-3 flex-wrap">
             {aluno.objetivo && <span className="text-xs px-2 py-1 rounded-full" style={{ background: '#a78bfa15', color: '#a78bfa', border: '1px solid #a78bfa25' }}>{aluno.objetivo}</span>}
             {aluno.dataNascimento && <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: `1px solid ${BORDER}` }}>{calcularIdade(aluno.dataNascimento)} anos</span>}
             {aluno.peso > 0 && <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: `1px solid ${BORDER}` }}>{aluno.peso}kg</span>}
@@ -164,6 +175,9 @@ export default function DashboardAluno({ onNav }) {
             ))}
           </div>
         </div>
+      )}
+      {showEditarPerfil && (
+        <ModalEditarPerfil user={user} tipoUsuario="aluno" onClose={() => setShowEditarPerfil(false)} />
       )}
     </div>
   );

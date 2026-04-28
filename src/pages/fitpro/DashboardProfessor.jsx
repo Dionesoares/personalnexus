@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Activity, Dumbbell, Calendar, Plus, Share2, Copy, CheckCircle2, X, Link2 } from 'lucide-react';
+import { Users, Activity, Dumbbell, Calendar, Plus, Share2, Copy, CheckCircle2, X, Link2, Settings } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
+import ModalEditarPerfil from '../../components/fitpro/ModalEditarPerfil';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -12,6 +13,7 @@ export default function DashboardProfessor({ onNav }) {
   const { user } = useAuth();
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [copied, setCopied] = useState(null);
+  const [showEditarPerfil, setShowEditarPerfil] = useState(false);
 
   const creds = getCredentials();
   const myCred = creds.find(c => c.id === user?.id);
@@ -64,10 +66,17 @@ export default function DashboardProfessor({ onNav }) {
               {meusAlunos.length > 0 ? `Você tem ${meusAlunos.length} aluno${meusAlunos.length > 1 ? 's' : ''} sob sua orientação` : 'Comece cadastrando seu primeiro aluno'}
             </p>
           </div>
-          <button onClick={() => setShowLinkModal(true)} className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-            style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)', color: '#38bdf8' }}>
-            <Share2 size={14} />Convidar Aluno
-          </button>
+          <div className="hidden md:flex gap-2">
+            <button onClick={() => setShowEditarPerfil(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399' }}>
+              <Settings size={14} />Meu Perfil
+            </button>
+            <button onClick={() => setShowLinkModal(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)', color: '#38bdf8' }}>
+              <Share2 size={14} />Convidar Aluno
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-4 gap-3 mt-6">
           {stats.map((s, i) => (
@@ -162,6 +171,10 @@ export default function DashboardProfessor({ onNav }) {
           )}
         </div>
       </div>
+
+      {showEditarPerfil && (
+        <ModalEditarPerfil user={user} tipoUsuario="professor" onClose={() => setShowEditarPerfil(false)} />
+      )}
 
       {/* Modal de link */}
       {showLinkModal && (
