@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play } from 'lucide-react';
+import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
 import { TREINO_TEMPLATES, aplicarTemplate } from '../../lib/treinoTemplates';
@@ -62,6 +63,22 @@ export default function TreinosView() {
   const addFromBiblioteca = (sessaoId, bEx) => {
     const novo = { id: generateId(), nome: bEx.nome, grupoMuscular: bEx.grupoMuscular, series: parseInt(bEx.series?.split('-')[0] || '3') || 3, repeticoes: bEx.repeticoes || '10-12', carga: 0, descanso: bEx.descanso || 60, tecnica: 'Normal', observacoes: bEx.dicas || '' };
     setForm(f => ({ ...f, sessoes: f.sessoes.map(s => s.id === sessaoId ? { ...s, exercicios: [...s.exercicios, novo] } : s) }));
+  };
+
+  const onDragEnd = (sessaoId, result) => {
+    if (!result.destination) return;
+    const { source, destination } = result;
+    if (source.index === destination.index) return;
+    setForm(f => ({
+      ...f,
+      sessoes: f.sessoes.map(s => {
+        if (s.id !== sessaoId) return s;
+        const exs = Array.from(s.exercicios);
+        const [moved] = exs.splice(source.index, 1);
+        exs.splice(destination.index, 0, moved);
+        return { ...s, exercicios: exs };
+      })
+    }));
   };
 
   if (selectedTreino) {
@@ -339,25 +356,48 @@ export default function TreinosView() {
                       </select>
                       <button onClick={() => removeSessao(sessao.id)} className="text-red-400 hover:text-red-300"><X size={14} /></button>
                     </div>
+                    <DragDropContext onDragEnd={(result) => onDragEnd(sessao.id, result)}>
                     <div className="p-3 space-y-2">
-                      {sessao.exercicios.map((ex, ei) => (
-                        <div key={ex.id} className="flex gap-2 items-start p-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                          <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style={{ background: `${cor}25`, color: cor }}>{ei + 1}</span>
-                          <div className="flex-1 grid grid-cols-2 gap-1">
-                            <input value={ex.nome} onChange={e => updateExercicio(sessao.id, ex.id, 'nome', e.target.value)} placeholder="Exercício" className="col-span-2 px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                            <input type="number" value={ex.series} onChange={e => updateExercicio(sessao.id, ex.id, 'series', parseInt(e.target.value) || 1)} placeholder="Séries" className="px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                            <input value={ex.repeticoes} onChange={e => updateExercicio(sessao.id, ex.id, 'repeticoes', e.target.value)} placeholder="Reps" className="px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                      <Droppable droppableId={sessao.id}>
+                        {(provided) => (
+                          <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                            {sessao.exercicios.map((ex, ei) => (
+                              <Draggable key={ex.id} draggableId={ex.id} index={ei}>
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    className="flex gap-2 items-start p-2 rounded-xl transition-shadow"
+                                    style={{
+                                      background: snapshot.isDragging ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
+                                      boxShadow: snapshot.isDragging ? '0 8px 24px rgba(0,0,0,0.5)' : undefined,
+                                      ...provided.draggableProps.style
+                                    }}>
+                                    {/* Handle de arrastar */}
+                                    <div {...provided.dragHandleProps} className="flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing" title="Arrastar para reordenar">
+                                      <GripVertical size={14} color="#475569" />
+                                    </div>
+                                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style={{ background: `${cor}25`, color: cor }}>{ei + 1}</span>
+                                    <div className="flex-1 grid grid-cols-2 gap-1">
+                                      <input value={ex.nome} onChange={e => updateExercicio(sessao.id, ex.id, 'nome', e.target.value)} placeholder="Exercício" className="col-span-2 px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                                      <input type="number" value={ex.series} onChange={e => updateExercicio(sessao.id, ex.id, 'series', parseInt(e.target.value) || 1)} placeholder="Séries" className="px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                                      <input value={ex.repeticoes} onChange={e => updateExercicio(sessao.id, ex.id, 'repeticoes', e.target.value)} placeholder="Reps" className="px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                                    </div>
+                                    <button onClick={() => removeExercicio(sessao.id, ex.id)} className="text-red-400 text-xs mt-1 flex-shrink-0"><X size={12} /></button>
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
                           </div>
-                          <button onClick={() => removeExercicio(sessao.id, ex.id)} className="text-red-400 text-xs mt-1 flex-shrink-0"><X size={12} /></button>
-                        </div>
-                      ))}
-                      <div className="flex gap-2">
+                        )}
+                      </Droppable>
+                      <div className="flex gap-2 mt-2">
                         <button onClick={() => addExercicio(sessao.id)} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs" style={{ background: `${cor}10`, color: cor }}>
                           <Plus size={10} />Exercício
                         </button>
                         {(() => {
                           const all = exerciciosBiblioteca || [];
-                          // Professor vê: biblioteca padrão (admin/system) + seus próprios
                           const bibDisponivel = user?.role === 'admin'
                             ? all
                             : all.filter(b => !b.professorId || b.professorId === 'system' || b.professorId === 'admin' || b.professorId === user?.id);
@@ -375,6 +415,7 @@ export default function TreinosView() {
                         })()}
                       </div>
                     </div>
+                    </DragDropContext>
                   </div>
                 );
               })}
