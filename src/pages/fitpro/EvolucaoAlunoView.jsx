@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, Activity, Dumbbell, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
@@ -12,10 +12,18 @@ export default function EvolucaoAlunoView() {
   const { avaliacoes, alunos, planosTreino, periodizacoes } = useApp();
   const { user } = useAuth();
   const [activeChart, setActiveChart] = useState('gordura');
+  const [alunoId, setAlunoId] = useState('');
 
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const alunoId = myCred?.linkedId || alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase())?.id || '';
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      const linkedId = myCred?.linkedId || '';
+      if (linkedId) { setAlunoId(linkedId); return; }
+      const byEmail = alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase());
+      setAlunoId(byEmail?.id || '');
+    });
+  }, [user?.id, alunos]);
+
   const aluno = alunos.find(a => a.id === alunoId);
 
   const minhasAvaliacoes = avaliacoes
