@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, TrendingUp } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
@@ -12,9 +12,16 @@ export default function MinhasAvaliacoesView() {
   const { avaliacoes, alunos } = useApp();
   const { user } = useAuth();
 
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const alunoId = myCred?.linkedId || alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase())?.id || '';
+  const [alunoId, setAlunoId] = useState('');
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      const linkedId = myCred?.linkedId || '';
+      if (linkedId) { setAlunoId(linkedId); return; }
+      const byEmail = alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase());
+      setAlunoId(byEmail?.id || '');
+    });
+  }, [user?.id, alunos]);
 
   const minhasAvaliacoes = avaliacoes.filter(a => a.alunoId === alunoId).sort((a, b) => new Date(a.data) - new Date(b.data));
   const ultimaAv = minhasAvaliacoes[minhasAvaliacoes.length - 1];
