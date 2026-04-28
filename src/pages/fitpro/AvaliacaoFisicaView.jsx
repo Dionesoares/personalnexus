@@ -151,7 +151,12 @@ export default function AvaliacaoFisicaView() {
             <div className="px-4 pb-4">
               {section.id === 'dobras' && (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                  {(protocolo === '7' || aluno?.sexo === 'M' ? ['peito', 'axilarMedia'] : []).concat(['triceps', 'subescapular', 'abdomen', 'suprailíaca', 'coxa', 'panturrilha', 'biceps']).map(campo => (
+                  {(protocolo === '7'
+                    ? ['peito', 'axilarMedia', 'triceps', 'subescapular', 'abdomen', 'suprailíaca', 'coxa']
+                    : aluno?.sexo === 'M'
+                      ? ['peito', 'abdomen', 'coxa']
+                      : ['triceps', 'suprailíaca', 'coxa']
+                  ).map(campo => (
                     <div key={campo}>
                       <label className="text-xs text-slate-400 block mb-1 capitalize">{campo === 'suprailíaca' ? 'Suprailíaca' : campo === 'axilarMedia' ? 'Axilar Média' : campo.charAt(0).toUpperCase() + campo.slice(1)} (mm)</label>
                       <input type="number" value={dobras[campo]} onChange={e => setDobras(d => ({ ...d, [campo]: e.target.value }))} placeholder="0"
