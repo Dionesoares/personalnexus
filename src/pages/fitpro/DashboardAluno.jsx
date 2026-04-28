@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings } from 'lucide-react';
+import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { calcularIdade } from '../../lib/fitpro-calculations';
@@ -152,6 +152,55 @@ export default function DashboardAluno({ onNav }) {
           )
         )}
       </div>
+
+      {/* Próximas Aulas */}
+      {(() => {
+        const agenda = (() => { try { return JSON.parse(localStorage.getItem('fitpro_agenda') || '[]'); } catch { return []; } })();
+        const hoje = new Date().toISOString().split('T')[0];
+        const proximas = agenda
+          .filter(ev => ev.alunoId === resolvedAlunoId && ev.data >= hoje && ev.status !== 'cancelado')
+          .sort((a, b) => `${a.data}${a.hora}`.localeCompare(`${b.data}${b.hora}`))
+          .slice(0, 3);
+
+        if (proximas.length === 0) return null;
+
+        const TIPO_COLOR = {
+          'Avaliação': '#fb923c', 'Treino Personalizado': '#f472b6', 'Consultoria': '#60a5fa',
+          'Corrida': '#34d399', 'Reposição': '#fbbf24', 'Online': '#a78bfa', 'Outro': '#64748b',
+        };
+
+        return (
+          <div className="rounded-2xl p-5" style={{ background: CARD, border: '1px solid #a78bfa30' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <CalendarDays size={16} color="#a78bfa" />
+              <h3 className="font-semibold text-white">Próximas Aulas</h3>
+            </div>
+            <div className="space-y-2">
+              {proximas.map(ev => {
+                const cor = TIPO_COLOR[ev.tipo] || '#a78bfa';
+                const dataFormatada = new Date(ev.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
+                return (
+                  <div key={ev.id} className="flex items-center gap-3 p-3 rounded-xl"
+                    style={{ background: `${cor}08`, border: `1px solid ${cor}20`, borderLeft: `4px solid ${cor}` }}>
+                    <div className="flex-shrink-0 text-center">
+                      <div className="text-sm font-bold text-white">{ev.hora}</div>
+                      <div className="text-xs text-slate-500">{ev.duracao}min</div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-white truncate">{ev.titulo}</div>
+                      <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                        <Clock size={10} />
+                        <span>{dataFormatada}</span>
+                        <span className="px-1.5 py-0.5 rounded-full" style={{ background: `${cor}15`, color: cor }}>{ev.tipo}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Meus Treinos */}
       {meusTreinos.length > 0 && (
