@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, UserCheck, Stethoscope, BookOpen,
   X, Zap, LogOut, Shield, Settings, BarChart2, DollarSign,
   ShoppingBag, ClipboardList, Activity, Dumbbell, Calendar,
-  TrendingUp, Heart, ChevronRight, Footprints
+  TrendingUp, Heart, ChevronRight, Footprints, CalendarDays
 } from 'lucide-react';
 import { useAuth } from '../../context/FitProContext';
 
@@ -27,6 +27,7 @@ export const professorNav = [
   { icon: Activity, label: 'Avaliações', color: '#fb923c', view: 'avaliacao' },
   { icon: Dumbbell, label: 'Meus Treinos', color: '#f472b6', view: 'treinos' },
   { icon: Calendar, label: 'Periodização', color: '#fbbf24', view: 'periodizacao' },
+  { icon: CalendarDays, label: 'Agenda', color: '#a78bfa', view: 'agenda' },
   { icon: Footprints, label: 'Consultoria de Corrida', color: '#34d399', view: 'consultoria-corrida' },
   { icon: BookOpen, label: 'Biblioteca', color: '#f472b6', view: 'biblioteca' },
   { icon: Stethoscope, label: 'Parceiros', color: '#34d399', view: 'parceiros' },
