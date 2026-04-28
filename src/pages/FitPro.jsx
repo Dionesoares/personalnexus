@@ -93,7 +93,7 @@ function AuthenticatedApp() {
             </button>
             <div>
               <h2 className="text-sm font-bold text-white">{navItems.find(n => n.view === activeView)?.label || 'FitPro'}</h2>
-              <p className="text-xs text-slate-500 hidden sm:block">FitPro Assessment Platform</p>
+              <p className="text-xs text-slate-500 hidden sm:block">AthleticFitPro</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
