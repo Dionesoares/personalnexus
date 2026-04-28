@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter, MessageCircle, Eye, EyeOff } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -15,9 +15,13 @@ export default function AlunosView({ roleOverride }) {
   const { user } = useAuth();
   const role = roleOverride || user?.role;
 
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const professorId = myCred?.linkedId || '';
+  const [professorId, setProfessorId_] = useState('');
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      setProfessorId_(myCred?.linkedId || '');
+    });
+  }, [user?.id]);
 
   const [search, setSearch] = useState('');
   const [filtroProf, setFiltroProf] = useState('');
@@ -44,14 +48,14 @@ export default function AlunosView({ roleOverride }) {
   const [senhaNovo, setSenhaNovo] = useState('');
   const [showSenha, setShowSenha] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     const data = { ...form, peso: parseFloat(form.peso) || 0, altura: parseFloat(form.altura) || 0, professorId: form.professorId || professorId || '' };
-    if (editId) { updateAluno(editId, data); setSelectedAluno({ ...selectedAluno, ...data }); }
+    if (editId) { await updateAluno(editId, data); setSelectedAluno({ ...selectedAluno, ...data }); }
     else {
-      const id = addAluno(data);
+      const id = await addAluno(data);
       if (form.email && senhaNovo) {
-        addCredential({ email: form.email, password: senhaNovo, role: 'aluno', nome: form.nome, linkedId: id, ativo: true, autoRegistrado: false });
+        await addCredential({ email: form.email, password: senhaNovo, role: 'aluno', nome: form.nome, linkedId: id, ativo: true, autoRegistrado: false });
       }
     }
     setShowForm(false); setEditId(null); setForm(emptyAluno); setSenhaNovo('');
@@ -73,9 +77,9 @@ export default function AlunosView({ roleOverride }) {
     setEditId(aluno.id); setShowForm(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm('Excluir este aluno?')) return;
-    deleteAluno(id); setSelectedAluno(null);
+    await deleteAluno(id); setSelectedAluno(null);
   };
 
   if (selectedAluno) {

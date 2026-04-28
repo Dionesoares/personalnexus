@@ -3,6 +3,7 @@ import { Footprints, ChevronDown, ChevronUp, Calendar, Clock, Target, Zap, Check
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 
+
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 const ZONA_COLOR = { Z1: '#60a5fa', Z2: '#34d399', Z3: '#fbbf24', Z4: '#fb923c', Z5: '#ef4444' };
@@ -27,11 +28,8 @@ export default function TreinoCorridaAlunoView() {
   const linkedId = myCred?.linkedId;
   const alunoAtual = alunos.find(a => a.id === linkedId || a.email?.toLowerCase() === user?.email?.toLowerCase());
 
-  // Carrega planos de corrida do localStorage
-  const planos = (() => {
-    try { return JSON.parse(localStorage.getItem('fitpro_planos_corrida') || '[]'); } catch { return []; }
-  })();
-
+  const { planosCorrida } = useApp();
+  const planos = planosCorrida || [];
   const meusPlanos = planos.filter(p => p.alunoId === alunoAtual?.id);
 
   const toggleFeita = (sessaoId) => {

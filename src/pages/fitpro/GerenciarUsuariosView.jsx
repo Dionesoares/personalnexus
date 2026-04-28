@@ -28,8 +28,10 @@ export default function GerenciarUsuariosView() {
   const [changingPassId, setChangingPassId] = useState(null);
   const [newPass, setNewPass] = useState('');
 
-  useEffect(() => { setCreds(getCredentials()); }, []);
-  const refresh = () => setCreds(getCredentials());
+  useEffect(() => {
+    getCredentials().then(data => setCreds(data));
+  }, []);
+  const refresh = () => getCredentials().then(data => setCreds(data));
 
   const filtered = creds.filter(c => {
     const matchRole = filterRole === 'todos' || c.role === filterRole;
@@ -37,10 +39,10 @@ export default function GerenciarUsuariosView() {
     return matchRole && matchSearch;
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome || !form.email || !form.password) return alert('Preencha todos os campos obrigatórios');
-    if (editId) updateCredential(editId, form);
-    else addCredential({ ...form, autoRegistrado: false });
+    if (editId) await updateCredential(editId, form);
+    else await addCredential({ ...form, autoRegistrado: false });
     setSaved(true);
     setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyForm); refresh(); }, 1000);
   };
@@ -50,8 +52,8 @@ export default function GerenciarUsuariosView() {
     setEditId(c.id); setShowForm(true); setChangingPassId(null);
   };
 
-  const handleDelete = (id) => {
-    if (confirm('Excluir este usuário?')) { deleteCredential(id); refresh(); }
+  const handleDelete = async (id) => {
+    if (confirm('Excluir este usuário?')) { await deleteCredential(id); refresh(); }
   };
 
   const toggleReveal = (id) => setRevealedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
@@ -60,9 +62,9 @@ export default function GerenciarUsuariosView() {
     navigator.clipboard.writeText(senha).then(() => { setCopiedId(id); setTimeout(() => setCopiedId(null), 2000); });
   };
 
-  const saveNewPass = (id) => {
+  const saveNewPass = async (id) => {
     if (newPass.length < 6) return alert('Senha deve ter mínimo 6 caracteres');
-    updateCredential(id, { password: newPass });
+    await updateCredential(id, { password: newPass });
     setChangingPassId(null); setNewPass(''); refresh();
   };
 

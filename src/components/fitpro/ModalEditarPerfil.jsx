@@ -1,21 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, User, Phone, Mail, MapPin, Lock, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '../../context/FitProContext';
-import { getCredentials, saveState, loadState } from '../../lib/fitpro-storage';
+import { getCredentials, updateCredential } from '../../lib/fitpro-storage';
 
 const BORDER = 'rgba(255,255,255,0.07)';
 
 export default function ModalEditarPerfil({ user, tipoUsuario, onClose }) {
   const { alunos, professores, updateAluno, updateProfessor } = useApp();
 
-  // Resolve perfil atual
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const linkedId = myCred?.linkedId;
-
   const perfilAtual = tipoUsuario === 'aluno'
-    ? (alunos.find(a => a.id === linkedId || a.email?.toLowerCase() === user?.email?.toLowerCase()))
-    : (professores.find(p => p.id === linkedId || p.email?.toLowerCase() === user?.email?.toLowerCase()));
+    ? (alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase()))
+    : (professores.find(p => p.email?.toLowerCase() === user?.email?.toLowerCase()));
 
   const [form, setForm] = useState({
     nome: perfilAtual?.nome || user?.nome || '',
@@ -56,10 +51,8 @@ export default function ModalEditarPerfil({ user, tipoUsuario, onClose }) {
     }
 
     // Atualiza senha nas credenciais se informada
-    if (novaSenha.trim()) {
-      const allCreds = getCredentials();
-      const updated = allCreds.map(c => c.id === user?.id ? { ...c, password: novaSenha.trim() } : c);
-      localStorage.setItem('fitpro_credentials', JSON.stringify(updated));
+    if (novaSenha.trim() && user?.id) {
+      updateCredential(user.id, { password: novaSenha.trim() });
     }
 
     setSaved(true);

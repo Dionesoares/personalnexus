@@ -42,21 +42,9 @@ const DIAS = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', '
 const ZONA_COLOR = { Z1: '#60a5fa', Z2: '#34d399', Z3: '#fbbf24', Z4: '#fb923c', Z5: '#ef4444' };
 
 export default function ConsultoriaCorridaView() {
-  const { alunos, planosCorrida = [], addPlanoCorrida, updatePlanoCorrida, deletePlanoCorrida } = useApp();
+  const { alunos, planosCorrida, addPlanoCorrida, updatePlanoCorrida, deletePlanoCorrida } = useApp();
   const { user } = useAuth();
 
-  // Fallback se context não tiver planosCorrida ainda
-  const [planosLocal, setPlanosLocal] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('fitpro_planos_corrida') || '[]'); } catch { return []; }
-  });
-
-  const savePlanos = (list) => {
-    setPlanosLocal(list);
-    localStorage.setItem('fitpro_planos_corrida', JSON.stringify(list));
-  };
-
-  const myCred = alunos; // just to have list
-  const professorId = user?.id;
   const alunosFiltrados = alunos;
 
   const [selectedPlano, setSelectedPlano] = useState(null);
@@ -67,25 +55,24 @@ export default function ConsultoriaCorridaView() {
   const [alunoFilter, setAlunoFilter] = useState('');
   const [expandedSessao, setExpandedSessao] = useState({});
 
-  const planos = planosLocal;
+  const planos = planosCorrida || [];
   const exibidos = alunoFilter ? planos.filter(p => p.alunoId === alunoFilter) : planos;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     if (!form.alunoId) return alert('Selecione um aluno');
-    const data = { ...form, updatedAt: new Date().toISOString() };
     if (editId) {
-      savePlanos(planos.map(p => p.id === editId ? { ...p, ...data } : p));
+      await updatePlanoCorrida(editId, form);
     } else {
-      savePlanos([...planos, { ...data, id: generateId(), createdAt: new Date().toISOString() }]);
+      await addPlanoCorrida(form);
     }
     setSaved(true);
     setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyPlanoCorrida()); }, 1200);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm('Excluir este plano de corrida?')) return;
-    savePlanos(planos.filter(p => p.id !== id));
+    await deletePlanoCorrida(id);
     setSelectedPlano(null);
   };
 

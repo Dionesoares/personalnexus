@@ -21,8 +21,7 @@ export default function LoginPage({ onCadastro }) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    const ok = login(email, password);
+    const ok = await login(email, password);
     if (!ok) setError('Email ou senha incorretos. Verifique suas credenciais.');
     setLoading(false);
   };

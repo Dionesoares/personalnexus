@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -17,9 +17,13 @@ export default function TreinosView() {
   const { planosTreino, alunos, exerciciosBiblioteca, addPlanoTreino, updatePlanoTreino, deletePlanoTreino } = useApp();
   const { user } = useAuth();
 
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const professorId = myCred?.linkedId || '';
+  const [professorId, setProfessorId_] = useState('');
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      setProfessorId_(myCred?.linkedId || '');
+    });
+  }, [user?.id]);
 
   const [selectedTreino, setSelectedTreino] = useState(null);
   const [showForm, setShowForm] = useState(false);

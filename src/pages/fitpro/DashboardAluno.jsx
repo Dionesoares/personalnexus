@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -14,11 +14,16 @@ export default function DashboardAluno({ onNav }) {
   const { user } = useAuth();
   const [showEditarPerfil, setShowEditarPerfil] = useState(false);
 
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const alunoId = myCred?.linkedId || '';
-  const alunoByEmail = !alunoId ? alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase()) : null;
-  const resolvedAlunoId = alunoId || alunoByEmail?.id || '';
+  const [resolvedAlunoId, setResolvedAlunoId] = useState('');
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      const alunoId = myCred?.linkedId || '';
+      if (alunoId) { setResolvedAlunoId(alunoId); return; }
+      const byEmail = alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase());
+      setResolvedAlunoId(byEmail?.id || '');
+    });
+  }, [user?.id, alunos]);
 
   const aluno = alunos.find(a => a.id === resolvedAlunoId);
   const minhasAvaliacoes = avaliacoes.filter(a => a.alunoId === resolvedAlunoId).sort((a, b) => new Date(b.data) - new Date(a.data));

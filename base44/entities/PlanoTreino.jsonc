@@ -1,0 +1,34 @@
+{
+  "name": "PlanoTreino",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "alunoId": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "objetivo": {
+      "type": "string"
+    },
+    "nivel": {
+      "type": "string"
+    },
+    "duracaoSemanas": {
+      "type": "number"
+    },
+    "sessoes": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "nome",
+    "alunoId"
+  ]
+}

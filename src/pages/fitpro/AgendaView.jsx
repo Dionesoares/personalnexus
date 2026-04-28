@@ -48,7 +48,7 @@ function toDateStr(year, month, day) {
 }
 
 export default function AgendaView() {
-  const { alunos } = useApp();
+  const { alunos, agenda: eventos, addAgendaEvento, updateAgendaEvento, deleteAgendaEvento } = useApp();
   const { user } = useAuth();
 
   const today = new Date();
@@ -61,31 +61,22 @@ export default function AgendaView() {
   const [saved, setSaved] = useState(false);
   const [viewMode, setViewMode] = useState('mes'); // 'mes' | 'semana' | 'lista'
 
-  const [eventos, setEventos] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('fitpro_agenda') || '[]'); } catch { return []; }
-  });
-
-  const saveEventos = (list) => {
-    setEventos(list);
-    localStorage.setItem('fitpro_agenda', JSON.stringify(list));
-  };
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.titulo.trim()) return alert('Título é obrigatório');
     if (!form.data) return alert('Data é obrigatória');
     const data = { ...form, professorId: user?.id };
     if (editId) {
-      saveEventos(eventos.map(e => e.id === editId ? { ...e, ...data } : e));
+      await updateAgendaEvento(editId, data);
     } else {
-      saveEventos([...eventos, { ...data, id: generateId(), createdAt: new Date().toISOString() }]);
+      await addAgendaEvento(data);
     }
     setSaved(true);
     setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyEvento()); }, 1000);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm('Excluir este evento?')) return;
-    saveEventos(eventos.filter(e => e.id !== id));
+    await deleteAgendaEvento(id);
   };
 
   const openEdit = (ev) => {
@@ -234,7 +225,7 @@ export default function AgendaView() {
             <p className="text-xs text-slate-500 text-center py-4">Nenhum evento neste dia</p>
           ) : (
             <div className="space-y-2">
-              {getEventosDay(selectedDay).map(ev => <EventoCard key={ev.id} ev={ev} alunos={alunos} onEdit={openEdit} onDelete={handleDelete} onChangeStatus={(id, st) => saveEventos(eventos.map(e => e.id === id ? { ...e, status: st } : e))} />)}
+              {getEventosDay(selectedDay).map(ev => <EventoCard key={ev.id} ev={ev} alunos={alunos} onEdit={openEdit} onDelete={handleDelete} onChangeStatus={(id, st) => updateAgendaEvento(id, { status: st })} />)}
             </div>
           )}
         </div>
@@ -293,7 +284,7 @@ export default function AgendaView() {
           ) : (
             eventosOrdenados.map(ev => (
               <EventoCard key={ev.id} ev={ev} alunos={alunos} onEdit={openEdit} onDelete={handleDelete}
-                onChangeStatus={(id, st) => saveEventos(eventos.map(e => e.id === id ? { ...e, status: st } : e))} />
+                onChangeStatus={(id, st) => updateAgendaEvento(id, { status: st })} />
             ))
           )}
         </div>

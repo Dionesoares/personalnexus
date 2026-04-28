@@ -48,22 +48,22 @@ export default function CadastroPage({ onBack }) {
     setErro('');
     if (password.length < 6) return setErro('Senha deve ter no mínimo 6 caracteres');
     if (password !== confirmPass) return setErro('As senhas não conferem');
-    if (emailExists(email)) return setErro('Este email já está cadastrado');
+    const jaExiste = await emailExists(email);
+    if (jaExiste) return setErro('Este email já está cadastrado');
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 700));
 
     if (tipo === 'aluno') {
-      const alunoId = addAluno({ nome, email, telefone, dataNascimento: dataNasc, sexo, peso: parseFloat(peso) || 0, altura: parseFloat(altura) || 0, objetivo, observacoes: '', endereco, professorId: professorId || '' });
-      addCredential({ email, password, role: 'aluno', nome, linkedId: alunoId, ativo: true, autoRegistrado: true });
+      const alunoId = await addAluno({ nome, email, telefone, dataNascimento: dataNasc, sexo, peso: parseFloat(peso) || 0, altura: parseFloat(altura) || 0, objetivo, observacoes: '', endereco, professorId: professorId || '' });
+      await addCredential({ email, password, role: 'aluno', nome, linkedId: alunoId, ativo: true, autoRegistrado: true });
     } else {
-      const profId = addProfessor({ nome, email, telefone, cref, especialidade, endereco });
-      addCredential({ email, password, role: 'professor', nome, linkedId: profId, ativo: true, autoRegistrado: true });
+      const profId = await addProfessor({ nome, email, telefone, cref, especialidade, endereco });
+      await addCredential({ email, password, role: 'professor', nome, linkedId: profId, ativo: true, autoRegistrado: true });
     }
 
     setDone(true);
     await new Promise(r => setTimeout(r, 1500));
-    login(email, password);
+    await login(email, password);
     setLoading(false);
   };
 

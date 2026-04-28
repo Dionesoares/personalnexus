@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Activity, Dumbbell, Calendar, Plus, Share2, Copy, CheckCircle2, X, Link2, Settings } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -15,9 +15,13 @@ export default function DashboardProfessor({ onNav }) {
   const [copied, setCopied] = useState(null);
   const [showEditarPerfil, setShowEditarPerfil] = useState(false);
 
-  const creds = getCredentials();
-  const myCred = creds.find(c => c.id === user?.id);
-  const professorId = myCred?.linkedId || '';
+  const [professorId, setProfessorId_] = useState('');
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      setProfessorId_(myCred?.linkedId || '');
+    });
+  }, [user?.id]);
 
   const meusAlunos = professorId ? alunos.filter(a => a.professorId === professorId) : alunos;
   const minhasAvaliacoes = avaliacoes.filter(a => meusAlunos.some(al => al.id === a.alunoId));

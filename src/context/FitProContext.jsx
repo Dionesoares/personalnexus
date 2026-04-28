@@ -1,144 +1,243 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { loadState, saveState, generateId, getCredentials, login as doLogin, logout as doLogout, getSession } from '../lib/fitpro-storage';
+import { base44 } from '@/api/base44Client';
+import { login as doLogin, logout as doLogout, getSession, generateId } from '../lib/fitpro-storage';
 
 // ── App Context ──────────────────────────────────────────────────────────────
 const AppContext = createContext(null);
 
 export function FitProAppProvider({ children }) {
-  const [state, setState] = useState(loadState);
+  const [alunos, setAlunos] = useState([]);
+  const [professores, setProfessores] = useState([]);
+  const [avaliacoes, setAvaliacoes] = useState([]);
+  const [planosTreino, setPlanosTreino] = useState([]);
+  const [periodizacoes, setPeriodizacoes] = useState([]);
+  const [especialistas, setEspecialistas] = useState([]);
+  const [exerciciosBiblioteca, setExerciciosBiblioteca] = useState([]);
+  const [produtos, setProdutos] = useState([]);
+  const [transacoes, setTransacoes] = useState([]);
+  const [planosCorrida, setPlanosCorrida] = useState([]);
+  const [agenda, setAgenda] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // Carrega todos os dados na inicialização
   useEffect(() => {
-    try { saveState(state); } catch (e) { console.warn('[FitPro] saveState:', e); }
-  }, [state]);
-
-  const addAluno = useCallback((aluno) => {
-    const id = generateId();
-    setState(s => ({ ...s, alunos: [...s.alunos, { ...aluno, id, createdAt: new Date().toISOString() }] }));
-    return id;
-  }, []);
-  const updateAluno = useCallback((id, aluno) => setState(s => ({ ...s, alunos: s.alunos.map(a => a.id === id ? { ...a, ...aluno } : a) })), []);
-  const deleteAluno = useCallback((id) => setState(s => ({ ...s, alunos: s.alunos.filter(a => a.id !== id) })), []);
-
-  const addProfessor = useCallback((prof) => {
-    const id = generateId();
-    setState(s => ({ ...s, professores: [...s.professores, { ...prof, id, createdAt: new Date().toISOString() }] }));
-    return id;
-  }, []);
-  const updateProfessor = useCallback((id, prof) => setState(s => ({ ...s, professores: s.professores.map(p => p.id === id ? { ...p, ...prof } : p) })), []);
-  const deleteProfessor = useCallback((id) => setState(s => ({ ...s, professores: s.professores.filter(p => p.id !== id) })), []);
-
-  const addAvaliacao = useCallback((av) => {
-    const id = generateId();
-    setState(s => ({ ...s, avaliacoes: [...s.avaliacoes, { ...av, id }] }));
-    return id;
-  }, []);
-  const updateAvaliacao = useCallback((id, av) => setState(s => ({ ...s, avaliacoes: s.avaliacoes.map(a => a.id === id ? { ...a, ...av } : a) })), []);
-
-  const addPlanoTreino = useCallback((plano) => {
-    const id = generateId();
-    const now = new Date().toISOString();
-    setState(s => ({ ...s, planosTreino: [...s.planosTreino, { ...plano, id, createdAt: now, updatedAt: now }] }));
-    return id;
-  }, []);
-  const updatePlanoTreino = useCallback((id, plano) => setState(s => ({ ...s, planosTreino: s.planosTreino.map(p => p.id === id ? { ...p, ...plano, updatedAt: new Date().toISOString() } : p) })), []);
-  const deletePlanoTreino = useCallback((id) => setState(s => ({ ...s, planosTreino: s.planosTreino.filter(p => p.id !== id) })), []);
-
-  const addPeriodizacao = useCallback((per) => {
-    const id = generateId();
-    setState(s => ({ ...s, periodizacoes: [...s.periodizacoes, { ...per, id, createdAt: new Date().toISOString() }] }));
-    return id;
-  }, []);
-  const updatePeriodizacao = useCallback((id, per) => setState(s => ({ ...s, periodizacoes: s.periodizacoes.map(p => p.id === id ? { ...p, ...per } : p) })), []);
-  const deletePeriodizacao = useCallback((id) => setState(s => ({ ...s, periodizacoes: s.periodizacoes.filter(p => p.id !== id) })), []);
-
-  const addEspecialista = useCallback((esp) => {
-    const id = generateId();
-    setState(s => ({ ...s, especialistas: [...s.especialistas, { ...esp, id, createdAt: new Date().toISOString() }] }));
-    return id;
-  }, []);
-  const updateEspecialista = useCallback((id, esp) => setState(s => ({ ...s, especialistas: s.especialistas.map(e => e.id === id ? { ...e, ...esp } : e) })), []);
-  const deleteEspecialista = useCallback((id) => setState(s => ({ ...s, especialistas: s.especialistas.filter(e => e.id !== id) })), []);
-
-  const addPastaTreino = useCallback((p) => {
-    const id = generateId();
-    setState(s => ({ ...s, pastasTreino: [...(s.pastasTreino || []), { ...p, id, createdAt: new Date().toISOString() }] }));
-    return id;
-  }, []);
-  const updatePastaTreino = useCallback((id, p) => setState(s => ({ ...s, pastasTreino: (s.pastasTreino || []).map(x => x.id === id ? { ...x, ...p } : x) })), []);
-  const deletePastaTreino = useCallback((id) => setState(s => ({ ...s, pastasTreino: (s.pastasTreino || []).filter(x => x.id !== id), rotinasTreino: (s.rotinasTreino || []).filter(r => r.pastaId !== id) })), []);
-
-  const addRotinaTreino = useCallback((r) => {
-    const id = generateId();
-    const now = new Date().toISOString();
-    setState(s => ({ ...s, rotinasTreino: [...(s.rotinasTreino || []), { ...r, id, createdAt: now, updatedAt: now }] }));
-    return id;
-  }, []);
-  const updateRotinaTreino = useCallback((id, r) => setState(s => ({ ...s, rotinasTreino: (s.rotinasTreino || []).map(x => x.id === id ? { ...x, ...r, updatedAt: new Date().toISOString() } : x) })), []);
-  const deleteRotinaTreino = useCallback((id) => setState(s => ({ ...s, rotinasTreino: (s.rotinasTreino || []).filter(x => x.id !== id) })), []);
-
-  const addExercicioBiblioteca = useCallback((ex) => {
-    const id = generateId();
-    const now = new Date().toISOString();
-    setState(s => ({ ...s, exerciciosBiblioteca: [...(s.exerciciosBiblioteca || []), { ...ex, id, createdAt: now, updatedAt: now }] }));
-    return id;
-  }, []);
-  const updateExercicioBiblioteca = useCallback((id, ex) => setState(s => ({ ...s, exerciciosBiblioteca: (s.exerciciosBiblioteca || []).map(e => e.id === id ? { ...e, ...ex, updatedAt: new Date().toISOString() } : e) })), []);
-  const deleteExercicioBiblioteca = useCallback((id) => setState(s => ({ ...s, exerciciosBiblioteca: (s.exerciciosBiblioteca || []).filter(e => e.id !== id) })), []);
-
-  const addTransacao = useCallback((t) => {
-    const id = generateId();
-    setState(s => ({ ...s, transacoes: [...(s.transacoes || []), { ...t, id, dataCriacao: new Date().toISOString() }] }));
-    return id;
+    async function loadAll() {
+      try {
+        const [
+          al, pr, av, pt, per, esp, ex, prod, tr, pc, ag
+        ] = await Promise.all([
+          base44.entities.Aluno.list(),
+          base44.entities.Professor.list(),
+          base44.entities.Avaliacao.list(),
+          base44.entities.PlanoTreino.list(),
+          base44.entities.Periodizacao.list(),
+          base44.entities.Especialista.list(),
+          base44.entities.ExercicioBiblioteca.list(),
+          base44.entities.Produto.list(),
+          base44.entities.Transacao.list(),
+          base44.entities.PlanoCorrida.list(),
+          base44.entities.Agenda.list(),
+        ]);
+        setAlunos(al);
+        setProfessores(pr);
+        setAvaliacoes(av);
+        setPlanosTreino(pt);
+        setPeriodizacoes(per);
+        setEspecialistas(esp);
+        setExerciciosBiblioteca(ex);
+        setProdutos(prod);
+        setTransacoes(tr);
+        setPlanosCorrida(pc);
+        setAgenda(ag);
+      } catch (e) {
+        console.error('[FitPro] loadAll error:', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadAll();
   }, []);
 
-  const addProduto = useCallback((p) => {
-    const id = generateId();
-    const now = new Date().toISOString();
-    setState(s => ({ ...s, produtos: [...(s.produtos || []), { ...p, id, createdAt: now, updatedAt: now }] }));
-    return id;
+  // ── Alunos ──
+  const addAluno = useCallback(async (aluno) => {
+    const created = await base44.entities.Aluno.create(aluno);
+    setAlunos(s => [...s, created]);
+    return created.id;
   }, []);
-  const updateProduto = useCallback((id, p) => setState(s => ({ ...s, produtos: (s.produtos || []).map(x => x.id === id ? { ...x, ...p, updatedAt: new Date().toISOString() } : x) })), []);
-  const deleteProduto = useCallback((id) => setState(s => ({ ...s, produtos: (s.produtos || []).filter(x => x.id !== id) })), []);
+  const updateAluno = useCallback(async (id, aluno) => {
+    const updated = await base44.entities.Aluno.update(id, aluno);
+    setAlunos(s => s.map(a => a.id === id ? updated : a));
+  }, []);
+  const deleteAluno = useCallback(async (id) => {
+    await base44.entities.Aluno.delete(id);
+    setAlunos(s => s.filter(a => a.id !== id));
+  }, []);
 
-  const addMensalidade = useCallback((m) => {
-    const id = generateId();
-    setState(s => ({ ...s, mensalidades: [...(s.mensalidades || []), { ...m, id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }] }));
-    return id;
+  // ── Professores ──
+  const addProfessor = useCallback(async (prof) => {
+    const created = await base44.entities.Professor.create(prof);
+    setProfessores(s => [...s, created]);
+    return created.id;
   }, []);
-  const updateMensalidade = useCallback((id, m) => setState(s => ({ ...s, mensalidades: (s.mensalidades || []).map(x => x.id === id ? { ...x, ...m, updatedAt: new Date().toISOString() } : x) })), []);
-  const deleteMensalidade = useCallback((id) => setState(s => ({ ...s, mensalidades: (s.mensalidades || []).filter(x => x.id !== id) })), []);
+  const updateProfessor = useCallback(async (id, prof) => {
+    const updated = await base44.entities.Professor.update(id, prof);
+    setProfessores(s => s.map(p => p.id === id ? updated : p));
+  }, []);
+  const deleteProfessor = useCallback(async (id) => {
+    await base44.entities.Professor.delete(id);
+    setProfessores(s => s.filter(p => p.id !== id));
+  }, []);
 
-  const addPlanoMensalidade = useCallback((p) => {
-    const id = generateId();
-    setState(s => ({ ...s, planosMensalidade: [...(s.planosMensalidade || []), { ...p, id, createdAt: new Date().toISOString() }] }));
-    return id;
+  // ── Avaliações ──
+  const addAvaliacao = useCallback(async (av) => {
+    const created = await base44.entities.Avaliacao.create(av);
+    setAvaliacoes(s => [...s, created]);
+    return created.id;
   }, []);
-  const updatePlanoMensalidade = useCallback((id, p) => setState(s => ({ ...s, planosMensalidade: (s.planosMensalidade || []).map(x => x.id === id ? { ...x, ...p } : x) })), []);
-  const deletePlanoMensalidade = useCallback((id) => setState(s => ({ ...s, planosMensalidade: (s.planosMensalidade || []).filter(x => x.id !== id) })), []);
+  const updateAvaliacao = useCallback(async (id, av) => {
+    const updated = await base44.entities.Avaliacao.update(id, av);
+    setAvaliacoes(s => s.map(a => a.id === id ? updated : a));
+  }, []);
 
-  const addPlanoDieta = useCallback((dieta) => {
-    const id = generateId();
-    setState(s => ({ ...s, planosDieta: [...(s.planosDieta || []), { ...dieta, id, createdAt: new Date().toISOString() }] }));
-    return id;
+  // ── Planos de Treino ──
+  const addPlanoTreino = useCallback(async (plano) => {
+    const created = await base44.entities.PlanoTreino.create(plano);
+    setPlanosTreino(s => [...s, created]);
+    return created.id;
   }, []);
-  const updatePlanoDieta = useCallback((id, dieta) => setState(s => ({ ...s, planosDieta: (s.planosDieta || []).map(d => d.id === id ? { ...d, ...dieta } : d) })), []);
+  const updatePlanoTreino = useCallback(async (id, plano) => {
+    const updated = await base44.entities.PlanoTreino.update(id, plano);
+    setPlanosTreino(s => s.map(p => p.id === id ? updated : p));
+  }, []);
+  const deletePlanoTreino = useCallback(async (id) => {
+    await base44.entities.PlanoTreino.delete(id);
+    setPlanosTreino(s => s.filter(p => p.id !== id));
+  }, []);
+
+  // ── Periodizações ──
+  const addPeriodizacao = useCallback(async (per) => {
+    const created = await base44.entities.Periodizacao.create(per);
+    setPeriodizacoes(s => [...s, created]);
+    return created.id;
+  }, []);
+  const updatePeriodizacao = useCallback(async (id, per) => {
+    const updated = await base44.entities.Periodizacao.update(id, per);
+    setPeriodizacoes(s => s.map(p => p.id === id ? updated : p));
+  }, []);
+  const deletePeriodizacao = useCallback(async (id) => {
+    await base44.entities.Periodizacao.delete(id);
+    setPeriodizacoes(s => s.filter(p => p.id !== id));
+  }, []);
+
+  // ── Especialistas ──
+  const addEspecialista = useCallback(async (esp) => {
+    const created = await base44.entities.Especialista.create(esp);
+    setEspecialistas(s => [...s, created]);
+    return created.id;
+  }, []);
+  const updateEspecialista = useCallback(async (id, esp) => {
+    const updated = await base44.entities.Especialista.update(id, esp);
+    setEspecialistas(s => s.map(e => e.id === id ? updated : e));
+  }, []);
+  const deleteEspecialista = useCallback(async (id) => {
+    await base44.entities.Especialista.delete(id);
+    setEspecialistas(s => s.filter(e => e.id !== id));
+  }, []);
+
+  // ── Biblioteca de Exercícios ──
+  const addExercicioBiblioteca = useCallback(async (ex) => {
+    const created = await base44.entities.ExercicioBiblioteca.create(ex);
+    setExerciciosBiblioteca(s => [...s, created]);
+    return created.id;
+  }, []);
+  const updateExercicioBiblioteca = useCallback(async (id, ex) => {
+    const updated = await base44.entities.ExercicioBiblioteca.update(id, ex);
+    setExerciciosBiblioteca(s => s.map(e => e.id === id ? updated : e));
+  }, []);
+  const deleteExercicioBiblioteca = useCallback(async (id) => {
+    await base44.entities.ExercicioBiblioteca.delete(id);
+    setExerciciosBiblioteca(s => s.filter(e => e.id !== id));
+  }, []);
+
+  // ── Produtos ──
+  const addProduto = useCallback(async (p) => {
+    const created = await base44.entities.Produto.create(p);
+    setProdutos(s => [...s, created]);
+    return created.id;
+  }, []);
+  const updateProduto = useCallback(async (id, p) => {
+    const updated = await base44.entities.Produto.update(id, p);
+    setProdutos(s => s.map(x => x.id === id ? updated : x));
+  }, []);
+  const deleteProduto = useCallback(async (id) => {
+    await base44.entities.Produto.delete(id);
+    setProdutos(s => s.filter(x => x.id !== id));
+  }, []);
+
+  // ── Transações ──
+  const addTransacao = useCallback(async (t) => {
+    const created = await base44.entities.Transacao.create(t);
+    setTransacoes(s => [...s, created]);
+    return created.id;
+  }, []);
+
+  // ── Planos de Corrida ──
+  const addPlanoCorrida = useCallback(async (p) => {
+    const created = await base44.entities.PlanoCorrida.create(p);
+    setPlanosCorrida(s => [...s, created]);
+    return created.id;
+  }, []);
+  const updatePlanoCorrida = useCallback(async (id, p) => {
+    const updated = await base44.entities.PlanoCorrida.update(id, p);
+    setPlanosCorrida(s => s.map(x => x.id === id ? updated : x));
+  }, []);
+  const deletePlanoCorrida = useCallback(async (id) => {
+    await base44.entities.PlanoCorrida.delete(id);
+    setPlanosCorrida(s => s.filter(x => x.id !== id));
+  }, []);
+
+  // ── Agenda ──
+  const addAgendaEvento = useCallback(async (ev) => {
+    const created = await base44.entities.Agenda.create(ev);
+    setAgenda(s => [...s, created]);
+    return created.id;
+  }, []);
+  const updateAgendaEvento = useCallback(async (id, ev) => {
+    const updated = await base44.entities.Agenda.update(id, ev);
+    setAgenda(s => s.map(x => x.id === id ? updated : x));
+  }, []);
+  const deleteAgendaEvento = useCallback(async (id) => {
+    await base44.entities.Agenda.delete(id);
+    setAgenda(s => s.filter(x => x.id !== id));
+  }, []);
 
   const value = {
-    ...state,
+    // data
+    alunos, professores, avaliacoes, planosTreino, periodizacoes,
+    especialistas, exerciciosBiblioteca, produtos, transacoes,
+    planosCorrida, agenda, loading,
+    // alunos
     addAluno, updateAluno, deleteAluno,
+    // professores
     addProfessor, updateProfessor, deleteProfessor,
+    // avaliacoes
     addAvaliacao, updateAvaliacao,
+    // treinos
     addPlanoTreino, updatePlanoTreino, deletePlanoTreino,
+    // periodizacao
     addPeriodizacao, updatePeriodizacao, deletePeriodizacao,
-    addPlanoDieta, updatePlanoDieta,
+    // especialistas
     addEspecialista, updateEspecialista, deleteEspecialista,
-    addPastaTreino, updatePastaTreino, deletePastaTreino,
-    addRotinaTreino, updateRotinaTreino, deleteRotinaTreino,
+    // biblioteca
     addExercicioBiblioteca, updateExercicioBiblioteca, deleteExercicioBiblioteca,
-    addTransacao,
+    // produtos
     addProduto, updateProduto, deleteProduto,
-    addMensalidade, updateMensalidade, deleteMensalidade,
-    addPlanoMensalidade, updatePlanoMensalidade, deletePlanoMensalidade,
+    // transacoes
+    addTransacao,
+    // corrida
+    addPlanoCorrida, updatePlanoCorrida, deletePlanoCorrida,
+    // agenda
+    addAgendaEvento, updateAgendaEvento, deleteAgendaEvento,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
@@ -156,8 +255,8 @@ const AuthContext = createContext(null);
 export function FitProAuthProvider({ children }) {
   const [user, setUser] = useState(getSession);
 
-  const login = useCallback((email, password) => {
-    const u = doLogin(email, password);
+  const login = useCallback(async (email, password) => {
+    const u = await doLogin(email, password);
     if (u) { setUser(u); return true; }
     return false;
   }, []);
