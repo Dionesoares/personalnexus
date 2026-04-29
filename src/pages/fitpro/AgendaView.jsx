@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Plus, X, ChevronLeft, ChevronRight, Clock,
   User, Edit2, Trash2, CheckCircle2, AlertCircle, Circle
 } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
-import { generateId } from '../../lib/fitpro-storage';
+import { generateId, getCredentials } from '../../lib/fitpro-storage';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -50,6 +50,18 @@ function toDateStr(year, month, day) {
 export default function AgendaView() {
   const { alunos, agenda: eventos, addAgendaEvento, updateAgendaEvento, deleteAgendaEvento } = useApp();
   const { user } = useAuth();
+  const [professorId, setProfessorId] = useState('');
+
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      setProfessorId(myCred?.linkedId || '');
+    });
+  }, [user?.id]);
+
+  const alunosDoFormulario = user?.role === 'professor'
+    ? alunos.filter(a => professorId && a.professorId === professorId)
+    : alunos;
 
   const today = new Date();
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -312,7 +324,7 @@ export default function AgendaView() {
                   className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                   style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <option value="">Sem aluno vinculado</option>
-                  {alunos.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                  {alunosDoFormulario.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
                 </select>
               </div>
               <div>
