@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Plus, X, TrendingUp, TrendingDown, Clock, AlertCircle, CheckCircle2, Users, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { DollarSign, Plus, X, TrendingUp, TrendingDown, Clock, AlertCircle, CheckCircle2, Users, ChevronDown, ChevronUp, Zap, Ban, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
@@ -63,7 +63,7 @@ const ALUNO_STATUS_CONFIG = {
 };
 
 export default function FinanceiroView() {
-  const { transacoes, alunos, addTransacao, updateTransacao } = useApp();
+  const { transacoes, alunos, addTransacao, updateTransacao, deleteTransacao } = useApp();
   const [confirmando, setConfirmando] = useState(null); // id da transação sendo confirmada
   const { user } = useAuth();
 
@@ -285,7 +285,7 @@ export default function FinanceiroView() {
                         {t.vencimento && ` • venc. ${new Date(t.vencimento).toLocaleDateString('pt-BR')}`}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
                       {(t.status === 'pendente' || t.status === 'vencido') && (
                         <button
                           onClick={() => confirmarRecebido(t.id)}
@@ -296,6 +296,22 @@ export default function FinanceiroView() {
                           {confirmando === t.id ? '...' : 'Recebido'}
                         </button>
                       )}
+                      {t.status !== 'cancelado' && (
+                        <button
+                          onClick={() => updateTransacao(t.id, { status: 'cancelado' })}
+                          title="Cancelar cobrança"
+                          className="p-1.5 rounded-xl text-xs transition-all hover:opacity-90"
+                          style={{ background: '#64748b15', color: '#94a3b8', border: '1px solid #64748b25' }}>
+                          <Ban size={13} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { if (confirm('Excluir esta transação?')) deleteTransacao(t.id); }}
+                        title="Excluir cobrança"
+                        className="p-1.5 rounded-xl text-xs transition-all hover:opacity-90"
+                        style={{ background: '#ef444415', color: '#ef4444', border: '1px solid #ef444425' }}>
+                        <Trash2 size={13} />
+                      </button>
                       <div className="text-right">
                         <div className="text-sm font-bold" style={{ color: t.categoria === 'despesa' ? '#ef4444' : '#34d399' }}>
                           {t.categoria === 'despesa' ? '-' : '+'}R$ {parseFloat(t.valor || 0).toFixed(2)}
