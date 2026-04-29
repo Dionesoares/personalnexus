@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap } from 'lucide-react';
+import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -51,7 +51,7 @@ function emptyCobrancaProf(profId = '') {
 }
 
 export default function FinanceiroAdminView() {
-  const { transacoes, professores, addTransacao, updateTransacao } = useApp();
+  const { transacoes, professores, addTransacao, updateTransacao, deleteTransacao } = useApp();
 
   // Apenas transações vinculadas a professores (plano do professor, não dos alunos)
   const transacoesProfessores = (transacoes || [])
@@ -345,7 +345,7 @@ export default function FinanceiroAdminView() {
                         {t.vencimento && ` • venc. ${new Date(t.vencimento).toLocaleDateString('pt-BR')}`}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
                       {(t.status === 'pendente' || t.status === 'vencido') && (
                         <button
                           onClick={() => confirmarRecebido(t.id)}
@@ -356,6 +356,22 @@ export default function FinanceiroAdminView() {
                           {confirmando === t.id ? '...' : 'Recebido'}
                         </button>
                       )}
+                      {t.status !== 'cancelado' && (
+                        <button
+                          onClick={() => updateTransacao(t.id, { status: 'cancelado' })}
+                          title="Cancelar cobrança"
+                          className="p-1.5 rounded-xl transition-all hover:opacity-90"
+                          style={{ background: '#64748b15', color: '#94a3b8', border: '1px solid #64748b25' }}>
+                          <Ban size={13} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { if (confirm('Excluir esta cobrança?')) deleteTransacao(t.id); }}
+                        title="Excluir cobrança"
+                        className="p-1.5 rounded-xl transition-all hover:opacity-90"
+                        style={{ background: '#ef444415', color: '#ef4444', border: '1px solid #ef444425' }}>
+                        <Trash2 size={13} />
+                      </button>
                       <div className="text-right">
                         <div className="text-sm font-bold" style={{ color: '#34d399' }}>
                           R$ {parseFloat(t.valor || 0).toFixed(2)}
