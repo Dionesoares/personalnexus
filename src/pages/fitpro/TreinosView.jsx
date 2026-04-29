@@ -365,7 +365,7 @@ export default function TreinosView() {
                     </div>
                     <button
                       onClick={() => {
-                        const template = aplicarTemplate(form.nivel, form.alunoId);
+                        const template = aplicarTemplate(form.nivel, form.alunoId, exerciciosBiblioteca || []);
                         if (template) setForm(f => ({ ...f, nome: template.nome, objetivo: template.objetivo, duracaoSemanas: template.duracaoSemanas, sessoes: template.sessoes }));
                       }}
                       className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
