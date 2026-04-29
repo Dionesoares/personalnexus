@@ -8,14 +8,24 @@ const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
 const PLANOS_DEFAULT = [
-  { id: 'basico', nome: 'Básico', preco: 49.90, desc: 'Até 10 alunos, treinos ilimitados, avaliações básicas' },
+  { id: 'basico', nome: 'Básico', preco: 0, desc: 'Até 5 alunos — Gratuito' },
   { id: 'profissional', nome: 'Profissional', preco: 99.90, desc: 'Até 50 alunos, todos os recursos, periodização' },
   { id: 'premium', nome: 'Premium', preco: 179.90, desc: 'Alunos ilimitados, financeiro, relatórios avançados' },
   { id: 'enterprise', nome: 'Enterprise', preco: 299.90, desc: 'Multi-professor, API, suporte dedicado, white-label' },
 ];
 
 function loadPlanos() {
-  try { return JSON.parse(localStorage.getItem('fitpro_planos')) || PLANOS_DEFAULT; } catch { return PLANOS_DEFAULT; }
+  try {
+    const saved = JSON.parse(localStorage.getItem('fitpro_planos'));
+    if (!saved) return PLANOS_DEFAULT;
+    // Se o plano básico ainda tiver preço incorreto, reseta para o padrão
+    const basico = saved.find(p => p.id === 'basico');
+    if (basico && basico.preco > 0) {
+      savePlanos(PLANOS_DEFAULT);
+      return PLANOS_DEFAULT;
+    }
+    return saved;
+  } catch { return PLANOS_DEFAULT; }
 }
 function savePlanos(planos) {
   localStorage.setItem('fitpro_planos', JSON.stringify(planos));
@@ -120,8 +130,8 @@ export default function ProfessoresView() {
               <div className="text-xs text-slate-500">{plano.desc}</div>
             </div>
             <div className="text-right">
-              <div className="text-lg font-bold text-white">R$ {plano.preco.toFixed(2)}</div>
-              <div className="text-xs text-slate-500">/mês</div>
+              <div className="text-lg font-bold text-white">{plano.preco === 0 ? 'Grátis' : `R$ ${plano.preco.toFixed(2)}`}</div>
+                        <div className="text-xs text-slate-500">{plano.preco === 0 ? '' : '/mês'}</div>
             </div>
           </div>
           {prof.dataVencimento && <div className="text-xs text-slate-500 mt-2">Vencimento: {new Date(prof.dataVencimento).toLocaleDateString('pt-BR')}</div>}
@@ -203,8 +213,8 @@ export default function ProfessoresView() {
                     <div className="text-xs text-slate-500">Alunos</div>
                   </div>
                   <div className="flex-1 p-2 rounded-xl text-center" style={{ background: `${planoColor}08`, border: `1px solid ${planoColor}20` }}>
-                    <div className="text-sm font-bold" style={{ color: planoColor }}>R${plano.preco.toFixed(0)}</div>
-                    <div className="text-xs text-slate-500">/mês</div>
+                    <div className="text-sm font-bold" style={{ color: planoColor }}>{plano.preco === 0 ? 'Grátis' : `R$${plano.preco.toFixed(0)}`}</div>
+                    <div className="text-xs text-slate-500">{plano.preco === 0 ? '' : '/mês'}</div>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -324,14 +334,18 @@ export default function ProfessoresView() {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 p-3">
-                            <button onClick={() => setForm(f => ({ ...f, planoCobranca: plano.id }))} className="flex-1 text-left">
+                            <div className="flex-1 cursor-pointer" onClick={() => setForm(f => ({ ...f, planoCobranca: plano.id }))}>
                               <div className="flex items-center justify-between mb-0.5">
                                 <span className="font-bold text-sm" style={{ color: selected ? color : '#94a3b8' }}>{plano.nome}</span>
-                                <span className="font-bold text-sm" style={{ color: selected ? color : '#64748b' }}>R$ {plano.preco.toFixed(2)}/mês</span>
+                                <span className="font-bold text-sm" style={{ color: selected ? color : '#64748b' }}>
+                                  {plano.preco === 0 ? 'Grátis' : `R$ ${plano.preco.toFixed(2)}/mês`}
+                                </span>
                               </div>
                               <p className="text-xs text-slate-500">{plano.desc}</p>
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); setEditingPlanoId(plano.id); setEditingPlanoData({ nome: plano.nome, preco: plano.preco, desc: plano.desc }); }}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setEditingPlanoId(plano.id); setEditingPlanoData({ nome: plano.nome, preco: plano.preco, desc: plano.desc }); }}
                               className="p-1.5 rounded-lg flex-shrink-0 hover:bg-white/10 transition-all" style={{ color: '#64748b' }}>
                               <Pencil size={12} />
                             </button>
