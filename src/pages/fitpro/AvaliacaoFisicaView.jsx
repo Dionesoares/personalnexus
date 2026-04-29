@@ -1,40 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Activity, Save, ArrowLeft, ChevronDown, ChevronUp, TrendingUp, Trash2 } from 'lucide-react';
+import { Activity, Save, ChevronDown, ChevronUp, TrendingUp, Trash2, Plus, X, ChevronRight, User } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import {
   calcularDensidadeCorporal, calcularPercentualGordura, calcularIMC, classificarIMC,
   classificarGordura, calcularIdade, calcularTMB, calcularGEB, getCorClassificacao
 } from '../../lib/fitpro-calculations';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
-export default function AvaliacaoFisicaView() {
-  const { alunos, addAvaliacao, deleteAvaliacao, avaliacoes } = useApp();
-  const { user } = useAuth();
+const emptyDobras = { peito: '', axilarMedia: '', triceps: '', subescapular: '', abdomen: '', 'suprailíaca': '', coxa: '', panturrilha: '', biceps: '' };
+const emptyCircs = { circCintura: '', circQuadril: '', circBracoDireito: '', circBracoEsquerdo: '', circCoxaDireita: '', circCoxaEsquerda: '' };
+const emptyVitais = { pressaoArterial: '', freqCardiacaRepouso: '', nivelAtividade: 'moderado' };
 
-  const [professorId, setProfessorId] = useState('');
-  useEffect(() => {
-    getCredentials().then(creds => {
-      const myCred = creds.find(c => c.id === user?.id);
-      setProfessorId(myCred?.linkedId || '');
-    });
-  }, [user?.id]);
-
+// ── Formulário de Nova Avaliação ─────────────────────────────────────────────
+function NovaAvaliacaoForm({ alunos, professorId, userRole, addAvaliacao, deleteAvaliacao, avaliacoes, onClose }) {
   const [alunoId, setAlunoId] = useState('');
   const [protocolo, setProtocolo] = useState('7');
-  const [saved, setSaved] = useState(false);
   const [activeSection, setActiveSection] = useState('dobras');
-
-  const [dobras, setDobras] = useState({ peito: '', axilarMedia: '', triceps: '', subescapular: '', abdomen: '', suprailíaca: '', coxa: '', panturrilha: '', biceps: '' });
-  const [circunferencias, setCircs] = useState({ circCintura: '', circQuadril: '', circBracoDireito: '', circBracoEsquerdo: '', circCoxaDireita: '', circCoxaEsquerda: '' });
-  const [vitais, setVitais] = useState({ pressaoArterial: '', freqCardiacaRepouso: '', nivelAtividade: 'moderado' });
+  const [dobras, setDobras] = useState(emptyDobras);
+  const [circs, setCircs] = useState(emptyCircs);
+  const [vitais, setVitais] = useState(emptyVitais);
   const [observacoes, setObservacoes] = useState('');
+  const [saved, setSaved] = useState(false);
 
-  const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
+  const alunosFiltrados = userRole === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
   const aluno = alunos.find(a => a.id === alunoId);
   const historico = avaliacoes.filter(a => a.alunoId === alunoId).sort((a, b) => new Date(a.data) - new Date(b.data));
 
@@ -55,8 +47,7 @@ export default function AvaliacaoFisicaView() {
     const imc = calcularIMC(aluno.peso, aluno.altura);
     const tmb = calcularTMB(aluno.peso, aluno.altura, idade, aluno.sexo);
     const geb = calcularGEB(tmb, vitais.nivelAtividade);
-    const rcq = circunferencias.circCintura && circunferencias.circQuadril
-      ? parseFloat(circunferencias.circCintura) / parseFloat(circunferencias.circQuadril) : undefined;
+    const rcq = circs.circCintura && circs.circQuadril ? parseFloat(circs.circCintura) / parseFloat(circs.circQuadril) : undefined;
     return {
       somaDobras: soma, densidadeCorporal: densidade, percentualGordura: percGordura,
       massaGorda, massaMagra, imc, classificacaoIMC: classificarIMC(imc),
@@ -68,34 +59,27 @@ export default function AvaliacaoFisicaView() {
   const resultados = aluno ? calcular() : null;
 
   const handleSave = () => {
-    if (!aluno || !resultados) return alert('Selecione um aluno e calcule os resultados');
-    const data = {
+    if (!aluno || !resultados) return alert('Selecione um aluno e preencha as dobras');
+    addAvaliacao({
       alunoId, data: new Date().toISOString().split('T')[0],
       idade: resultados.idade, peso: aluno.peso, altura: aluno.altura,
       ...Object.fromEntries(Object.entries(dobras).map(([k, v]) => [k, parseFloat(v) || undefined])),
-      ...Object.fromEntries(Object.entries(circunferencias).map(([k, v]) => [k, parseFloat(v) || undefined])),
+      ...Object.fromEntries(Object.entries(circs).map(([k, v]) => [k, parseFloat(v) || undefined])),
       pressaoArterial: vitais.pressaoArterial,
       freqCardiacaRepouso: parseFloat(vitais.freqCardiacaRepouso) || undefined,
-      somaDobras: resultados.somaDobras,
-      densidadeCorporal: resultados.densidadeCorporal,
-      percentualGordura: resultados.percentualGordura,
-      massaGorda: resultados.massaGorda,
-      massaMagra: resultados.massaMagra,
-      imc: resultados.imc,
-      classificacaoIMC: resultados.classificacaoIMC,
-      classificacaoGordura: resultados.classificacaoGordura,
-      relacaoCinturaQuadril: resultados.relacaoCinturaQuadril,
-      observacoes
-    };
-    addAvaliacao(data);
+      somaDobras: resultados.somaDobras, densidadeCorporal: resultados.densidadeCorporal,
+      percentualGordura: resultados.percentualGordura, massaGorda: resultados.massaGorda,
+      massaMagra: resultados.massaMagra, imc: resultados.imc,
+      classificacaoIMC: resultados.classificacaoIMC, classificacaoGordura: resultados.classificacaoGordura,
+      relacaoCinturaQuadril: resultados.relacaoCinturaQuadril, observacoes
+    });
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => { setSaved(false); onClose(); }, 1500);
   };
 
   const chartData = historico.map(av => ({
     data: new Date(av.data).toLocaleDateString('pt-BR', { month: 'short', day: '2-digit' }),
     gordura: av.percentualGordura?.toFixed(1),
-    massaMagra: av.massaMagra?.toFixed(1),
     peso: av.peso
   }));
 
@@ -106,14 +90,19 @@ export default function AvaliacaoFisicaView() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-bold text-white flex items-center gap-2"><Activity size={20} color="#fb923c" />Avaliação Física</h2>
-        <p className="text-xs text-slate-500">Dobras Cutâneas — Protocolo Jackson & Pollock</p>
-      </div>
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.85)' }}>
+      <div className="w-full max-w-2xl rounded-2xl p-6 my-4 space-y-4" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
 
-      {/* Seleção do aluno */}
-      <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-bold text-white flex items-center gap-2"><Activity size={18} color="#fb923c" />Nova Avaliação Física</h3>
+            <p className="text-xs text-slate-500">Protocolo Jackson & Pollock</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5"><X size={18} color="#6b7280" /></button>
+        </div>
+
+        {/* Seleção aluno + protocolo */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-slate-400 block mb-1">Aluno</label>
@@ -131,153 +120,283 @@ export default function AvaliacaoFisicaView() {
           </div>
         </div>
         {aluno && (
-          <div className="flex gap-2 mt-3 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             <span className="text-xs px-2 py-1 rounded-full" style={{ background: '#a78bfa15', color: '#a78bfa' }}>{aluno.nome}</span>
             <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>{aluno.sexo === 'M' ? 'Masculino' : 'Feminino'}</span>
             <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>{aluno.peso}kg / {aluno.altura}cm</span>
           </div>
         )}
-      </div>
 
-      {/* Sections */}
-      {sections.map(section => (
-        <div key={section.id} className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-          <button onClick={() => setActiveSection(activeSection === section.id ? '' : section.id)}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/5">
-            <h3 className="font-semibold text-white text-sm">{section.label}</h3>
-            {activeSection === section.id ? <ChevronUp size={16} color="#6b7280" /> : <ChevronDown size={16} color="#6b7280" />}
-          </button>
-          {activeSection === section.id && (
-            <div className="px-4 pb-4">
-              {section.id === 'dobras' && (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                  {(protocolo === '7'
-                    ? ['peito', 'axilarMedia', 'triceps', 'subescapular', 'abdomen', 'suprailíaca', 'coxa']
-                    : aluno?.sexo === 'M'
-                      ? ['peito', 'abdomen', 'coxa']
-                      : ['triceps', 'suprailíaca', 'coxa']
-                  ).map(campo => (
-                    <div key={campo}>
-                      <label className="text-xs text-slate-400 block mb-1 capitalize">{campo === 'suprailíaca' ? 'Suprailíaca' : campo === 'axilarMedia' ? 'Axilar Média' : campo.charAt(0).toUpperCase() + campo.slice(1)} (mm)</label>
-                      <input type="number" value={dobras[campo]} onChange={e => setDobras(d => ({ ...d, [campo]: e.target.value }))} placeholder="0"
-                        className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                    </div>
-                  ))}
-                </div>
-              )}
-              {section.id === 'circunferencias' && (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                  {[
-                    { key: 'circCintura', label: 'Cintura (cm)' },
-                    { key: 'circQuadril', label: 'Quadril (cm)' },
-                    { key: 'circBracoDireito', label: 'Braço Direito (cm)' },
-                    { key: 'circBracoEsquerdo', label: 'Braço Esquerdo (cm)' },
-                    { key: 'circCoxaDireita', label: 'Coxa Direita (cm)' },
-                    { key: 'circCoxaEsquerda', label: 'Coxa Esquerda (cm)' },
-                  ].map(f => (
-                    <div key={f.key}>
-                      <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
-                      <input type="number" value={circunferencias[f.key]} onChange={e => setCircs(c => ({ ...c, [f.key]: e.target.value }))} placeholder="0"
-                        className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                    </div>
-                  ))}
-                </div>
-              )}
-              {section.id === 'vitais' && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-slate-400 block mb-1">Pressão Arterial</label><input value={vitais.pressaoArterial} onChange={e => setVitais(v => ({ ...v, pressaoArterial: e.target.value })) } placeholder="120/80" className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
-                  <div><label className="text-xs text-slate-400 block mb-1">Freq. Cardíaca Repouso</label><input type="number" value={vitais.freqCardiacaRepouso} onChange={e => setVitais(v => ({ ...v, freqCardiacaRepouso: e.target.value }))} placeholder="65" className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
-                  <div className="col-span-2">
-                    <label className="text-xs text-slate-400 block mb-1">Nível de Atividade</label>
-                    <select value={vitais.nivelAtividade} onChange={e => setVitais(v => ({ ...v, nivelAtividade: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <option value="sedentario">Sedentário</option><option value="leve">Levemente Ativo</option>
-                      <option value="moderado">Moderadamente Ativo</option><option value="ativo">Muito Ativo</option><option value="muitoAtivo">Extremamente Ativo</option>
-                    </select>
+        {/* Seções colapsáveis */}
+        {sections.map(section => (
+          <div key={section.id} className="rounded-2xl overflow-hidden" style={{ background: '#0a0e1a', border: `1px solid ${BORDER}` }}>
+            <button onClick={() => setActiveSection(activeSection === section.id ? '' : section.id)}
+              className="w-full flex items-center justify-between p-4 hover:bg-white/5">
+              <h3 className="font-semibold text-white text-sm">{section.label}</h3>
+              {activeSection === section.id ? <ChevronUp size={16} color="#6b7280" /> : <ChevronDown size={16} color="#6b7280" />}
+            </button>
+            {activeSection === section.id && (
+              <div className="px-4 pb-4">
+                {section.id === 'dobras' && (
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                    {(protocolo === '7'
+                      ? ['peito', 'axilarMedia', 'triceps', 'subescapular', 'abdomen', 'suprailíaca', 'coxa']
+                      : aluno?.sexo === 'M' ? ['peito', 'abdomen', 'coxa'] : ['triceps', 'suprailíaca', 'coxa']
+                    ).map(campo => (
+                      <div key={campo}>
+                        <label className="text-xs text-slate-400 block mb-1">
+                          {campo === 'suprailíaca' ? 'Suprailíaca' : campo === 'axilarMedia' ? 'Axilar Média' : campo.charAt(0).toUpperCase() + campo.slice(1)} (mm)
+                        </label>
+                        <input type="number" value={dobras[campo]} onChange={e => setDobras(d => ({ ...d, [campo]: e.target.value }))} placeholder="0"
+                          className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                      </div>
+                    ))}
                   </div>
+                )}
+                {section.id === 'circunferencias' && (
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[
+                      { key: 'circCintura', label: 'Cintura (cm)' }, { key: 'circQuadril', label: 'Quadril (cm)' },
+                      { key: 'circBracoDireito', label: 'Braço Direito (cm)' }, { key: 'circBracoEsquerdo', label: 'Braço Esquerdo (cm)' },
+                      { key: 'circCoxaDireita', label: 'Coxa Direita (cm)' }, { key: 'circCoxaEsquerda', label: 'Coxa Esquerda (cm)' },
+                    ].map(f => (
+                      <div key={f.key}>
+                        <label className="text-xs text-slate-400 block mb-1">{f.label}</label>
+                        <input type="number" value={circs[f.key]} onChange={e => setCircs(c => ({ ...c, [f.key]: e.target.value }))} placeholder="0"
+                          className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {section.id === 'vitais' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-xs text-slate-400 block mb-1">Pressão Arterial</label><input value={vitais.pressaoArterial} onChange={e => setVitais(v => ({ ...v, pressaoArterial: e.target.value }))} placeholder="120/80" className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
+                    <div><label className="text-xs text-slate-400 block mb-1">FC Repouso</label><input type="number" value={vitais.freqCardiacaRepouso} onChange={e => setVitais(v => ({ ...v, freqCardiacaRepouso: e.target.value }))} placeholder="65" className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
+                    <div className="col-span-2">
+                      <label className="text-xs text-slate-400 block mb-1">Nível de Atividade</label>
+                      <select value={vitais.nivelAtividade} onChange={e => setVitais(v => ({ ...v, nivelAtividade: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <option value="sedentario">Sedentário</option>
+                        <option value="leve">Levemente Ativo</option>
+                        <option value="moderado">Moderadamente Ativo</option>
+                        <option value="ativo">Muito Ativo</option>
+                        <option value="muitoAtivo">Extremamente Ativo</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Observações */}
+        <div>
+          <label className="text-xs text-slate-400 block mb-1">Observações</label>
+          <textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} rows={2} placeholder="Anotações clínicas, observações..."
+            className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none resize-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+        </div>
+
+        {/* Resultados */}
+        {resultados && aluno && (
+          <div className="p-4 rounded-2xl" style={{ background: '#fb923c08', border: '1px solid #fb923c20' }}>
+            <h4 className="font-semibold text-white mb-3 text-sm">Resultados Calculados</h4>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              {[
+                { label: '% Gordura', value: `${resultados.percentualGordura.toFixed(1)}%`, color: '#fb923c' },
+                { label: 'Massa Magra', value: `${resultados.massaMagra.toFixed(1)}kg`, color: '#34d399' },
+                { label: 'Massa Gorda', value: `${resultados.massaGorda.toFixed(1)}kg`, color: '#ef4444' },
+                { label: 'IMC', value: resultados.imc.toFixed(1), color: '#60a5fa' },
+                { label: 'Classif. Gordura', value: resultados.classificacaoGordura, color: getCorClassificacao(resultados.classificacaoGordura) },
+                { label: 'Classif. IMC', value: resultados.classificacaoIMC, color: '#a78bfa' },
+                { label: 'TMB', value: `${resultados.tmb.toFixed(0)} kcal`, color: '#fbbf24' },
+                { label: 'Gasto Energético', value: `${resultados.geb.toFixed(0)} kcal`, color: '#60a5fa' },
+              ].map((item, i) => (
+                <div key={i} className="p-2 rounded-xl" style={{ background: `${item.color}08`, border: `1px solid ${item.color}20` }}>
+                  <div className="text-sm font-bold truncate" style={{ color: item.color }}>{item.value}</div>
+                  <div className="text-xs text-slate-500">{item.label}</div>
                 </div>
-              )}
+              ))}
             </div>
-          )}
-        </div>
-      ))}
-
-      {/* Observações */}
-      <div className="p-4 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-        <label className="text-xs text-slate-400 block mb-2">Observações</label>
-        <textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} rows={3} placeholder="Anotações clínicas, observações..."
-          className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none resize-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-      </div>
-
-      {/* Resultados */}
-      {resultados && aluno && (
-        <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-          <h3 className="font-semibold text-white mb-4">Resultados</h3>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { label: '% Gordura', value: `${resultados.percentualGordura.toFixed(1)}%`, color: '#fb923c' },
-              { label: 'Massa Magra', value: `${resultados.massaMagra.toFixed(1)}kg`, color: '#34d399' },
-              { label: 'Massa Gorda', value: `${resultados.massaGorda.toFixed(1)}kg`, color: '#ef4444' },
-              { label: 'IMC', value: resultados.imc.toFixed(1), color: '#60a5fa' },
-              { label: 'Classif. Gordura', value: resultados.classificacaoGordura, color: getCorClassificacao(resultados.classificacaoGordura) },
-              { label: 'Classif. IMC', value: resultados.classificacaoIMC, color: '#a78bfa' },
-              { label: 'TMB', value: `${resultados.tmb.toFixed(0)} kcal`, color: '#fbbf24' },
-              { label: 'Gasto Energético', value: `${resultados.geb.toFixed(0)} kcal`, color: '#60a5fa' },
-            ].map((item, i) => (
-              <div key={i} className="p-3 rounded-xl" style={{ background: `${item.color}08`, border: `1px solid ${item.color}20` }}>
-                <div className="text-sm font-bold truncate" style={{ color: item.color }}>{item.value}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{item.label}</div>
-              </div>
-            ))}
           </div>
-          <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2"
-            style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #fb923c, #ea580c)' }}>
-            <Save size={16} />{saved ? 'Avaliação Salva!' : 'Salvar Avaliação'}
-          </button>
-        </div>
-      )}
+        )}
 
-      {/* Histórico chart */}
-      {chartData.length > 1 && (
-        <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-          <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><TrendingUp size={16} color="#34d399" />Evolução do Aluno</h3>
-          <p className="text-xs text-slate-400 mb-3">% Gordura</p>
-          <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="data" tick={{ fill: '#64748b', fontSize: 10 }} />
-              <YAxis tick={{ fill: '#64748b', fontSize: 10 }} />
-              <Tooltip contentStyle={{ background: '#0d1225', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }} />
-              <Area type="monotone" dataKey="gordura" stroke="#fb923c" fill="#fb923c20" name="% Gordura" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+        {/* Botão salvar */}
+        <button onClick={handleSave} className="w-full py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2"
+          style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #fb923c, #ea580c)' }}>
+          <Save size={16} />{saved ? 'Avaliação Salva!' : 'Salvar Avaliação'}
+        </button>
 
-      {/* Histórico de avaliações com opção de excluir */}
-      {historico.length > 0 && (
-        <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-          <h3 className="font-semibold text-white mb-3 text-sm">Histórico de Avaliações</h3>
-          <div className="space-y-2">
-            {[...historico].reverse().map((av) => (
-              <div key={av.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#fb923c08', border: '1px solid #fb923c20' }}>
-                <div className="flex-1">
-                  <div className="text-sm text-white">{new Date(av.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
-                  <div className="flex gap-3 text-xs mt-0.5">
-                    {av.percentualGordura != null && <span style={{ color: '#fb923c' }}>{av.percentualGordura.toFixed(1)}% gordura</span>}
+        {/* Mini histórico do aluno selecionado */}
+        {historico.length > 0 && (
+          <div>
+            <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Histórico de {aluno?.nome}</h4>
+            {chartData.length > 1 && (
+              <ResponsiveContainer width="100%" height={140}>
+                <AreaChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="data" tick={{ fill: '#64748b', fontSize: 10 }} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} />
+                  <Tooltip contentStyle={{ background: '#0d1225', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11 }} />
+                  <Area type="monotone" dataKey="gordura" stroke="#fb923c" fill="#fb923c20" name="% Gordura" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+            <div className="space-y-1 mt-2">
+              {[...historico].reverse().slice(0, 3).map(av => (
+                <div key={av.id} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: '#fb923c06', border: '1px solid #fb923c15' }}>
+                  <span className="text-xs text-slate-400">{new Date(av.data).toLocaleDateString('pt-BR')}</span>
+                  <div className="flex gap-3 text-xs">
+                    {av.percentualGordura != null && <span style={{ color: '#fb923c' }}>{av.percentualGordura.toFixed(1)}% gord</span>}
                     {av.massaMagra != null && <span style={{ color: '#34d399' }}>{av.massaMagra.toFixed(1)}kg magra</span>}
-                    {av.peso && <span className="text-slate-500">{av.peso}kg</span>}
                   </div>
                 </div>
-                <button
-                  onClick={() => { if (confirm('Excluir esta avaliação?')) deleteAvaliacao(av.id); }}
-                  className="p-2 rounded-xl hover:bg-red-500/10 transition-all flex-shrink-0"
-                  style={{ color: '#ef4444' }}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Lista principal de todas as avaliações ───────────────────────────────────
+export default function AvaliacaoFisicaView() {
+  const { alunos, addAvaliacao, deleteAvaliacao, avaliacoes } = useApp();
+  const { user } = useAuth();
+  const [professorId, setProfessorId] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [filtroAlunoId, setFiltroAlunoId] = useState('');
+
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const myCred = creds.find(c => c.id === user?.id);
+      setProfessorId(myCred?.linkedId || '');
+    });
+  }, [user?.id]);
+
+  const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
+
+  // Todas as avaliações dos alunos do professor, ordenadas por data desc
+  const todasAvaliacoes = avaliacoes
+    .filter(av => alunosFiltrados.some(a => a.id === av.alunoId))
+    .filter(av => !filtroAlunoId || av.alunoId === filtroAlunoId)
+    .sort((a, b) => new Date(b.data) - new Date(a.data));
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Activity size={20} color="#fb923c" />Avaliações Físicas
+          </h2>
+          <p className="text-xs text-slate-500">{todasAvaliacoes.length} avaliação(ões) registrada(s)</p>
         </div>
+        <button onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+          style={{ background: '#fb923c20', color: '#fb923c', border: '1px solid #fb923c30' }}>
+          <Plus size={14} />Nova Avaliação
+        </button>
+      </div>
+
+      {/* Filtro por aluno */}
+      {alunosFiltrados.length > 0 && (
+        <select value={filtroAlunoId} onChange={e => setFiltroAlunoId(e.target.value)}
+          className="px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+          style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <option value="">Todos os alunos</option>
+          {alunosFiltrados.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+        </select>
+      )}
+
+      {/* Lista de avaliações */}
+      {todasAvaliacoes.length === 0 ? (
+        <div className="text-center py-16" style={{ background: CARD, borderRadius: 16, border: `1px solid ${BORDER}` }}>
+          <Activity size={48} className="mx-auto mb-3 opacity-20 text-slate-500" />
+          <p className="text-white font-semibold">Nenhuma avaliação registrada</p>
+          <p className="text-xs text-slate-500 mt-1">Clique em "+ Nova Avaliação" para começar</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {todasAvaliacoes.map(av => {
+            const aluno = alunos.find(a => a.id === av.alunoId);
+            const corClass = getCorClassificacao(av.classificacaoGordura || '');
+            return (
+              <div key={av.id} className="p-4 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold text-white"
+                      style={{ background: '#fb923c20' }}>
+                      {aluno?.nome?.charAt(0) || '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-white text-sm truncate">{aluno?.nome || 'Aluno desconhecido'}</div>
+                      <div className="text-xs text-slate-500">
+                        {new Date(av.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                        {av.peso && ` • ${av.peso}kg`}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {av.classificacaoGordura && (
+                      <span className="text-xs px-2 py-0.5 rounded-full hidden sm:inline"
+                        style={{ background: `${corClass}15`, color: corClass }}>
+                        {av.classificacaoGordura}
+                      </span>
+                    )}
+                    <button onClick={() => { if (confirm('Excluir esta avaliação?')) deleteAvaliacao(av.id); }}
+                      className="p-2 rounded-xl hover:bg-red-500/10 transition-all" style={{ color: '#ef4444' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Métricas */}
+                <div className="flex gap-2 mt-3 flex-wrap">
+                  {av.percentualGordura != null && (
+                    <span className="text-xs px-2 py-1 rounded-lg font-semibold" style={{ background: '#fb923c10', color: '#fb923c' }}>
+                      {av.percentualGordura.toFixed(1)}% gordura
+                    </span>
+                  )}
+                  {av.massaMagra != null && (
+                    <span className="text-xs px-2 py-1 rounded-lg font-semibold" style={{ background: '#34d39910', color: '#34d399' }}>
+                      {av.massaMagra.toFixed(1)}kg magra
+                    </span>
+                  )}
+                  {av.massaGorda != null && (
+                    <span className="text-xs px-2 py-1 rounded-lg font-semibold" style={{ background: '#ef444410', color: '#ef4444' }}>
+                      {av.massaGorda.toFixed(1)}kg gorda
+                    </span>
+                  )}
+                  {av.imc != null && (
+                    <span className="text-xs px-2 py-1 rounded-lg font-semibold" style={{ background: '#60a5fa10', color: '#60a5fa' }}>
+                      IMC {av.imc.toFixed(1)}
+                    </span>
+                  )}
+                  {av.tmb != null && (
+                    <span className="text-xs px-2 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>
+                      TMB {Math.round(av.tmb)} kcal
+                    </span>
+                  )}
+                </div>
+                {av.observacoes && <p className="text-xs text-slate-500 mt-2">📝 {av.observacoes}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal formulário */}
+      {showForm && (
+        <NovaAvaliacaoForm
+          alunos={alunos}
+          professorId={professorId}
+          userRole={user?.role}
+          addAvaliacao={addAvaliacao}
+          deleteAvaliacao={deleteAvaliacao}
+          avaliacoes={avaliacoes}
+          onClose={() => setShowForm(false)}
+        />
       )}
     </div>
   );
