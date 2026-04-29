@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Save, ChevronDown, ChevronUp, TrendingUp, Trash2, Plus, X, ChevronRight, User } from 'lucide-react';
+import { Activity, Save, ChevronDown, ChevronUp, Trash2, Plus, X, Edit2 } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import {
@@ -15,15 +15,36 @@ const emptyDobras = { peito: '', axilarMedia: '', triceps: '', subescapular: '',
 const emptyCircs = { circCintura: '', circQuadril: '', circBracoDireito: '', circBracoEsquerdo: '', circCoxaDireita: '', circCoxaEsquerda: '' };
 const emptyVitais = { pressaoArterial: '', freqCardiacaRepouso: '', nivelAtividade: 'moderado' };
 
-// ── Formulário de Nova Avaliação ─────────────────────────────────────────────
-function NovaAvaliacaoForm({ alunos, professorId, userRole, addAvaliacao, deleteAvaliacao, avaliacoes, onClose }) {
-  const [alunoId, setAlunoId] = useState('');
+// Extrai os campos de dobras/circs/vitais de uma avaliação existente
+function fromAvaliacao(av) {
+  const dobras = {};
+  ['peito','axilarMedia','triceps','subescapular','abdomen','suprailíaca','coxa','panturrilha','biceps'].forEach(k => {
+    dobras[k] = av[k] != null ? String(av[k]) : '';
+  });
+  const circs = {};
+  ['circCintura','circQuadril','circBracoDireito','circBracoEsquerdo','circCoxaDireita','circCoxaEsquerda'].forEach(k => {
+    circs[k] = av[k] != null ? String(av[k]) : '';
+  });
+  const vitais = {
+    pressaoArterial: av.pressaoArterial || '',
+    freqCardiacaRepouso: av.freqCardiacaRepouso != null ? String(av.freqCardiacaRepouso) : '',
+    nivelAtividade: av.nivelAtividade || 'moderado',
+  };
+  return { dobras, circs, vitais };
+}
+
+// ── Formulário (Nova / Editar Avaliação) ────────────────────────────────────
+function AvaliacaoForm({ alunos, professorId, userRole, addAvaliacao, updateAvaliacao, avaliacoes, editAvaliacao, onClose }) {
+  const isEdit = !!editAvaliacao;
+  const extracted = isEdit ? fromAvaliacao(editAvaliacao) : null;
+
+  const [alunoId, setAlunoId] = useState(isEdit ? editAvaliacao.alunoId : '');
   const [protocolo, setProtocolo] = useState('7');
   const [activeSection, setActiveSection] = useState('dobras');
-  const [dobras, setDobras] = useState(emptyDobras);
-  const [circs, setCircs] = useState(emptyCircs);
-  const [vitais, setVitais] = useState(emptyVitais);
-  const [observacoes, setObservacoes] = useState('');
+  const [dobras, setDobras] = useState(isEdit ? extracted.dobras : emptyDobras);
+  const [circs, setCircs] = useState(isEdit ? extracted.circs : emptyCircs);
+  const [vitais, setVitais] = useState(isEdit ? extracted.vitais : emptyVitais);
+  const [observacoes, setObservacoes] = useState(isEdit ? editAvaliacao.observacoes || '' : '');
   const [saved, setSaved] = useState(false);
 
   const alunosFiltrados = userRole === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
@@ -60,8 +81,9 @@ function NovaAvaliacaoForm({ alunos, professorId, userRole, addAvaliacao, delete
 
   const handleSave = () => {
     if (!aluno || !resultados) return alert('Selecione um aluno e preencha as dobras');
-    addAvaliacao({
-      alunoId, data: new Date().toISOString().split('T')[0],
+    const data = {
+      alunoId,
+      data: isEdit ? editAvaliacao.data : new Date().toISOString().split('T')[0],
       idade: resultados.idade, peso: aluno.peso, altura: aluno.altura,
       ...Object.fromEntries(Object.entries(dobras).map(([k, v]) => [k, parseFloat(v) || undefined])),
       ...Object.fromEntries(Object.entries(circs).map(([k, v]) => [k, parseFloat(v) || undefined])),
@@ -72,7 +94,12 @@ function NovaAvaliacaoForm({ alunos, professorId, userRole, addAvaliacao, delete
       massaMagra: resultados.massaMagra, imc: resultados.imc,
       classificacaoIMC: resultados.classificacaoIMC, classificacaoGordura: resultados.classificacaoGordura,
       relacaoCinturaQuadril: resultados.relacaoCinturaQuadril, observacoes
-    });
+    };
+    if (isEdit) {
+      updateAvaliacao(editAvaliacao.id, data);
+    } else {
+      addAvaliacao(data);
+    }
     setSaved(true);
     setTimeout(() => { setSaved(false); onClose(); }, 1500);
   };
@@ -96,7 +123,10 @@ function NovaAvaliacaoForm({ alunos, professorId, userRole, addAvaliacao, delete
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-white flex items-center gap-2"><Activity size={18} color="#fb923c" />Nova Avaliação Física</h3>
+            <h3 className="font-bold text-white flex items-center gap-2">
+              <Activity size={18} color="#fb923c" />
+              {isEdit ? 'Editar Avaliação Física' : 'Nova Avaliação Física'}
+            </h3>
             <p className="text-xs text-slate-500">Protocolo Jackson & Pollock</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5"><X size={18} color="#6b7280" /></button>
@@ -106,7 +136,10 @@ function NovaAvaliacaoForm({ alunos, professorId, userRole, addAvaliacao, delete
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-slate-400 block mb-1">Aluno</label>
-            <select value={alunoId} onChange={e => setAlunoId(e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <select value={alunoId} onChange={e => setAlunoId(e.target.value)}
+              disabled={isEdit}
+              className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none disabled:opacity-60"
+              style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
               <option value="">Selecione o aluno...</option>
               {alunosFiltrados.map(a => <option key={a.id} value={a.id}>{a.nome} ({a.sexo === 'M' ? 'Masc' : 'Fem'}{a.dataNascimento ? `, ${calcularIdade(a.dataNascimento)} anos` : ''})</option>)}
             </select>
@@ -196,7 +229,7 @@ function NovaAvaliacaoForm({ alunos, professorId, userRole, addAvaliacao, delete
             className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none resize-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
         </div>
 
-        {/* Resultados */}
+        {/* Resultados calculados */}
         {resultados && aluno && (
           <div className="p-4 rounded-2xl" style={{ background: '#fb923c08', border: '1px solid #fb923c20' }}>
             <h4 className="font-semibold text-white mb-3 text-sm">Resultados Calculados</h4>
@@ -223,11 +256,11 @@ function NovaAvaliacaoForm({ alunos, professorId, userRole, addAvaliacao, delete
         {/* Botão salvar */}
         <button onClick={handleSave} className="w-full py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2"
           style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #fb923c, #ea580c)' }}>
-          <Save size={16} />{saved ? 'Avaliação Salva!' : 'Salvar Avaliação'}
+          <Save size={16} />{saved ? (isEdit ? 'Avaliação Atualizada!' : 'Avaliação Salva!') : (isEdit ? 'Salvar Alterações' : 'Salvar Avaliação')}
         </button>
 
-        {/* Mini histórico do aluno selecionado */}
-        {historico.length > 0 && (
+        {/* Mini histórico */}
+        {historico.length > 0 && !isEdit && (
           <div>
             <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Histórico de {aluno?.nome}</h4>
             {chartData.length > 1 && (
@@ -261,10 +294,11 @@ function NovaAvaliacaoForm({ alunos, professorId, userRole, addAvaliacao, delete
 
 // ── Lista principal de todas as avaliações ───────────────────────────────────
 export default function AvaliacaoFisicaView() {
-  const { alunos, addAvaliacao, deleteAvaliacao, avaliacoes } = useApp();
+  const { alunos, addAvaliacao, updateAvaliacao, deleteAvaliacao, avaliacoes } = useApp();
   const { user } = useAuth();
   const [professorId, setProfessorId] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editAvaliacao, setEditAvaliacao] = useState(null);
   const [filtroAlunoId, setFiltroAlunoId] = useState('');
 
   useEffect(() => {
@@ -276,11 +310,14 @@ export default function AvaliacaoFisicaView() {
 
   const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
 
-  // Todas as avaliações dos alunos do professor, ordenadas por data desc
   const todasAvaliacoes = avaliacoes
     .filter(av => alunosFiltrados.some(a => a.id === av.alunoId))
     .filter(av => !filtroAlunoId || av.alunoId === filtroAlunoId)
     .sort((a, b) => new Date(b.data) - new Date(a.data));
+
+  const openNew = () => { setEditAvaliacao(null); setShowForm(true); };
+  const openEdit = (av) => { setEditAvaliacao(av); setShowForm(true); };
+  const closeForm = () => { setShowForm(false); setEditAvaliacao(null); };
 
   return (
     <div className="space-y-4">
@@ -292,7 +329,7 @@ export default function AvaliacaoFisicaView() {
           </h2>
           <p className="text-xs text-slate-500">{todasAvaliacoes.length} avaliação(ões) registrada(s)</p>
         </div>
-        <button onClick={() => setShowForm(true)}
+        <button onClick={openNew}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
           style={{ background: '#fb923c20', color: '#fb923c', border: '1px solid #fb923c30' }}>
           <Plus size={14} />Nova Avaliação
@@ -309,7 +346,7 @@ export default function AvaliacaoFisicaView() {
         </select>
       )}
 
-      {/* Lista de avaliações */}
+      {/* Lista */}
       {todasAvaliacoes.length === 0 ? (
         <div className="text-center py-16" style={{ background: CARD, borderRadius: 16, border: `1px solid ${BORDER}` }}>
           <Activity size={48} className="mx-auto mb-3 opacity-20 text-slate-500" />
@@ -337,13 +374,19 @@ export default function AvaliacaoFisicaView() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     {av.classificacaoGordura && (
                       <span className="text-xs px-2 py-0.5 rounded-full hidden sm:inline"
                         style={{ background: `${corClass}15`, color: corClass }}>
                         {av.classificacaoGordura}
                       </span>
                     )}
+                    {/* Botão Editar */}
+                    <button onClick={() => openEdit(av)}
+                      className="p-2 rounded-xl hover:bg-white/5 transition-all" style={{ color: '#fbbf24' }}>
+                      <Edit2 size={14} />
+                    </button>
+                    {/* Botão Excluir */}
                     <button onClick={() => { if (confirm('Excluir esta avaliação?')) deleteAvaliacao(av.id); }}
                       className="p-2 rounded-xl hover:bg-red-500/10 transition-all" style={{ color: '#ef4444' }}>
                       <Trash2 size={14} />
@@ -388,14 +431,15 @@ export default function AvaliacaoFisicaView() {
 
       {/* Modal formulário */}
       {showForm && (
-        <NovaAvaliacaoForm
+        <AvaliacaoForm
           alunos={alunos}
           professorId={professorId}
           userRole={user?.role}
           addAvaliacao={addAvaliacao}
-          deleteAvaliacao={deleteAvaliacao}
+          updateAvaliacao={updateAvaliacao}
           avaliacoes={avaliacoes}
-          onClose={() => setShowForm(false)}
+          editAvaliacao={editAvaliacao}
+          onClose={closeForm}
         />
       )}
     </div>
