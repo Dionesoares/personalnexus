@@ -17,14 +17,19 @@ const PLANOS_DEFAULT = [
 function loadPlanos() {
   try {
     const saved = JSON.parse(localStorage.getItem('fitpro_planos'));
-    if (!saved) return PLANOS_DEFAULT;
-    // Se o plano básico ainda tiver preço incorreto, reseta para o padrão
-    const basico = saved.find(p => p.id === 'basico');
-    if (basico && basico.preco > 0) {
+    if (!saved || !Array.isArray(saved) || saved.length < 4) {
       savePlanos(PLANOS_DEFAULT);
       return PLANOS_DEFAULT;
     }
-    return saved;
+    // Garante que planos com IDs conhecidos tenham os valores corretos como base
+    const merged = PLANOS_DEFAULT.map(def => {
+      const s = saved.find(p => p.id === def.id);
+      return s ? s : def;
+    });
+    // Força o básico como gratuito sempre
+    const idx = merged.findIndex(p => p.id === 'basico');
+    if (idx >= 0) merged[idx] = { ...merged[idx], preco: 0 };
+    return merged;
   } catch { return PLANOS_DEFAULT; }
 }
 function savePlanos(planos) {
@@ -83,8 +88,8 @@ export default function ProfessoresView() {
     const meusAlunos = alunos.filter(a => a.professorId === prof.id);
     const avsTotal = avaliacoes.filter(av => meusAlunos.some(a => a.id === av.alunoId)).length;
     const treinosTotal = planosTreino.filter(t => meusAlunos.some(a => a.id === t.alunoId)).length;
-    const plano = planos.find(p => p.id === prof.planoCobranca) || planos[1];
-    const planoColor = PLANO_COLOR[prof.planoCobranca] || '#34d399';
+    const plano = planos.find(p => p.id === prof.planoCobranca) || planos.find(p => p.id === 'basico') || planos[0];
+    const planoColor = PLANO_COLOR[prof.planoCobranca] || PLANO_COLOR[plano?.id] || '#60a5fa';
 
     return (
       <div className="space-y-4">
@@ -192,8 +197,8 @@ export default function ProfessoresView() {
             const meusAlunos = alunos.filter(a => a.professorId === prof.id);
             const colors = ['#34d399','#60a5fa','#a78bfa','#fb923c','#f472b6'];
             const color = colors[i % 5];
-            const plano = planos.find(p => p.id === prof.planoCobranca) || planos[1];
-            const planoColor = PLANO_COLOR[prof.planoCobranca] || '#34d399';
+            const plano = planos.find(p => p.id === prof.planoCobranca) || planos.find(p => p.id === 'basico') || planos[0];
+            const planoColor = PLANO_COLOR[prof.planoCobranca] || PLANO_COLOR[plano?.id] || '#60a5fa';
             return (
               <motion.div key={prof.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="p-5 rounded-2xl cursor-pointer hover:opacity-90 transition-all"
@@ -322,11 +327,12 @@ export default function ProfessoresView() {
                                 Cancelar
                               </button>
                               <button onClick={() => {
-                                const updated = planos.map(p => p.id === plano.id ? { ...p, ...editingPlanoData } : p);
-                                setPlanos(updated);
-                                savePlanos(updated);
-                                setEditingPlanoId(null);
-                              }} className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold"
+                                 const newData = { ...editingPlanoData, preco: plano.id === 'basico' ? 0 : (parseFloat(editingPlanoData.preco) || 0) };
+                                 const updated = planos.map(p => p.id === plano.id ? { ...p, ...newData } : p);
+                                 setPlanos(updated);
+                                 savePlanos(updated);
+                                 setEditingPlanoId(null);
+                               }} className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold"
                                 style={{ background: `${color}20`, color }}>
                                 <Check size={11} />Salvar
                               </button>
