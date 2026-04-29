@@ -210,6 +210,10 @@ export default function ProfessoresView() {
                 <div className="flex gap-2">
                   <button onClick={() => setSelectedProf(prof)} className="flex-1 py-2 rounded-xl text-xs font-semibold"
                     style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>Ver Perfil</button>
+                  <button onClick={(e) => { e.stopPropagation(); openForm(prof); }}
+                    className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" style={{ color: '#fbbf24' }}>
+                    <Edit2 size={14} />
+                  </button>
                   <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir este professor?')) deleteProfessor(prof.id); }}
                     className="px-3 py-2 rounded-xl text-xs hover:bg-red-500/10" style={{ color: '#ef4444' }}>
                     <Trash2 size={14} />
