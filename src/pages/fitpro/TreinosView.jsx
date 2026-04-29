@@ -47,7 +47,7 @@ export default function TreinosView() {
     }
   }, [user?.id, alunos]);
 
-  const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
+  const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => professorId && a.professorId === professorId) : alunos;
   const treinosFiltrados = user?.role === 'professor'
     ? planosTreino.filter(t => alunosFiltrados.some(a => a.id === t.alunoId))
     : user?.role === 'aluno'

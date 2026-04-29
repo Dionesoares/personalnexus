@@ -33,7 +33,7 @@ export default function AlunosView({ roleOverride }) {
   const [activeTab, setActiveTab] = useState('perfil');
 
   const alunosFiltrados = role === 'professor'
-    ? alunos.filter(a => a.professorId === professorId)
+    ? alunos.filter(a => professorId && a.professorId === professorId)
     : alunos;
 
   const filtered = alunosFiltrados.filter(a => {
@@ -50,7 +50,9 @@ export default function AlunosView({ roleOverride }) {
 
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
-    const data = { ...form, peso: parseFloat(form.peso) || 0, altura: parseFloat(form.altura) || 0, professorId: form.professorId || professorId || '' };
+    // Para professores, sempre vincular o professorId automaticamente
+    const assignedProfessorId = role === 'professor' ? professorId : (form.professorId || '');
+    const data = { ...form, peso: parseFloat(form.peso) || 0, altura: parseFloat(form.altura) || 0, professorId: assignedProfessorId };
     if (editId) { await updateAluno(editId, data); setSelectedAluno({ ...selectedAluno, ...data }); }
     else {
       const id = await addAluno(data);

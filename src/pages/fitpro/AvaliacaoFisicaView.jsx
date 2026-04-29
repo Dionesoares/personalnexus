@@ -309,7 +309,7 @@ export default function AvaliacaoFisicaView() {
     });
   }, [user?.id]);
 
-  const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
+  const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => professorId && a.professorId === professorId) : alunos;
 
   const todasAvaliacoes = avaliacoes
     .filter(av => alunosFiltrados.some(a => a.id === av.alunoId))

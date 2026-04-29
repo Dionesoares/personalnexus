@@ -57,7 +57,7 @@ export default function PeriodizacaoView() {
     });
   }, [user?.id]);
 
-  const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
+  const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => professorId && a.professorId === professorId) : alunos;
   const periodizacoesFiltradas = user?.role === 'professor'
     ? periodizacoes.filter(p => alunosFiltrados.some(a => a.id === p.alunoId))
     : periodizacoes;
