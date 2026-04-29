@@ -25,6 +25,7 @@ import RelatoriosView from './fitpro/RelatoriosView';
 import LojaView from './fitpro/LojaView';
 import MeusPedidosView from './fitpro/MeusPedidosView';
 import ConsultoriaCorridaView from './fitpro/ConsultoriaCorridaView';
+import FinanceiroAdminView from './fitpro/FinanceiroAdminView';
 import AgendaView from './fitpro/AgendaView';
 import TreinoCorridaAlunoView from './fitpro/TreinoCorridaAlunoView';
 import PeriodizacaoAlunoView from './fitpro/PeriodizacaoAlunoView';
@@ -69,7 +70,7 @@ function AuthenticatedApp() {
     if (activeView === 'evolucao') return <EvolucaoAlunoView />;
     if (activeView === 'periodizacao') return <PeriodizacaoView />;
     if (activeView === 'professores') return <ProfessoresView />;
-    if (activeView === 'financeiro') return <FinanceiroView />;
+    if (activeView === 'financeiro') return isAdmin ? <FinanceiroAdminView /> : <FinanceiroView />;
     if (activeView === 'biblioteca') return <BibliotecaView />;
     if (activeView === 'shop') return <ProdutosView />;
     if (activeView === 'pedidos') return <PedidosView />;
