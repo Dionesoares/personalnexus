@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Save, ChevronDown, ChevronUp, Trash2, Plus, X, Edit2 } from 'lucide-react';
+import { Activity, Save, ChevronDown, ChevronUp, Trash2, Plus, X, Edit2, Download } from 'lucide-react';
+import { gerarPDFAvaliacao } from '../../lib/fitpro-pdf';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import {
@@ -381,6 +382,11 @@ export default function AvaliacaoFisicaView() {
                         {av.classificacaoGordura}
                       </span>
                     )}
+                    {/* Botão PDF */}
+                    <button onClick={() => gerarPDFAvaliacao(av, aluno)}
+                      className="p-2 rounded-xl hover:bg-white/5 transition-all" style={{ color: '#34d399' }}>
+                      <Download size={14} />
+                    </button>
                     {/* Botão Editar */}
                     <button onClick={() => openEdit(av)}
                       className="p-2 rounded-xl hover:bg-white/5 transition-all" style={{ color: '#fbbf24' }}>

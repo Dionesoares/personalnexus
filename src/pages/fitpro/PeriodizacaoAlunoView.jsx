@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, ChevronRight, Moon } from 'lucide-react';
+import { Calendar, ChevronRight, Moon, Download } from 'lucide-react';
+import { gerarPDFPeriodizacao } from '../../lib/fitpro-pdf';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import PeriodizacaoChart from '../../components/fitpro/PeriodizacaoChart';
@@ -48,10 +49,15 @@ export default function PeriodizacaoAlunoView() {
           <button onClick={() => setSelectedPer(null)} className="p-2 rounded-xl hover:bg-white/5">
             <ChevronRight size={18} color="#9ca3af" className="rotate-180" />
           </button>
-          <div>
+          <div className="flex-1">
             <h2 className="text-lg font-bold text-white">{per.nome}</h2>
             <p className="text-xs text-slate-500">{per.tipo} • {per.duracaoTotal} semanas</p>
           </div>
+          <button onClick={() => { const a = alunos.find(x => x.id === per.alunoId); gerarPDFPeriodizacao(per, a, planosTreino); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold flex-shrink-0"
+            style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+            <Download size={13} />PDF
+          </button>
         </div>
 
         {/* KPIs */}
@@ -189,11 +195,19 @@ export default function PeriodizacaoAlunoView() {
                   )}
                 </div>
 
-                <button onClick={() => setSelectedPer(per)}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
-                  style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
-                  Ver Timeline Completa
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => setSelectedPer(per)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                    style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
+                    Ver Timeline Completa
+                  </button>
+                  <button onClick={() => { const a = alunos.find(x => x.id === per.alunoId); gerarPDFPeriodizacao(per, a, planosTreino); }}
+                    className="px-3 py-2.5 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                    style={{ background: '#34d39915', color: '#34d399', border: '1px solid #34d39925' }}
+                    title="Baixar PDF">
+                    <Download size={15} />
+                  </button>
+                </div>
               </div>
             );
           })}

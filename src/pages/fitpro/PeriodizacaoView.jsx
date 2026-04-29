@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, X, Trash2, ChevronRight, Moon, Sparkles, Loader2, Edit2 } from 'lucide-react';
+import { Calendar, Plus, X, Trash2, ChevronRight, Moon, Sparkles, Loader2, Edit2, Download } from 'lucide-react';
+import { gerarPDFPeriodizacao } from '../../lib/fitpro-pdf';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
@@ -288,6 +289,11 @@ export default function PeriodizacaoView() {
             <h2 className="text-lg font-bold text-white">{per.nome}</h2>
             <p className="text-xs text-slate-500">{aluno?.nome} • {per.tipo} • {per.duracaoTotal} semanas</p>
           </div>
+          <button onClick={() => gerarPDFPeriodizacao(per, aluno, planosTreino)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+            style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+            <Download size={13} />PDF
+          </button>
           {user?.role !== 'admin' && (
             <button
               onClick={() => {
@@ -443,6 +449,10 @@ export default function PeriodizacaoView() {
                   <button onClick={() => setSelectedPer(per)} className="flex-1 py-2 rounded-xl text-xs font-semibold"
                     style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
                     Ver Timeline
+                  </button>
+                  <button onClick={() => { const a = alunos.find(x => x.id === per.alunoId); gerarPDFPeriodizacao(per, a, planosTreino); }}
+                    className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" title="Baixar PDF" style={{ color: '#34d399' }}>
+                    <Download size={14} />
                   </button>
                   {user?.role !== 'admin' && (
                     <>

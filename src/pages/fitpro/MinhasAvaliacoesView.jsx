@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, TrendingUp } from 'lucide-react';
+import { Activity, TrendingUp, Download } from 'lucide-react';
+import { gerarPDFAvaliacao } from '../../lib/fitpro-pdf';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { getCorClassificacao } from '../../lib/fitpro-calculations';
@@ -110,11 +111,17 @@ export default function MinhasAvaliacoesView() {
                       <div className="text-sm text-white">{new Date(av.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
                       <div className="text-xs text-slate-500">Peso: {av.peso}kg • Altura: {av.altura}cm</div>
                     </div>
-                    {av.classificacaoGordura && (
-                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${getCorClassificacao(av.classificacaoGordura)}15`, color: getCorClassificacao(av.classificacaoGordura) }}>
-                        {av.classificacaoGordura}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {av.classificacaoGordura && (
+                        <span className="text-xs px-2 py-0.5 rounded-full hidden sm:inline" style={{ background: `${getCorClassificacao(av.classificacaoGordura)}15`, color: getCorClassificacao(av.classificacaoGordura) }}>
+                          {av.classificacaoGordura}
+                        </span>
+                      )}
+                      <button onClick={() => { const aluno = alunos.find(a => a.id === av.alunoId); gerarPDFAvaliacao(av, aluno); }}
+                        className="p-1.5 rounded-xl hover:bg-white/5 transition-all" title="Baixar PDF" style={{ color: '#34d399' }}>
+                        <Download size={14} />
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                     {[

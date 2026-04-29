@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy } from 'lucide-react';
+import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy, Download } from 'lucide-react';
+import { gerarPDFTreino } from '../../lib/fitpro-pdf';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
@@ -96,6 +97,11 @@ export default function TreinosView() {
         <div className="flex items-center gap-3">
           <button onClick={() => setSelectedTreino(null)} className="p-2 rounded-xl hover:bg-white/5"><ChevronRight size={18} color="#9ca3af" className="rotate-180" /></button>
           <div className="flex-1"><h2 className="text-lg font-bold text-white">{treino.nome}</h2><p className="text-xs text-slate-500">{aluno?.nome} • {treino.nivel} • {treino.duracaoSemanas} semanas</p></div>
+          <button onClick={() => gerarPDFTreino(treino, aluno)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+            style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+            <Download size={13} />PDF
+          </button>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
@@ -255,6 +261,10 @@ export default function TreinosView() {
                 <div className="flex gap-2">
                   <button onClick={() => setSelectedTreino(treino)} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
                     Ver Planilha
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); gerarPDFTreino(treino, aluno); }}
+                    className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" title="Baixar PDF" style={{ color: '#34d399' }}>
+                    <Download size={14} />
                   </button>
                   {user?.role !== 'admin' && (
                     <>
