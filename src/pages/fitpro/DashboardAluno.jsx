@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock } from 'lucide-react';
+import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock, AlertCircle } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { calcularIdade } from '../../lib/fitpro-calculations';
@@ -10,7 +10,7 @@ const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
 export default function DashboardAluno({ onNav }) {
-  const { alunos, avaliacoes, planosTreino, periodizacoes, especialistas } = useApp();
+  const { alunos, avaliacoes, planosTreino, periodizacoes, especialistas, transacoes } = useApp();
   const { user } = useAuth();
   const [showEditarPerfil, setShowEditarPerfil] = useState(false);
 
@@ -27,6 +27,20 @@ export default function DashboardAluno({ onNav }) {
 
   const aluno = alunos.find(a => a.id === resolvedAlunoId);
   const minhasAvaliacoes = avaliacoes.filter(a => a.alunoId === resolvedAlunoId).sort((a, b) => new Date(b.data) - new Date(a.data));
+
+  // Pendência financeira
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const minhasMensalidades = (transacoes || []).filter(t =>
+    t.alunoId === resolvedAlunoId && t.tipo === 'Mensalidade' && t.categoria !== 'despesa'
+  );
+  const pendenciaVencida = minhasMensalidades.find(t => {
+    if (t.status === 'pago') return false;
+    const venc = t.vencimento ? new Date(t.vencimento) : new Date(t.data);
+    venc.setHours(0, 0, 0, 0);
+    return venc < hoje;
+  });
+  const pendenciaPendente = !pendenciaVencida && minhasMensalidades.find(t => t.status === 'pendente');
   const meusTreinos = planosTreino.filter(t => t.alunoId === resolvedAlunoId);
   const minhasPeriodizacoes = periodizacoes.filter(p => p.alunoId === resolvedAlunoId);
   const ultimaAvaliacao = minhasAvaliacoes[0];
@@ -70,6 +84,27 @@ export default function DashboardAluno({ onNav }) {
           </div>
         )}
       </div>
+
+      {/* Notificação de pendência financeira */}
+      {(pendenciaVencida || pendenciaPendente) && (
+        <div className="flex items-start gap-3 p-4 rounded-2xl"
+          style={{
+            background: pendenciaVencida ? '#ef444412' : '#fbbf2412',
+            border: `1px solid ${pendenciaVencida ? '#ef444440' : '#fbbf2440'}`,
+          }}>
+          <AlertCircle size={18} style={{ color: pendenciaVencida ? '#ef4444' : '#fbbf24', flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div className="text-sm font-bold" style={{ color: pendenciaVencida ? '#ef4444' : '#fbbf24' }}>
+              {pendenciaVencida ? '⚠️ Mensalidade Vencida' : '💰 Mensalidade Pendente'}
+            </div>
+            <div className="text-xs text-slate-400 mt-0.5">
+              {pendenciaVencida
+                ? `Você possui uma mensalidade vencida de R$ ${parseFloat(pendenciaVencida.valor || 0).toFixed(2)}. Entre em contato com seu professor.`
+                : `Você possui uma mensalidade pendente de R$ ${parseFloat(pendenciaPendente.valor || 0).toFixed(2)}. Regularize para evitar suspensão.`}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Nav 2x2 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
