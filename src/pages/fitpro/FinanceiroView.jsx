@@ -63,7 +63,8 @@ const ALUNO_STATUS_CONFIG = {
 };
 
 export default function FinanceiroView() {
-  const { transacoes, alunos, addTransacao } = useApp();
+  const { transacoes, alunos, addTransacao, updateTransacao } = useApp();
+  const [confirmando, setConfirmando] = useState(null); // id da transação sendo confirmada
   const { user } = useAuth();
 
   const [professorId, setProfessorId] = useState('');
@@ -142,6 +143,24 @@ export default function FinanceiroView() {
   const gerarCobranca = (aluno) => {
     setForm({ ...emptyTransacao(aluno.id), descricao: `Mensalidade — ${aluno.nome}` });
     setShowForm(true);
+  };
+
+  const confirmarRecebido = async (transacaoId) => {
+    setConfirmando(transacaoId);
+    await updateTransacao(transacaoId, { status: 'pago' });
+    setConfirmando(null);
+  };
+
+  // Retorna a mensalidade pendente/vencida mais recente de um aluno
+  const getMensalidadePendenteAluno = (alunoId) => {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    return todasTransacoes.find(t =>
+      t.alunoId === alunoId &&
+      t.tipo === 'Mensalidade' &&
+      t.categoria !== 'despesa' &&
+      (t.status === 'pendente' || t.status === 'vencido')
+    );
   };
 
   return (
@@ -266,13 +285,25 @@ export default function FinanceiroView() {
                         {t.vencimento && ` • venc. ${new Date(t.vencimento).toLocaleDateString('pt-BR')}`}
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-sm font-bold" style={{ color: t.categoria === 'despesa' ? '#ef4444' : '#34d399' }}>
-                        {t.categoria === 'despesa' ? '-' : '+'}R$ {parseFloat(t.valor || 0).toFixed(2)}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {(t.status === 'pendente' || t.status === 'vencido') && (
+                        <button
+                          onClick={() => confirmarRecebido(t.id)}
+                          disabled={confirmando === t.id}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+                          style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+                          <CheckCircle2 size={11} />
+                          {confirmando === t.id ? '...' : 'Recebido'}
+                        </button>
+                      )}
+                      <div className="text-right">
+                        <div className="text-sm font-bold" style={{ color: t.categoria === 'despesa' ? '#ef4444' : '#34d399' }}>
+                          {t.categoria === 'despesa' ? '-' : '+'}R$ {parseFloat(t.valor || 0).toFixed(2)}
+                        </div>
+                        <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${statusColor}15`, color: statusColor }}>
+                          {STATUS_LABEL[t.status] || t.status}
+                        </span>
                       </div>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${statusColor}15`, color: statusColor }}>
-                        {STATUS_LABEL[t.status] || t.status}
-                      </span>
                     </div>
                   </motion.div>
                 );
@@ -335,12 +366,27 @@ export default function FinanceiroView() {
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => gerarCobranca(aluno)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold flex-shrink-0 transition-all hover:opacity-90"
-                      style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
-                      <Zap size={11} />Cobrar
-                    </button>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      {(aluno.statusFinanceiro === 'pendente' || aluno.statusFinanceiro === 'vencido') && (() => {
+                        const mens = getMensalidadePendenteAluno(aluno.id);
+                        return mens ? (
+                          <button
+                            onClick={() => confirmarRecebido(mens.id)}
+                            disabled={confirmando === mens.id}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+                            style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+                            <CheckCircle2 size={11} />
+                            {confirmando === mens.id ? '...' : 'Recebido'}
+                          </button>
+                        ) : null;
+                      })()}
+                      <button
+                        onClick={() => gerarCobranca(aluno)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
+                        style={{ background: '#64748b15', color: '#94a3b8', border: '1px solid #64748b25' }}>
+                        <Zap size={11} />Cobrar
+                      </button>
+                    </div>
                   </motion.div>
                 );
               })}

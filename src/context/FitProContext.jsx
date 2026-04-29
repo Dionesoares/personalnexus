@@ -184,6 +184,10 @@ export function FitProAppProvider({ children }) {
     setTransacoes(s => [...s, created]);
     return created.id;
   }, []);
+  const updateTransacao = useCallback(async (id, t) => {
+    const updated = await base44.entities.Transacao.update(id, t);
+    setTransacoes(s => s.map(x => x.id === id ? updated : x));
+  }, []);
 
   // ── Planos de Corrida ──
   const addPlanoCorrida = useCallback(async (p) => {
@@ -237,7 +241,7 @@ export function FitProAppProvider({ children }) {
     // produtos
     addProduto, updateProduto, deleteProduto,
     // transacoes
-    addTransacao,
+    addTransacao, updateTransacao,
     // corrida
     addPlanoCorrida, updatePlanoCorrida, deletePlanoCorrida,
     // agenda
