@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Activity, Dumbbell, Calendar, Plus, Share2, Copy, CheckCircle2, X, Link2, Settings } from 'lucide-react';
+import { Users, Activity, Dumbbell, Calendar, Plus, Share2, Copy, CheckCircle2, X, Link2, Settings, AlertCircle, Clock } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import ModalEditarPerfil from '../../components/fitpro/ModalEditarPerfil';
@@ -9,7 +9,7 @@ const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
 export default function DashboardProfessor({ onNav }) {
-  const { alunos, avaliacoes, planosTreino, periodizacoes } = useApp();
+  const { alunos, avaliacoes, planosTreino, periodizacoes, transacoes } = useApp();
   const { user } = useAuth();
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [copied, setCopied] = useState(null);
@@ -24,6 +24,17 @@ export default function DashboardProfessor({ onNav }) {
   }, [user?.id]);
 
   const meusAlunos = professorId ? alunos.filter(a => a.professorId === professorId) : alunos;
+
+  // Cobranças do admin para este professor (pendentes ou vencidas)
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const cobrancasAdmin = (transacoes || []).filter(t =>
+    t.professorId === professorId && !t.alunoId && (t.status === 'pendente' || t.status === 'vencido')
+  );
+  const cobrancaVencida = cobrancasAdmin.some(t => {
+    const venc = t.vencimento ? new Date(t.vencimento) : new Date(t.data);
+    venc.setHours(0,0,0,0);
+    return venc < hoje;
+  });
   const minhasAvaliacoes = avaliacoes.filter(a => meusAlunos.some(al => al.id === a.alunoId));
   const meusTreinos = planosTreino.filter(t => meusAlunos.some(al => al.id === t.alunoId));
   const minhasPeriodizacoes = periodizacoes.filter(p => meusAlunos.some(al => al.id === p.alunoId));
@@ -92,6 +103,24 @@ export default function DashboardProfessor({ onNav }) {
           ))}
         </div>
       </div>
+
+      {/* Notificação de cobrança do admin */}
+      {cobrancasAdmin.length > 0 && (
+        <div className="flex items-start gap-3 p-4 rounded-2xl"
+          style={{ background: cobrancaVencida ? '#ef444412' : '#fbbf2412', border: `1px solid ${cobrancaVencida ? '#ef444440' : '#fbbf2440'}` }}>
+          {cobrancaVencida ? <AlertCircle size={18} color="#ef4444" className="flex-shrink-0 mt-0.5" /> : <Clock size={18} color="#fbbf24" className="flex-shrink-0 mt-0.5" />}
+          <div>
+            <div className="text-sm font-bold" style={{ color: cobrancaVencida ? '#ef4444' : '#fbbf24' }}>
+              {cobrancaVencida ? '⚠️ Cobrança Vencida' : '💰 Cobrança Pendente'}
+            </div>
+            <div className="text-xs text-slate-400 mt-0.5">
+              {cobrancasAdmin.length === 1
+                ? `Você possui uma cobrança de plano ${cobrancaVencida ? 'vencida' : 'pendente'}: ${cobrancasAdmin[0].descricao} — R$ ${parseFloat(cobrancasAdmin[0].valor || 0).toFixed(2)}. Entre em contato com o administrador.`
+                : `Você possui ${cobrancasAdmin.length} cobranças de plano ${cobrancaVencida ? 'vencidas/pendentes' : 'pendentes'}. Entre em contato com o administrador.`}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="rounded-2xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>

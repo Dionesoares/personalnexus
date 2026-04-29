@@ -87,7 +87,10 @@ export default function FinanceiroView() {
   const [abaAtiva, setAbaAtiva] = useState('transacoes'); // 'transacoes' | 'alunos'
   const [filtroAlunosStatus, setFiltroAlunosStatus] = useState('todos');
 
-  const todasTransacoes = (transacoes || []).sort((a, b) => new Date(b.data) - new Date(a.data));
+  // Excluir cobranças do admin para o professor (t.professorId sem t.alunoId = cobrança de plano do admin)
+  const todasTransacoes = (transacoes || [])
+    .filter(t => !(t.professorId && !t.alunoId))
+    .sort((a, b) => new Date(b.data) - new Date(a.data));
   const meses = [...new Set(todasTransacoes.map(t => t.data?.slice(0, 7)))].filter(Boolean).sort().reverse();
 
   const filtradas = todasTransacoes.filter(t => {
