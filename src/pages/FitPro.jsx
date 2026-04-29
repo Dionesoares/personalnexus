@@ -27,6 +27,7 @@ import MeusPedidosView from './fitpro/MeusPedidosView';
 import ConsultoriaCorridaView from './fitpro/ConsultoriaCorridaView';
 import AgendaView from './fitpro/AgendaView';
 import TreinoCorridaAlunoView from './fitpro/TreinoCorridaAlunoView';
+import PeriodizacaoAlunoView from './fitpro/PeriodizacaoAlunoView';
 
 const BG = '#0a0e1a';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -78,6 +79,7 @@ function AuthenticatedApp() {
     if (activeView === 'agenda') return <AgendaView />;
     if (activeView === 'consultoria-corrida') return <ConsultoriaCorridaView />;
     if (activeView === 'treino-corrida') return <TreinoCorridaAlunoView />;
+    if (activeView === 'periodizacao-aluno') return <PeriodizacaoAlunoView />;
     return <PlaceholderView title={navItems.find(n => n.view === activeView)?.label || activeView} />;
   };
 
