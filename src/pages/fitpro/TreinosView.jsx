@@ -34,11 +34,30 @@ export default function TreinosView() {
   const [saved, setSaved] = useState(false);
   const [gifModal, setGifModal] = useState(null); // { nome, gifUrl, series, repeticoes, descanso, observacoes, dicas, cor }
 
+  const [alunoId, setAlunoId] = useState('');
+  useEffect(() => {
+    if (user?.role === 'aluno') {
+      getCredentials().then(creds => {
+        const myCred = creds.find(c => c.id === user?.id);
+        const linkedId = myCred?.linkedId || '';
+        if (linkedId) { setAlunoId(linkedId); return; }
+        const byEmail = alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase());
+        setAlunoId(byEmail?.id || '');
+      });
+    }
+  }, [user?.id, alunos]);
+
   const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => a.professorId === professorId) : alunos;
-  const treinosFiltrados = user?.role === 'professor' ? planosTreino.filter(t => alunosFiltrados.some(a => a.id === t.alunoId)) : planosTreino;
+  const treinosFiltrados = user?.role === 'professor'
+    ? planosTreino.filter(t => alunosFiltrados.some(a => a.id === t.alunoId))
+    : user?.role === 'aluno'
+    ? planosTreino.filter(t => t.alunoId === alunoId)
+    : planosTreino;
 
   const [alunoFilter, setAlunoFilter] = useState('');
-  const treinosExibidos = alunoFilter ? treinosFiltrados.filter(t => t.alunoId === alunoFilter) : treinosFiltrados;
+  const treinosExibidos = user?.role === 'aluno'
+    ? treinosFiltrados
+    : alunoFilter ? treinosFiltrados.filter(t => t.alunoId === alunoFilter) : treinosFiltrados;
 
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
@@ -228,7 +247,7 @@ export default function TreinosView() {
         )}
       </div>
 
-      {alunosFiltrados.length > 0 && (
+      {user?.role !== 'aluno' && alunosFiltrados.length > 0 && (
         <select value={alunoFilter} onChange={e => setAlunoFilter(e.target.value)} className="px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
           <option value="">Todos os alunos</option>
           {alunosFiltrados.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
