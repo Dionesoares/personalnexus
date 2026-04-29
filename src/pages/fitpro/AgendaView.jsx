@@ -103,12 +103,17 @@ export default function AgendaView() {
     setShowForm(true);
   };
 
-  const eventosDoMes = eventos.filter(e => {
+  // Filtra eventos apenas do professor logado (admin vê todos)
+  const eventosFiltrados = user?.role === 'professor' && professorId
+    ? eventos.filter(e => e.professorId === user?.id || !e.professorId)
+    : eventos;
+
+  const eventosDoMes = eventosFiltrados.filter(e => {
     const d = new Date(e.data);
     return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
   });
 
-  const eventosOrdenados = [...eventos].sort((a, b) => `${a.data}${a.hora}`.localeCompare(`${b.data}${b.hora}`));
+  const eventosOrdenados = [...eventosFiltrados].sort((a, b) => `${a.data}${a.hora}`.localeCompare(`${b.data}${b.hora}`));
 
   // Semana atual
   const [weekOffset, setWeekOffset] = useState(0);
@@ -127,7 +132,7 @@ export default function AgendaView() {
   for (let i = 0; i < firstDay; i++) calendarCells.push(null);
   for (let d = 1; d <= daysInMonth; d++) calendarCells.push(d);
 
-  const getEventosDay = (dateStr) => eventos.filter(e => e.data === dateStr).sort((a, b) => a.hora.localeCompare(b.hora));
+  const getEventosDay = (dateStr) => eventosFiltrados.filter(e => e.data === dateStr).sort((a, b) => a.hora.localeCompare(b.hora));
 
   return (
     <div className="space-y-4">
