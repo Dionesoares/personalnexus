@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Plus, X, TrendingUp, TrendingDown, Clock, AlertCircle, CheckCircle2, Users, ChevronDown, ChevronUp, Zap, Ban, Trash2 } from 'lucide-react';
+import { DollarSign, Plus, X, TrendingUp, TrendingDown, Clock, AlertCircle, CheckCircle2, Users, ChevronDown, ChevronUp, Zap, Ban, Trash2, QrCode, Edit2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import PixProfessorConfig from '../../components/fitpro/PixProfessorConfig';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -80,11 +81,12 @@ export default function FinanceiroView() {
     : alunos;
 
   const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyTransacao());
   const [saved, setSaved] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroMes, setFiltroMes] = useState('');
-  const [abaAtiva, setAbaAtiva] = useState('transacoes'); // 'transacoes' | 'alunos'
+  const [abaAtiva, setAbaAtiva] = useState('transacoes'); // 'transacoes' | 'alunos' | 'pix'
   const [filtroAlunosStatus, setFiltroAlunosStatus] = useState('todos');
 
   // Excluir cobranças do admin para o professor (t.professorId sem t.alunoId = cobrança de plano do admin)
@@ -138,9 +140,30 @@ export default function FinanceiroView() {
   const handleSave = () => {
     if (!form.valor) return alert('Preencha o valor');
     if (!form.descricao.trim()) return alert('Preencha a descrição');
-    addTransacao({ ...form, valor: parseFloat(form.valor) || 0 });
+    const payload = { ...form, valor: parseFloat(form.valor) || 0, professorId };
+    if (editId) {
+      updateTransacao(editId, payload);
+    } else {
+      addTransacao(payload);
+    }
     setSaved(true);
-    setTimeout(() => { setSaved(false); setShowForm(false); setForm(emptyTransacao()); }, 1200);
+    setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyTransacao()); }, 1200);
+  };
+
+  const abrirEdicao = (t) => {
+    setForm({
+      descricao: t.descricao || '',
+      tipo: t.tipo || 'Mensalidade',
+      valor: String(t.valor || ''),
+      data: t.data || new Date().toISOString().split('T')[0],
+      vencimento: t.vencimento || '',
+      status: t.status || 'pendente',
+      alunoId: t.alunoId || '',
+      observacoes: t.observacoes || '',
+      categoria: t.categoria || 'receita',
+    });
+    setEditId(t.id);
+    setShowForm(true);
   };
 
   const gerarCobranca = (aluno) => {
@@ -223,11 +246,12 @@ export default function FinanceiroView() {
         </div>
       )}
 
-      {/* Abas: Transações | Alunos */}
+      {/* Abas: Transações | Alunos | PIX */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
         {[
           { id: 'transacoes', label: '💳 Transações' },
-          { id: 'alunos', label: `👥 Controle de Alunos ${countsPorStatus.vencido > 0 ? `(${countsPorStatus.vencido} vencido${countsPorStatus.vencido > 1 ? 's' : ''})` : ''}` },
+          { id: 'alunos', label: `👥 Alunos ${countsPorStatus.vencido > 0 ? `(${countsPorStatus.vencido}✗)` : ''}` },
+          { id: 'pix', label: '🔳 Meu PIX' },
         ].map(a => (
           <button key={a.id} onClick={() => setAbaAtiva(a.id)}
             className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
@@ -299,6 +323,13 @@ export default function FinanceiroView() {
                           {confirmando === t.id ? '...' : 'Recebido'}
                         </button>
                       )}
+                      <button
+                        onClick={() => abrirEdicao(t)}
+                        title="Editar cobrança"
+                        className="p-1.5 rounded-xl text-xs transition-all hover:opacity-90"
+                        style={{ background: '#fbbf2415', color: '#fbbf24', border: '1px solid #fbbf2425' }}>
+                        <Edit2 size={13} />
+                      </button>
                       {t.status !== 'cancelado' && (
                         <button
                           onClick={() => updateTransacao(t.id, { status: 'cancelado' })}
@@ -414,13 +445,18 @@ export default function FinanceiroView() {
         </div>
       )}
 
+      {/* ABA PIX */}
+      {abaAtiva === 'pix' && professorId && (
+        <PixProfessorConfig professorId={professorId} />
+      )}
+
       {/* Form modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.8)' }}>
           <div className="w-full max-w-md rounded-2xl p-6 my-4" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-white">Nova Transação</h3>
-              <button onClick={() => setShowForm(false)}><X size={18} color="#6b7280" /></button>
+              <h3 className="font-bold text-white">{editId ? 'Editar Transação' : 'Nova Transação'}</h3>
+              <button onClick={() => { setShowForm(false); setEditId(null); setForm(emptyTransacao()); }}><X size={18} color="#6b7280" /></button>
             </div>
             <div className="space-y-3">
               <div>
@@ -520,7 +556,7 @@ export default function FinanceiroView() {
             </div>
             <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white"
               style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #34d399, #059669)' }}>
-              {saved ? '✓ Salvo!' : 'Salvar Transação'}
+              {saved ? '✓ Salvo!' : editId ? 'Salvar Alterações' : 'Salvar Transação'}
             </button>
           </div>
         </div>

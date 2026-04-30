@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock, AlertCircle } from 'lucide-react';
+import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock, AlertCircle, QrCode } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { calcularIdade } from '../../lib/fitpro-calculations';
 import ModalEditarPerfil from '../../components/fitpro/ModalEditarPerfil';
+import { ModalPixAluno } from '../../components/fitpro/PixProfessorConfig';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -13,6 +14,9 @@ export default function DashboardAluno({ onNav }) {
   const { alunos, avaliacoes, planosTreino, periodizacoes, especialistas, transacoes } = useApp();
   const { user } = useAuth();
   const [showEditarPerfil, setShowEditarPerfil] = useState(false);
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pixTransacao, setPixTransacao] = useState(null);
+  const [professorIdAluno, setProfessorIdAluno] = useState('');
 
   const [resolvedAlunoId, setResolvedAlunoId] = useState('');
   useEffect(() => {
@@ -24,6 +28,13 @@ export default function DashboardAluno({ onNav }) {
       setResolvedAlunoId(byEmail?.id || '');
     });
   }, [user?.id, alunos]);
+
+  // Descobre o professorId do aluno para buscar o PIX do professor
+  useEffect(() => {
+    if (!resolvedAlunoId) return;
+    const aluno = alunos.find(a => a.id === resolvedAlunoId);
+    if (aluno?.professorId) setProfessorIdAluno(aluno.professorId);
+  }, [resolvedAlunoId, alunos]);
 
   const aluno = alunos.find(a => a.id === resolvedAlunoId);
   const minhasAvaliacoes = avaliacoes.filter(a => a.alunoId === resolvedAlunoId).sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -86,24 +97,41 @@ export default function DashboardAluno({ onNav }) {
       </div>
 
       {/* Notificação de pendência financeira */}
-      {(pendenciaVencida || pendenciaPendente) && (
-        <div className="flex items-start gap-3 p-4 rounded-2xl"
-          style={{
-            background: pendenciaVencida ? '#ef444412' : '#fbbf2412',
-            border: `1px solid ${pendenciaVencida ? '#ef444440' : '#fbbf2440'}`,
-          }}>
-          <AlertCircle size={18} style={{ color: pendenciaVencida ? '#ef4444' : '#fbbf24', flexShrink: 0, marginTop: 1 }} />
-          <div>
-            <div className="text-sm font-bold" style={{ color: pendenciaVencida ? '#ef4444' : '#fbbf24' }}>
-              {pendenciaVencida ? '⚠️ Mensalidade Vencida' : '💰 Mensalidade Pendente'}
+      {(pendenciaVencida || pendenciaPendente) && (() => {
+        const cobranca = pendenciaVencida || pendenciaPendente;
+        const cor = pendenciaVencida ? '#ef4444' : '#fbbf24';
+        return (
+          <div className="p-4 rounded-2xl"
+            style={{ background: `${cor}12`, border: `1px solid ${cor}40` }}>
+            <div className="flex items-start gap-3">
+              <AlertCircle size={18} style={{ color: cor, flexShrink: 0, marginTop: 1 }} />
+              <div className="flex-1">
+                <div className="text-sm font-bold" style={{ color: cor }}>
+                  {pendenciaVencida ? '⚠️ Mensalidade Vencida' : '💰 Cobrança Pendente'}
+                </div>
+                <div className="text-xs text-slate-400 mt-0.5">
+                  {cobranca.descricao} — <span className="font-semibold text-white">R$ {parseFloat(cobranca.valor || 0).toFixed(2)}</span>
+                  {cobranca.vencimento && ` • Venc. ${new Date(cobranca.vencimento).toLocaleDateString('pt-BR')}`}
+                </div>
+              </div>
             </div>
-            <div className="text-xs text-slate-400 mt-0.5">
-              {pendenciaVencida
-                ? `Você possui uma mensalidade vencida de R$ ${parseFloat(pendenciaVencida.valor || 0).toFixed(2)}. Entre em contato com seu professor.`
-                : `Você possui uma mensalidade pendente de R$ ${parseFloat(pendenciaPendente.valor || 0).toFixed(2)}. Regularize para evitar suspensão.`}
-            </div>
+            <button
+              onClick={() => { setPixTransacao(cobranca); setShowPixModal(true); }}
+              className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all"
+              style={{ background: `${cor}20`, color: cor, border: `1px solid ${cor}40` }}>
+              <QrCode size={15} />Pagar agora via PIX
+            </button>
           </div>
-        </div>
+        );
+      })()}
+
+      {/* Modal PIX do professor */}
+      {showPixModal && pixTransacao && (
+        <ModalPixAluno
+          transacao={pixTransacao}
+          professorId={professorIdAluno}
+          onClose={() => { setShowPixModal(false); setPixTransacao(null); }}
+        />
       )}
 
       {/* Quick Nav 2x2 */}
