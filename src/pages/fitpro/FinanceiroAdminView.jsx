@@ -85,8 +85,24 @@ function emptyCobrancaProf(profId = '') {
   };
 }
 
+const PLANOS_DEFAULT = [
+  { id: 'basico', nome: 'Básico', preco: 0 },
+  { id: 'profissional', nome: 'Profissional', preco: 99.90 },
+  { id: 'premium', nome: 'Premium', preco: 179.90 },
+  { id: 'enterprise', nome: 'Enterprise', preco: 299.90 },
+];
+
+function loadPlanos() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('fitpro_planos'));
+    if (saved && Array.isArray(saved) && saved.length >= 4) return saved;
+    return PLANOS_DEFAULT;
+  } catch { return PLANOS_DEFAULT; }
+}
+
 export default function FinanceiroAdminView() {
   const { transacoes, professores, addTransacao, updateTransacao, deleteTransacao } = useApp();
+  const planos = loadPlanos();
 
   // Apenas transações vinculadas a professores (plano do professor, não dos alunos)
   const transacoesProfessores = (transacoes || [])
@@ -171,7 +187,12 @@ export default function FinanceiroAdminView() {
     );
 
   const gerarCobrancaProf = (prof) => {
-    setForm({ ...emptyCobrancaProf(prof.id), descricao: `Mensalidade — ${prof.nome}` });
+    const plano = planos.find(pl => pl.id === prof.planoCobranca) || planos.find(pl => pl.id === 'profissional');
+    setForm({
+      ...emptyCobrancaProf(prof.id),
+      descricao: `${plano?.nome || 'Mensalidade'} — ${prof.nome}`,
+      valor: plano ? String(plano.preco) : '',
+    });
     setShowForm(true);
   };
 
@@ -606,13 +627,38 @@ export default function FinanceiroAdminView() {
                 <label className="text-xs text-slate-400 block mb-1">Professor</label>
                 <select value={form.professorId} onChange={e => {
                   const p = professores.find(pr => pr.id === e.target.value);
-                  setForm(f => ({ ...f, professorId: e.target.value, descricao: p ? `Mensalidade — ${p.nome}` : f.descricao }));
+                  const plano = p ? planos.find(pl => pl.id === p.planoCobranca) || planos.find(pl => pl.id === 'profissional') : null;
+                  setForm(f => ({
+                    ...f,
+                    professorId: e.target.value,
+                    descricao: p ? `${plano?.nome || 'Mensalidade'} — ${p.nome}` : '',
+                    valor: plano ? String(plano.preco) : '',
+                  }));
                 }}
                   className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                   style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <option value="">Selecionar professor</option>
-                  {professores.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                  {professores.map(p => {
+                    const plano = planos.find(pl => pl.id === p.planoCobranca);
+                    return <option key={p.id} value={p.id}>{p.nome}{plano ? ` — ${plano.nome}` : ''}</option>;
+                  })}
                 </select>
+                {/* Info do plano do professor selecionado */}
+                {form.professorId && (() => {
+                  const p = professores.find(pr => pr.id === form.professorId);
+                  const plano = p ? planos.find(pl => pl.id === p.planoCobranca) : null;
+                  if (!plano) return null;
+                  const PLANO_COLOR = { basico: '#60a5fa', profissional: '#34d399', premium: '#fbbf24', enterprise: '#a78bfa' };
+                  const color = PLANO_COLOR[plano.id] || '#00d4ff';
+                  return (
+                    <div className="mt-1.5 flex items-center gap-2 px-3 py-2 rounded-xl"
+                      style={{ background: `${color}10`, border: `1px solid ${color}25` }}>
+                      <span className="text-xs font-semibold" style={{ color }}>{plano.nome}</span>
+                      <span className="text-xs text-slate-400">•</span>
+                      <span className="text-xs font-bold text-white">{plano.preco === 0 ? 'Gratuito' : `R$ ${plano.preco.toFixed(2)}/mês`}</span>
+                    </div>
+                  );
+                })()}
               </div>
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Descrição</label>
