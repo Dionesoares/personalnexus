@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Activity, Dumbbell, Calendar, Plus, Share2, Copy, CheckCircle2, X, Settings, AlertCircle, Clock, QrCode } from 'lucide-react';
 
@@ -50,15 +50,21 @@ export default function DashboardProfessor({ onNav }) {
 
   const meusAlunos = professorId ? alunos.filter(a => a.professorId === professorId) : alunos;
 
-  // Cobranças do admin para este professor — só mostra se vencidas
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const cobrancasVencidas = (transacoes || []).filter(t => {
-    if (t.professorId !== professorId || t.alunoId) return false;
-    if (t.status === 'pago' || t.status === 'cancelado') return false;
-    if (!t.vencimento) return false;
-    const venc = new Date(t.vencimento); venc.setHours(0,0,0,0);
-    return venc < hoje;
-  });
+  // Cobranças para este professor que estejam vencidas (qualquer tipo, sem alunoId)
+  const cobrancasVencidas = useMemo(() => {
+    if (!professorId) return [];
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    return (transacoes || []).filter(t => {
+      if (!t.professorId || t.professorId !== professorId) return false;
+      if (t.alunoId) return false; // ignora cobranças de alunos
+      if (t.status === 'pago' || t.status === 'cancelado') return false;
+      // Vencida: tem vencimento e a data já passou, OU não tem vencimento mas o status é 'vencido'
+      if (t.status === 'vencido') return true;
+      if (!t.vencimento) return false;
+      const venc = new Date(t.vencimento); venc.setHours(0,0,0,0);
+      return venc < hoje;
+    });
+  }, [professorId, transacoes]);
   const minhasAvaliacoes = avaliacoes.filter(a => meusAlunos.some(al => al.id === a.alunoId));
   const meusTreinos = planosTreino.filter(t => meusAlunos.some(al => al.id === t.alunoId));
   const minhasPeriodizacoes = periodizacoes.filter(p => meusAlunos.some(al => al.id === p.alunoId));
