@@ -41,9 +41,20 @@ function gerarQrUrl(payload) {
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
-const STATUS_COLOR = { pago: '#34d399', pendente: '#fbbf24', vencido: '#ef4444', cancelado: '#64748b' };
-const STATUS_LABEL = { pago: 'Pago', pendente: 'Pendente', vencido: 'Vencido', cancelado: 'Cancelado' };
-const STATUS_ICON = { pago: CheckCircle2, pendente: Clock, vencido: AlertCircle, cancelado: X };
+const STATUS_COLOR = { pago: '#34d399', pendente: '#fbbf24', vencido: '#ef4444', cancelado: '#64748b', a_vencer: '#60a5fa' };
+const STATUS_LABEL = { pago: 'Pago', pendente: 'Pendente', vencido: 'Vencido', cancelado: 'Cancelado', a_vencer: 'A vencer' };
+const STATUS_ICON = { pago: CheckCircle2, pendente: Clock, vencido: AlertCircle, cancelado: X, a_vencer: Clock };
+
+// Determina o status visual de uma transação considerando a data de vencimento
+function resolverStatusTransacao(t) {
+  if (t.status === 'pago' || t.status === 'cancelado') return t.status;
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const venc = t.vencimento ? new Date(t.vencimento) : null;
+  if (venc) { venc.setHours(0, 0, 0, 0); }
+  if (venc && venc > hoje) return 'a_vencer';
+  if (venc && venc < hoje) return 'vencido';
+  return t.status; // vence hoje = pendente
+}
 
 const PROF_STATUS_CONFIG = {
   pago:         { label: 'Em dia',       color: '#34d399', bg: '#34d39915', border: '#34d39930', icon: CheckCircle2 },
@@ -431,8 +442,9 @@ export default function FinanceiroAdminView() {
           ) : (
             <div className="space-y-2">
               {filtradas.map((t, i) => {
-                const statusColor = STATUS_COLOR[t.status] || '#64748b';
-                const StatusIcon = STATUS_ICON[t.status] || Clock;
+                const statusVisual = resolverStatusTransacao(t);
+                const statusColor = STATUS_COLOR[statusVisual] || '#64748b';
+                const StatusIcon = STATUS_ICON[statusVisual] || Clock;
                 const prof = professores.find(p => p.id === t.professorId);
                 return (
                   <motion.div key={t.id || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -449,7 +461,7 @@ export default function FinanceiroAdminView() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {(t.status === 'pendente' || t.status === 'vencido') && (
+                      {(statusVisual === 'pendente' || statusVisual === 'vencido' || statusVisual === 'a_vencer') && t.status !== 'pago' && (
                         <button
                           onClick={() => confirmarRecebido(t.id)}
                           disabled={confirmando === t.id}
@@ -480,7 +492,7 @@ export default function FinanceiroAdminView() {
                           R$ {parseFloat(t.valor || 0).toFixed(2)}
                         </div>
                         <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: `${statusColor}15`, color: statusColor }}>
-                          {STATUS_LABEL[t.status] || t.status}
+                          {STATUS_LABEL[statusVisual] || statusVisual}
                         </span>
                       </div>
                     </div>
