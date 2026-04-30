@@ -713,7 +713,7 @@ export default function FinanceiroAdminView() {
                   <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
                     className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                     style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    {Object.entries({ pendente: 'Pendente', pago: 'Pago', vencido: 'Vencido' }).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    {Object.entries({ pendente: 'Pendente', pago: 'Cobrança em dia', vencido: 'Vencido' }).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
               </div>
