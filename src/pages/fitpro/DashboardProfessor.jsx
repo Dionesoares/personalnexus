@@ -66,6 +66,10 @@ export default function DashboardProfessor({ onNav }) {
     const venc = new Date(t.vencimento); venc.setHours(0,0,0,0);
     return venc < hoje;
   });
+  const cobrancasVencidas = cobrancasAdmin.filter(t => {
+    const venc = new Date(t.vencimento); venc.setHours(0,0,0,0);
+    return venc < hoje;
+  });
   const minhasAvaliacoes = avaliacoes.filter(a => meusAlunos.some(al => al.id === a.alunoId));
   const meusTreinos = planosTreino.filter(t => meusAlunos.some(al => al.id === t.alunoId));
   const minhasPeriodizacoes = periodizacoes.filter(p => meusAlunos.some(al => al.id === p.alunoId));
@@ -135,27 +139,49 @@ export default function DashboardProfessor({ onNav }) {
         </div>
       </div>
 
-      {/* Notificação de cobrança do admin */}
-      {cobrancasAdmin.length > 0 && (
-        <div className="p-4 rounded-2xl"
-          style={{ background: cobrancaVencida ? '#ef444412' : '#fbbf2412', border: `1px solid ${cobrancaVencida ? '#ef444440' : '#fbbf2440'}` }}>
+      {/* Notificação de cobranças vencidas */}
+      {cobrancasVencidas.length > 0 && (
+        <div className="p-4 rounded-2xl" style={{ background: '#ef444412', border: '1px solid #ef444440' }}>
           <div className="flex items-start gap-3">
-            {cobrancaVencida ? <AlertCircle size={18} color="#ef4444" className="flex-shrink-0 mt-0.5" /> : <Clock size={18} color="#fbbf24" className="flex-shrink-0 mt-0.5" />}
+            <AlertCircle size={18} color="#ef4444" className="flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <div className="text-sm font-bold" style={{ color: cobrancaVencida ? '#ef4444' : '#fbbf24' }}>
-                {cobrancaVencida ? '⚠️ Cobrança Vencida' : '💰 Cobrança Pendente'}
+              <div className="text-sm font-bold" style={{ color: '#ef4444' }}>
+                ⚠️ {cobrancasVencidas.length === 1 ? 'Cobrança Vencida' : `${cobrancasVencidas.length} Cobranças Vencidas`}
               </div>
               <div className="text-xs text-slate-400 mt-0.5">
-                {cobrancasAdmin.length === 1
-                  ? `${cobrancasAdmin[0].descricao} — R$ ${parseFloat(cobrancasAdmin[0].valor || 0).toFixed(2)}`
-                  : `Você possui ${cobrancasAdmin.length} cobranças de plano pendentes/vencidas.`}
+                {cobrancasVencidas.length === 1
+                  ? `${cobrancasVencidas[0].descricao} — R$ ${parseFloat(cobrancasVencidas[0].valor || 0).toFixed(2)} — venceu em ${new Date(cobrancasVencidas[0].vencimento).toLocaleDateString('pt-BR')}`
+                  : `Total em atraso: R$ ${cobrancasVencidas.reduce((acc, t) => acc + parseFloat(t.valor || 0), 0).toFixed(2)}`}
               </div>
             </div>
           </div>
           <button
             onClick={() => setShowPixModal(true)}
             className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all"
-            style={{ background: cobrancaVencida ? '#ef444420' : '#fbbf2420', color: cobrancaVencida ? '#ef4444' : '#fbbf24', border: `1px solid ${cobrancaVencida ? '#ef444440' : '#fbbf2440'}` }}>
+            style={{ background: '#ef444420', color: '#ef4444', border: '1px solid #ef444440' }}>
+            <QrCode size={15} />Pagar agora via PIX
+          </button>
+        </div>
+      )}
+
+      {/* Notificação de cobranças pendentes (vence hoje) */}
+      {!cobrancaVencida && cobrancasAdmin.length > 0 && (
+        <div className="p-4 rounded-2xl" style={{ background: '#fbbf2412', border: '1px solid #fbbf2440' }}>
+          <div className="flex items-start gap-3">
+            <Clock size={18} color="#fbbf24" className="flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="text-sm font-bold" style={{ color: '#fbbf24' }}>💰 Cobrança Pendente</div>
+              <div className="text-xs text-slate-400 mt-0.5">
+                {cobrancasAdmin.length === 1
+                  ? `${cobrancasAdmin[0].descricao} — R$ ${parseFloat(cobrancasAdmin[0].valor || 0).toFixed(2)}`
+                  : `Você possui ${cobrancasAdmin.length} cobranças pendentes.`}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowPixModal(true)}
+            className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all"
+            style={{ background: '#fbbf2420', color: '#fbbf24', border: '1px solid #fbbf2440' }}>
             <QrCode size={15} />Pagar agora via PIX
           </button>
         </div>
