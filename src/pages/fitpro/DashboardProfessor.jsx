@@ -50,22 +50,14 @@ export default function DashboardProfessor({ onNav }) {
 
   const meusAlunos = professorId ? alunos.filter(a => a.professorId === professorId) : alunos;
 
-  // Cobranças do admin para este professor (todas não pagas/canceladas)
+  // Cobranças do admin para este professor — só mostra se vencidas
   const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const cobrancasAdmin = (transacoes || []).filter(t =>
-    t.professorId === professorId && !t.alunoId &&
-    t.status !== 'pago' && t.status !== 'cancelado'
-  );
-  const cobrancasVencidas = cobrancasAdmin.filter(t => {
+  const cobrancasVencidas = (transacoes || []).filter(t => {
+    if (t.professorId !== professorId || t.alunoId) return false;
+    if (t.status === 'pago' || t.status === 'cancelado') return false;
     if (!t.vencimento) return false;
     const venc = new Date(t.vencimento); venc.setHours(0,0,0,0);
     return venc < hoje;
-  });
-  const cobrancaVencida = cobrancasVencidas.length > 0;
-  const cobrancasFuturas = cobrancasAdmin.filter(t => {
-    if (!t.vencimento) return true;
-    const venc = new Date(t.vencimento); venc.setHours(0,0,0,0);
-    return venc >= hoje;
   });
   const minhasAvaliacoes = avaliacoes.filter(a => meusAlunos.some(al => al.id === a.alunoId));
   const meusTreinos = planosTreino.filter(t => meusAlunos.some(al => al.id === t.alunoId));
@@ -160,33 +152,9 @@ export default function DashboardProfessor({ onNav }) {
         </div>
       )}
 
-      {/* Notificação de cobranças futuras/pendentes geradas pelo admin */}
-      {cobrancasFuturas.length > 0 && (
-        <div className="p-4 rounded-2xl" style={{ background: '#60a5fa12', border: '1px solid #60a5fa40' }}>
-          <div className="flex items-start gap-3">
-            <Clock size={18} color="#60a5fa" className="flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <div className="text-sm font-bold" style={{ color: '#60a5fa' }}>
-                💳 {cobrancasFuturas.length === 1 ? 'Nova Cobrança do Plano' : `${cobrancasFuturas.length} Cobranças do Plano`}
-              </div>
-              <div className="text-xs text-slate-400 mt-0.5">
-                {cobrancasFuturas.length === 1
-                  ? `${cobrancasFuturas[0].descricao} — R$ ${parseFloat(cobrancasFuturas[0].valor || 0).toFixed(2)}${cobrancasFuturas[0].vencimento ? ` — vence em ${new Date(cobrancasFuturas[0].vencimento).toLocaleDateString('pt-BR')}` : ''}`
-                  : `Total: R$ ${cobrancasFuturas.reduce((acc, t) => acc + parseFloat(t.valor || 0), 0).toFixed(2)}`}
-              </div>
-            </div>
-          </div>
-          <button onClick={() => setShowPixModal(true)}
-            className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all"
-            style={{ background: '#60a5fa20', color: '#60a5fa', border: '1px solid #60a5fa40' }}>
-            <QrCode size={15} />Pagar agora via PIX
-          </button>
-        </div>
-      )}
-
       {/* Modal PIX */}
       {showPixModal && (() => {
-        const valorTotal = cobrancasAdmin.reduce((acc, t) => acc + parseFloat(t.valor || 0), 0);
+        const valorTotal = cobrancasVencidas.reduce((acc, t) => acc + parseFloat(t.valor || 0), 0);
         const pixOk = pixDados?.chave && pixDados?.nome && pixDados?.cidade;
         const payload = pixOk ? gerarPayloadPix(pixDados.chave, pixDados.nome, pixDados.cidade, valorTotal) : null;
         const qrUrl = payload ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(payload)}` : null;
@@ -204,13 +172,13 @@ export default function DashboardProfessor({ onNav }) {
 
               {/* Resumo da cobrança */}
               <div className="mb-4 p-3 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                {cobrancasAdmin.length === 1 ? (
+                {cobrancasVencidas.length === 1 ? (
                   <>
-                    <div className="text-xs text-slate-400">{cobrancasAdmin[0].descricao}</div>
-                    {cobrancasAdmin[0].vencimento && <div className="text-xs text-slate-500">Venc. {new Date(cobrancasAdmin[0].vencimento).toLocaleDateString('pt-BR')}</div>}
+                    <div className="text-xs text-slate-400">{cobrancasVencidas[0].descricao}</div>
+                    {cobrancasVencidas[0].vencimento && <div className="text-xs text-slate-500">Venc. {new Date(cobrancasVencidas[0].vencimento).toLocaleDateString('pt-BR')}</div>}
                   </>
                 ) : (
-                  <div className="text-xs text-slate-400">{cobrancasAdmin.length} cobranças pendentes/vencidas</div>
+                  <div className="text-xs text-slate-400">{cobrancasVencidas.length} cobranças vencidas</div>
                 )}
                 <div className="text-2xl font-black text-white mt-1">R$ {valorTotal.toFixed(2)}</div>
               </div>
