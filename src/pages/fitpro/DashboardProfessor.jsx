@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Activity, Dumbbell, Calendar, Plus, Share2, Copy, CheckCircle2, X, Link2, Settings, AlertCircle, Clock } from 'lucide-react';
+import { Users, Activity, Dumbbell, Calendar, Plus, Share2, Copy, CheckCircle2, X, Link2, Settings, AlertCircle, Clock, QrCode } from 'lucide-react';
+
+const PIX_STORAGE_KEY = 'fitpro_admin_pix_qrcode';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import ModalEditarPerfil from '../../components/fitpro/ModalEditarPerfil';
@@ -14,6 +16,8 @@ export default function DashboardProfessor({ onNav }) {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [copied, setCopied] = useState(null);
   const [showEditarPerfil, setShowEditarPerfil] = useState(false);
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pixQrCode] = useState(() => localStorage.getItem(PIX_STORAGE_KEY) || '');
 
   const [professorId, setProfessorId_] = useState('');
   useEffect(() => {
@@ -106,18 +110,78 @@ export default function DashboardProfessor({ onNav }) {
 
       {/* Notificação de cobrança do admin */}
       {cobrancasAdmin.length > 0 && (
-        <div className="flex items-start gap-3 p-4 rounded-2xl"
+        <div className="p-4 rounded-2xl"
           style={{ background: cobrancaVencida ? '#ef444412' : '#fbbf2412', border: `1px solid ${cobrancaVencida ? '#ef444440' : '#fbbf2440'}` }}>
-          {cobrancaVencida ? <AlertCircle size={18} color="#ef4444" className="flex-shrink-0 mt-0.5" /> : <Clock size={18} color="#fbbf24" className="flex-shrink-0 mt-0.5" />}
-          <div>
-            <div className="text-sm font-bold" style={{ color: cobrancaVencida ? '#ef4444' : '#fbbf24' }}>
-              {cobrancaVencida ? '⚠️ Cobrança Vencida' : '💰 Cobrança Pendente'}
+          <div className="flex items-start gap-3">
+            {cobrancaVencida ? <AlertCircle size={18} color="#ef4444" className="flex-shrink-0 mt-0.5" /> : <Clock size={18} color="#fbbf24" className="flex-shrink-0 mt-0.5" />}
+            <div className="flex-1">
+              <div className="text-sm font-bold" style={{ color: cobrancaVencida ? '#ef4444' : '#fbbf24' }}>
+                {cobrancaVencida ? '⚠️ Cobrança Vencida' : '💰 Cobrança Pendente'}
+              </div>
+              <div className="text-xs text-slate-400 mt-0.5">
+                {cobrancasAdmin.length === 1
+                  ? `${cobrancasAdmin[0].descricao} — R$ ${parseFloat(cobrancasAdmin[0].valor || 0).toFixed(2)}`
+                  : `Você possui ${cobrancasAdmin.length} cobranças de plano pendentes/vencidas.`}
+              </div>
             </div>
-            <div className="text-xs text-slate-400 mt-0.5">
-              {cobrancasAdmin.length === 1
-                ? `Você possui uma cobrança de plano ${cobrancaVencida ? 'vencida' : 'pendente'}: ${cobrancasAdmin[0].descricao} — R$ ${parseFloat(cobrancasAdmin[0].valor || 0).toFixed(2)}. Entre em contato com o administrador.`
-                : `Você possui ${cobrancasAdmin.length} cobranças de plano ${cobrancaVencida ? 'vencidas/pendentes' : 'pendentes'}. Entre em contato com o administrador.`}
+          </div>
+          <button
+            onClick={() => setShowPixModal(true)}
+            className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all"
+            style={{ background: cobrancaVencida ? '#ef444420' : '#fbbf2420', color: cobrancaVencida ? '#ef4444' : '#fbbf24', border: `1px solid ${cobrancaVencida ? '#ef444440' : '#fbbf2440'}` }}>
+            <QrCode size={15} />Pagar agora via PIX
+          </button>
+        </div>
+      )}
+
+      {/* Modal PIX */}
+      {showPixModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowPixModal(false); }}>
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-bold text-white">Pagamento via PIX</h3>
+                <p className="text-xs text-slate-500">Escaneie o QR Code para pagar</p>
+              </div>
+              <button onClick={() => setShowPixModal(false)} className="p-2 rounded-xl hover:bg-white/5"><X size={16} color="#6b7280" /></button>
             </div>
+
+            {cobrancasAdmin.length === 1 && (
+              <div className="mb-4 p-3 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="text-xs text-slate-400">{cobrancasAdmin[0].descricao}</div>
+                <div className="text-2xl font-black text-white mt-1">R$ {parseFloat(cobrancasAdmin[0].valor || 0).toFixed(2)}</div>
+                {cobrancasAdmin[0].vencimento && (
+                  <div className="text-xs text-slate-500 mt-1">Vencimento: {new Date(cobrancasAdmin[0].vencimento).toLocaleDateString('pt-BR')}</div>
+                )}
+              </div>
+            )}
+            {cobrancasAdmin.length > 1 && (
+              <div className="mb-4 p-3 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="text-xs text-slate-400">{cobrancasAdmin.length} cobranças pendentes</div>
+                <div className="text-2xl font-black text-white mt-1">
+                  R$ {cobrancasAdmin.reduce((acc, t) => acc + parseFloat(t.valor || 0), 0).toFixed(2)}
+                </div>
+              </div>
+            )}
+
+            {pixQrCode ? (
+              <div className="flex justify-center">
+                <div className="p-4 rounded-2xl" style={{ background: 'white' }}>
+                  <img src={pixQrCode} alt="QR Code PIX" className="w-52 h-52 object-contain" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <QrCode size={48} className="opacity-20 text-slate-500 mb-3" />
+                <p className="text-sm text-slate-500 text-center">QR Code PIX não configurado.</p>
+                <p className="text-xs text-slate-600 text-center mt-1">Solicite ao administrador para configurar.</p>
+              </div>
+            )}
+
+            <p className="text-xs text-center text-slate-500 mt-4">
+              Após o pagamento, aguarde a confirmação do administrador.
+            </p>
           </div>
         </div>
       )}

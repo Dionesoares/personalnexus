@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2 } from 'lucide-react';
+import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+
+const PIX_STORAGE_KEY = 'fitpro_admin_pix_qrcode';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -60,7 +62,7 @@ export default function FinanceiroAdminView() {
 
   const meses = [...new Set(transacoesProfessores.map(t => t.data?.slice(0, 7)))].filter(Boolean).sort().reverse();
 
-  const [abaAtiva, setAbaAtiva] = useState('professores'); // 'professores' | 'transacoes'
+  const [abaAtiva, setAbaAtiva] = useState('professores'); // 'professores' | 'transacoes' | 'pix'
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroProfStatus, setFiltroProfStatus] = useState('todos');
@@ -68,6 +70,18 @@ export default function FinanceiroAdminView() {
   const [form, setForm] = useState(emptyCobrancaProf());
   const [saved, setSaved] = useState(false);
   const [confirmando, setConfirmando] = useState(null);
+
+  // PIX config
+  const [pixQrCode, setPixQrCode] = useState(() => localStorage.getItem(PIX_STORAGE_KEY) || '');
+  const [pixInput, setPixInput] = useState(() => localStorage.getItem(PIX_STORAGE_KEY) || '');
+  const [pixSaved, setPixSaved] = useState(false);
+
+  const salvarPix = () => {
+    localStorage.setItem(PIX_STORAGE_KEY, pixInput.trim());
+    setPixQrCode(pixInput.trim());
+    setPixSaved(true);
+    setTimeout(() => setPixSaved(false), 2000);
+  };
 
   const filtradas = transacoesProfessores.filter(t => {
     const matchStatus = filtroStatus === 'todos' || t.status === filtroStatus;
@@ -195,8 +209,9 @@ export default function FinanceiroAdminView() {
       {/* Abas */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
         {[
-          { id: 'professores', label: `👨‍🏫 Controle de Professores${countsPorStatus.vencido > 0 ? ` (${countsPorStatus.vencido} vencido${countsPorStatus.vencido > 1 ? 's' : ''})` : ''}` },
+          { id: 'professores', label: `👨‍🏫 Professores${countsPorStatus.vencido > 0 ? ` (${countsPorStatus.vencido})` : ''}` },
           { id: 'transacoes', label: '💳 Transações' },
+          { id: 'pix', label: '🔳 Configurar PIX' },
         ].map(a => (
           <button key={a.id} onClick={() => setAbaAtiva(a.id)}
             className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
@@ -387,6 +402,60 @@ export default function FinanceiroAdminView() {
             </div>
           )}
         </>
+      )}
+
+      {/* ABA PIX */}
+      {abaAtiva === 'pix' && (
+        <div className="space-y-4">
+          <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            <div className="flex items-center gap-2 mb-4">
+              <QrCode size={18} color="#00d4ff" />
+              <div>
+                <h3 className="font-semibold text-white">QR Code PIX do Administrador</h3>
+                <p className="text-xs text-slate-500">Este QR Code será exibido para os professores ao clicar em "Pagar agora"</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">URL da imagem do QR Code PIX</label>
+                <input
+                  value={pixInput}
+                  onChange={e => setPixInput(e.target.value)}
+                  placeholder="https://... (URL da imagem do QR Code PIX)"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
+                />
+                <p className="text-xs text-slate-600 mt-1">Cole a URL pública da imagem do seu QR Code PIX (PNG, JPG ou GIF)</p>
+              </div>
+
+              <button onClick={salvarPix}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                style={{ background: pixSaved ? '#34d39920' : '#00d4ff20', color: pixSaved ? '#34d399' : '#00d4ff', border: `1px solid ${pixSaved ? '#34d39930' : '#00d4ff30'}` }}>
+                <Save size={14} />{pixSaved ? '✓ Salvo!' : 'Salvar QR Code PIX'}
+              </button>
+            </div>
+
+            {pixQrCode && (
+              <div className="mt-5">
+                <p className="text-xs text-slate-400 mb-3">Pré-visualização:</p>
+                <div className="flex justify-center">
+                  <div className="p-4 rounded-2xl" style={{ background: 'white' }}>
+                    <img src={pixQrCode} alt="QR Code PIX" className="w-48 h-48 object-contain" />
+                  </div>
+                </div>
+                <p className="text-xs text-center text-slate-500 mt-3">Este QR Code será exibido para professores realizarem o pagamento</p>
+              </div>
+            )}
+
+            {!pixQrCode && (
+              <div className="mt-5 p-4 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                <QrCode size={40} className="mx-auto mb-2 opacity-20 text-slate-500" />
+                <p className="text-xs text-slate-500">Nenhum QR Code cadastrado ainda</p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Form modal */}
