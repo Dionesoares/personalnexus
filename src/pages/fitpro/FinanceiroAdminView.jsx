@@ -1,10 +1,43 @@
 import React, { useState } from 'react';
-import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save } from 'lucide-react';
+import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save, Copy, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
-const PIX_STORAGE_KEY = 'fitpro_admin_pix_qrcode';
+const PIX_DADOS_KEY = 'fitpro_admin_pix_dados';
+
+// Gera payload PIX EMV simplificado para chave aleatória
+function gerarPayloadPix(chave, nome, cidade, valor = null) {
+  const nomeClean = nome.substring(0, 25).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  const cidadeClean = cidade.substring(0, 15).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+
+  const merchantAccountInfo = `0014BR.GOV.BCB.PIX01${String(chave.length).padStart(2,'0')}${chave}`;
+  const mai = `26${String(merchantAccountInfo.length).padStart(2,'0')}${merchantAccountInfo}`;
+  const mcc = '52040000';
+  const currency = '5303986';
+  const valorStr = valor ? `54${String(Number(valor).toFixed(2).length).padStart(2,'0')}${Number(valor).toFixed(2)}` : '';
+  const country = '5802BR';
+  const nomeField = `59${String(nomeClean.length).padStart(2,'0')}${nomeClean}`;
+  const cidadeField = `60${String(cidadeClean.length).padStart(2,'0')}${cidadeClean}`;
+  const txid = '62070503***';
+
+  const payload = `000201${mai}${mcc}${currency}${valorStr}${country}${nomeField}${cidadeField}${txid}6304`;
+
+  // CRC16 simples
+  let crc = 0xFFFF;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
+    }
+  }
+  crc = (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+  return payload + crc;
+}
+
+function gerarQrUrl(payload) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(payload)}`;
+}
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -72,16 +105,27 @@ export default function FinanceiroAdminView() {
   const [confirmando, setConfirmando] = useState(null);
 
   // PIX config
-  const [pixQrCode, setPixQrCode] = useState(() => localStorage.getItem(PIX_STORAGE_KEY) || '');
-  const [pixInput, setPixInput] = useState(() => localStorage.getItem(PIX_STORAGE_KEY) || '');
+  const pixDadosDefault = { chave: '', nome: '', cidade: '', banco: '', tipochave: 'cpf' };
+  const [pixDados, setPixDados] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(PIX_DADOS_KEY)) || pixDadosDefault; } catch { return pixDadosDefault; }
+  });
+  const [pixForm, setPixForm] = useState(pixDados);
   const [pixSaved, setPixSaved] = useState(false);
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pixValorPreview, setPixValorPreview] = useState('');
+  const [pixCopied, setPixCopied] = useState(false);
 
   const salvarPix = () => {
-    localStorage.setItem(PIX_STORAGE_KEY, pixInput.trim());
-    setPixQrCode(pixInput.trim());
+    localStorage.setItem(PIX_DADOS_KEY, JSON.stringify(pixForm));
+    setPixDados(pixForm);
     setPixSaved(true);
-    setTimeout(() => setPixSaved(false), 2000);
+    setTimeout(() => { setPixSaved(false); }, 2000);
   };
+
+  const pixPayload = pixDados.chave && pixDados.nome && pixDados.cidade
+    ? gerarPayloadPix(pixDados.chave, pixDados.nome, pixDados.cidade, pixValorPreview || null)
+    : null;
+  const pixQrUrl = pixPayload ? gerarQrUrl(pixPayload) : null;
 
   const filtradas = transacoesProfessores.filter(t => {
     const matchStatus = filtroStatus === 'todos' || t.status === filtroStatus;
@@ -407,53 +451,144 @@ export default function FinanceiroAdminView() {
       {/* ABA PIX */}
       {abaAtiva === 'pix' && (
         <div className="space-y-4">
+          {/* Formulário de dados PIX */}
           <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
             <div className="flex items-center gap-2 mb-4">
               <QrCode size={18} color="#00d4ff" />
               <div>
-                <h3 className="font-semibold text-white">QR Code PIX do Administrador</h3>
-                <p className="text-xs text-slate-500">Este QR Code será exibido para os professores ao clicar em "Pagar agora"</p>
+                <h3 className="font-semibold text-white">Dados PIX do Administrador</h3>
+                <p className="text-xs text-slate-500">Cadastre seus dados para gerar o QR Code PIX automaticamente</p>
               </div>
             </div>
 
             <div className="space-y-3">
-              <div>
-                <label className="text-xs text-slate-400 block mb-1">URL da imagem do QR Code PIX</label>
-                <input
-                  value={pixInput}
-                  onChange={e => setPixInput(e.target.value)}
-                  placeholder="https://... (URL da imagem do QR Code PIX)"
-                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
-                />
-                <p className="text-xs text-slate-600 mt-1">Cole a URL pública da imagem do seu QR Code PIX (PNG, JPG ou GIF)</p>
-              </div>
-
-              <button onClick={salvarPix}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                style={{ background: pixSaved ? '#34d39920' : '#00d4ff20', color: pixSaved ? '#34d399' : '#00d4ff', border: `1px solid ${pixSaved ? '#34d39930' : '#00d4ff30'}` }}>
-                <Save size={14} />{pixSaved ? '✓ Salvo!' : 'Salvar QR Code PIX'}
-              </button>
-            </div>
-
-            {pixQrCode && (
-              <div className="mt-5">
-                <p className="text-xs text-slate-400 mb-3">Pré-visualização:</p>
-                <div className="flex justify-center">
-                  <div className="p-4 rounded-2xl" style={{ background: 'white' }}>
-                    <img src={pixQrCode} alt="QR Code PIX" className="w-48 h-48 object-contain" />
-                  </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Tipo de Chave</label>
+                  <select value={pixForm.tipochave} onChange={e => setPixForm(f => ({ ...f, tipochave: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <option value="cpf">CPF</option>
+                    <option value="cnpj">CNPJ</option>
+                    <option value="email">E-mail</option>
+                    <option value="telefone">Telefone</option>
+                    <option value="aleatoria">Chave Aleatória</option>
+                  </select>
                 </div>
-                <p className="text-xs text-center text-slate-500 mt-3">Este QR Code será exibido para professores realizarem o pagamento</p>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Chave PIX</label>
+                  <input value={pixForm.chave} onChange={e => setPixForm(f => ({ ...f, chave: e.target.value }))}
+                    placeholder={pixForm.tipochave === 'cpf' ? '000.000.000-00' : pixForm.tipochave === 'email' ? 'email@ex.com' : 'Chave PIX'}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                </div>
               </div>
-            )}
 
-            {!pixQrCode && (
-              <div className="mt-5 p-4 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                <QrCode size={40} className="mx-auto mb-2 opacity-20 text-slate-500" />
-                <p className="text-xs text-slate-500">Nenhum QR Code cadastrado ainda</p>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Nome do Beneficiário</label>
+                <input value={pixForm.nome} onChange={e => setPixForm(f => ({ ...f, nome: e.target.value }))}
+                  placeholder="Nome completo ou razão social"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
-            )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Cidade</label>
+                  <input value={pixForm.cidade} onChange={e => setPixForm(f => ({ ...f, cidade: e.target.value }))}
+                    placeholder="São Paulo"
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Banco</label>
+                  <input value={pixForm.banco} onChange={e => setPixForm(f => ({ ...f, banco: e.target.value }))}
+                    placeholder="Ex: Nubank, Itaú..."
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button onClick={salvarPix}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background: pixSaved ? '#34d39920' : '#00d4ff20', color: pixSaved ? '#34d399' : '#00d4ff', border: `1px solid ${pixSaved ? '#34d39930' : '#00d4ff30'}` }}>
+                  <Save size={14} />{pixSaved ? '✓ Salvo!' : 'Salvar Dados PIX'}
+                </button>
+                {pixQrUrl && (
+                  <button onClick={() => setShowPixModal(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                    style={{ background: '#a78bfa20', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
+                    <Eye size={14} />Ver QR Code
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Preview QR Code com valor */}
+          {pixDados.chave && pixDados.nome && pixDados.cidade && (
+            <div className="p-5 rounded-2xl" style={{ background: CARD, border: '1px solid #00d4ff20' }}>
+              <h4 className="font-semibold text-white mb-3 text-sm flex items-center gap-2"><QrCode size={15} color="#00d4ff" />Pré-visualização do QR Code</h4>
+              <div className="flex gap-2 mb-4 items-center">
+                <span className="text-xs text-slate-400">Valor (opcional):</span>
+                <input type="number" value={pixValorPreview} onChange={e => setPixValorPreview(e.target.value)}
+                  placeholder="0.00" className="px-2 py-1.5 rounded-lg text-sm text-white outline-none w-28"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <span className="text-xs text-slate-500">Deixe vazio para valor livre</span>
+              </div>
+
+              <div className="flex flex-col items-center gap-4">
+                <div className="p-4 rounded-2xl" style={{ background: 'white' }}>
+                  <img src={pixQrUrl} alt="QR Code PIX" className="w-48 h-48 object-contain" />
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-bold text-white">{pixDados.nome}</div>
+                  <div className="text-xs text-slate-400">{pixDados.banco && `${pixDados.banco} · `}{pixDados.tipochave?.toUpperCase()}: {pixDados.chave}</div>
+                  <div className="text-xs text-slate-500">{pixDados.cidade}</div>
+                </div>
+                <button onClick={() => { navigator.clipboard.writeText(pixPayload); setPixCopied(true); setTimeout(() => setPixCopied(false), 2000); }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all"
+                  style={{ background: pixCopied ? '#34d39920' : '#1e2a3a', color: pixCopied ? '#34d399' : '#94a3b8', border: `1px solid ${pixCopied ? '#34d39930' : 'rgba(255,255,255,0.08)'}` }}>
+                  <Copy size={12} />{pixCopied ? 'Código copiado!' : 'Copiar código PIX (copia e cola)'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!pixDados.chave && (
+            <div className="p-6 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
+              <QrCode size={40} className="mx-auto mb-2 opacity-20 text-slate-500" />
+              <p className="text-sm text-slate-500">Preencha os dados acima para gerar seu QR Code PIX</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal QR Code PIX expandido */}
+      {showPixModal && pixQrUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowPixModal(false); }}>
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-white">QR Code PIX</h3>
+              <button onClick={() => setShowPixModal(false)} className="p-2 rounded-xl hover:bg-white/5"><X size={16} color="#6b7280" /></button>
+            </div>
+            <div className="flex justify-center mb-4">
+              <div className="p-5 rounded-2xl" style={{ background: 'white' }}>
+                <img src={pixQrUrl} alt="QR Code PIX" className="w-56 h-56 object-contain" />
+              </div>
+            </div>
+            <div className="text-center mb-4">
+              <div className="text-base font-bold text-white">{pixDados.nome}</div>
+              <div className="text-xs text-slate-400 mt-1">{pixDados.banco && `${pixDados.banco} · `}{pixDados.tipochave?.toUpperCase()}: {pixDados.chave}</div>
+              <div className="text-xs text-slate-500">{pixDados.cidade}</div>
+            </div>
+            <button onClick={() => { navigator.clipboard.writeText(pixPayload); setPixCopied(true); setTimeout(() => setPixCopied(false), 2000); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: pixCopied ? '#34d39920' : '#00d4ff20', color: pixCopied ? '#34d399' : '#00d4ff', border: `1px solid ${pixCopied ? '#34d39930' : '#00d4ff30'}` }}>
+              <Copy size={14} />{pixCopied ? '✓ Código Copiado!' : 'Copiar código PIX'}
+            </button>
           </div>
         </div>
       )}

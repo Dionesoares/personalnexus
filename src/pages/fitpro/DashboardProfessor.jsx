@@ -1,8 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Activity, Dumbbell, Calendar, Plus, Share2, Copy, CheckCircle2, X, Link2, Settings, AlertCircle, Clock, QrCode } from 'lucide-react';
+import { Users, Activity, Dumbbell, Calendar, Plus, Share2, Copy, CheckCircle2, X, Settings, AlertCircle, Clock, QrCode } from 'lucide-react';
 
-const PIX_STORAGE_KEY = 'fitpro_admin_pix_qrcode';
+const PIX_DADOS_KEY = 'fitpro_admin_pix_dados';
+
+function gerarPayloadPix(chave, nome, cidade, valor = null) {
+  const nomeClean = nome.substring(0, 25).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  const cidadeClean = cidade.substring(0, 15).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  const merchantAccountInfo = `0014BR.GOV.BCB.PIX01${String(chave.length).padStart(2,'0')}${chave}`;
+  const mai = `26${String(merchantAccountInfo.length).padStart(2,'0')}${merchantAccountInfo}`;
+  const currency = '5303986';
+  const valorStr = valor ? `54${String(Number(valor).toFixed(2).length).padStart(2,'0')}${Number(valor).toFixed(2)}` : '';
+  const country = '5802BR';
+  const nomeField = `59${String(nomeClean.length).padStart(2,'0')}${nomeClean}`;
+  const cidadeField = `60${String(cidadeClean.length).padStart(2,'0')}${cidadeClean}`;
+  const txid = '62070503***';
+  const payload = `000201${mai}52040000${currency}${valorStr}${country}${nomeField}${cidadeField}${txid}6304`;
+  let crc = 0xFFFF;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) { crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1; }
+  }
+  return payload + (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+}
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import ModalEditarPerfil from '../../components/fitpro/ModalEditarPerfil';
@@ -17,7 +37,8 @@ export default function DashboardProfessor({ onNav }) {
   const [copied, setCopied] = useState(null);
   const [showEditarPerfil, setShowEditarPerfil] = useState(false);
   const [showPixModal, setShowPixModal] = useState(false);
-  const [pixQrCode] = useState(() => localStorage.getItem(PIX_STORAGE_KEY) || '');
+  const [pixCopied, setPixCopied] = useState(false);
+  const [pixDados] = useState(() => { try { return JSON.parse(localStorage.getItem(PIX_DADOS_KEY)) || {}; } catch { return {}; } });
 
   const [professorId, setProfessorId_] = useState('');
   useEffect(() => {
@@ -135,56 +156,64 @@ export default function DashboardProfessor({ onNav }) {
       )}
 
       {/* Modal PIX */}
-      {showPixModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}
-          onClick={e => { if (e.target === e.currentTarget) setShowPixModal(false); }}>
-          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-bold text-white">Pagamento via PIX</h3>
-                <p className="text-xs text-slate-500">Escaneie o QR Code para pagar</p>
+      {showPixModal && (() => {
+        const valorTotal = cobrancasAdmin.reduce((acc, t) => acc + parseFloat(t.valor || 0), 0);
+        const pixOk = pixDados?.chave && pixDados?.nome && pixDados?.cidade;
+        const payload = pixOk ? gerarPayloadPix(pixDados.chave, pixDados.nome, pixDados.cidade, valorTotal) : null;
+        const qrUrl = payload ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(payload)}` : null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}
+            onClick={e => { if (e.target === e.currentTarget) setShowPixModal(false); }}>
+            <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-white">Pagamento via PIX</h3>
+                  <p className="text-xs text-slate-500">Escaneie o QR Code para pagar</p>
+                </div>
+                <button onClick={() => setShowPixModal(false)} className="p-2 rounded-xl hover:bg-white/5"><X size={16} color="#6b7280" /></button>
               </div>
-              <button onClick={() => setShowPixModal(false)} className="p-2 rounded-xl hover:bg-white/5"><X size={16} color="#6b7280" /></button>
-            </div>
 
-            {cobrancasAdmin.length === 1 && (
+              {/* Resumo da cobrança */}
               <div className="mb-4 p-3 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div className="text-xs text-slate-400">{cobrancasAdmin[0].descricao}</div>
-                <div className="text-2xl font-black text-white mt-1">R$ {parseFloat(cobrancasAdmin[0].valor || 0).toFixed(2)}</div>
-                {cobrancasAdmin[0].vencimento && (
-                  <div className="text-xs text-slate-500 mt-1">Vencimento: {new Date(cobrancasAdmin[0].vencimento).toLocaleDateString('pt-BR')}</div>
+                {cobrancasAdmin.length === 1 ? (
+                  <>
+                    <div className="text-xs text-slate-400">{cobrancasAdmin[0].descricao}</div>
+                    {cobrancasAdmin[0].vencimento && <div className="text-xs text-slate-500">Venc. {new Date(cobrancasAdmin[0].vencimento).toLocaleDateString('pt-BR')}</div>}
+                  </>
+                ) : (
+                  <div className="text-xs text-slate-400">{cobrancasAdmin.length} cobranças pendentes/vencidas</div>
                 )}
+                <div className="text-2xl font-black text-white mt-1">R$ {valorTotal.toFixed(2)}</div>
               </div>
-            )}
-            {cobrancasAdmin.length > 1 && (
-              <div className="mb-4 p-3 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div className="text-xs text-slate-400">{cobrancasAdmin.length} cobranças pendentes</div>
-                <div className="text-2xl font-black text-white mt-1">
-                  R$ {cobrancasAdmin.reduce((acc, t) => acc + parseFloat(t.valor || 0), 0).toFixed(2)}
-                </div>
-              </div>
-            )}
 
-            {pixQrCode ? (
-              <div className="flex justify-center">
-                <div className="p-4 rounded-2xl" style={{ background: 'white' }}>
-                  <img src={pixQrCode} alt="QR Code PIX" className="w-52 h-52 object-contain" />
+              {qrUrl ? (
+                <>
+                  <div className="flex justify-center mb-4">
+                    <div className="p-4 rounded-2xl" style={{ background: 'white' }}>
+                      <img src={qrUrl} alt="QR Code PIX" className="w-52 h-52 object-contain" />
+                    </div>
+                  </div>
+                  <div className="text-center mb-4">
+                    <div className="text-sm font-bold text-white">{pixDados.nome}</div>
+                    <div className="text-xs text-slate-400">{pixDados.banco && `${pixDados.banco} · `}{pixDados.tipochave?.toUpperCase()}: {pixDados.chave}</div>
+                  </div>
+                  <button onClick={() => { navigator.clipboard.writeText(payload); setPixCopied(true); setTimeout(() => setPixCopied(false), 2000); }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                    style={{ background: pixCopied ? '#34d39920' : '#1e2a3a', color: pixCopied ? '#34d399' : '#94a3b8', border: `1px solid ${pixCopied ? '#34d39930' : 'rgba(255,255,255,0.08)'}` }}>
+                    <Copy size={14} />{pixCopied ? '✓ Código Copiado!' : 'Copiar código PIX (copia e cola)'}
+                  </button>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                  <QrCode size={48} className="opacity-20 text-slate-500 mb-3" />
+                  <p className="text-sm text-slate-500 text-center">PIX não configurado pelo administrador.</p>
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                <QrCode size={48} className="opacity-20 text-slate-500 mb-3" />
-                <p className="text-sm text-slate-500 text-center">QR Code PIX não configurado.</p>
-                <p className="text-xs text-slate-600 text-center mt-1">Solicite ao administrador para configurar.</p>
-              </div>
-            )}
-
-            <p className="text-xs text-center text-slate-500 mt-4">
-              Após o pagamento, aguarde a confirmação do administrador.
-            </p>
+              )}
+              <p className="text-xs text-center text-slate-500 mt-4">Após o pagamento, aguarde a confirmação do administrador.</p>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Quick Actions */}
       <div className="rounded-2xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
