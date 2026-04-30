@@ -42,18 +42,18 @@ function gerarQrUrl(payload) {
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 const STATUS_COLOR = { pago: '#34d399', pendente: '#fbbf24', vencido: '#ef4444', cancelado: '#64748b', a_vencer: '#60a5fa' };
-const STATUS_LABEL = { pago: 'Pago', pendente: 'Pendente', vencido: 'Vencido', cancelado: 'Cancelado', a_vencer: 'A vencer' };
+const STATUS_LABEL = { pago: 'Cobrança em dia', pendente: 'Pendente', vencido: 'Vencido', cancelado: 'Cancelado', a_vencer: 'A vencer' };
 const STATUS_ICON = { pago: CheckCircle2, pendente: Clock, vencido: AlertCircle, cancelado: X, a_vencer: Clock };
 
 // Determina o status visual de uma transação considerando a data de vencimento
 function resolverStatusTransacao(t) {
   if (t.status === 'pago' || t.status === 'cancelado') return t.status;
+  if (!t.vencimento) return t.status; // sem vencimento, usa o status salvo
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-  const venc = t.vencimento ? new Date(t.vencimento) : null;
-  if (venc) { venc.setHours(0, 0, 0, 0); }
-  if (venc && venc > hoje) return 'a_vencer';
-  if (venc && venc < hoje) return 'vencido';
-  return t.status; // vence hoje = pendente
+  const venc = new Date(t.vencimento); venc.setHours(0, 0, 0, 0);
+  if (venc > hoje) return 'a_vencer';
+  if (venc < hoje) return 'vencido';
+  return 'pendente'; // vence hoje
 }
 
 const PROF_STATUS_CONFIG = {

@@ -50,19 +50,20 @@ export default function DashboardProfessor({ onNav }) {
 
   const meusAlunos = professorId ? alunos.filter(a => a.professorId === professorId) : alunos;
 
-  // Cobranças do admin para este professor — só exibe quando a data de vencimento chegou ou passou
+  // Cobranças do admin para este professor
+  // Regra: só exibe se houver data de vencimento E ela já chegou (hoje ou passou). Sem vencimento = não exibe.
+  // Status "pago" = em dia = não exibe alerta.
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const cobrancasAdmin = (transacoes || []).filter(t => {
     if (t.professorId !== professorId || t.alunoId) return false;
     if (t.status === 'pago' || t.status === 'cancelado') return false;
-    // Só mostra a partir da data de vencimento (hoje ou atrasada). Se for futura, não exibe.
-    const venc = t.vencimento ? new Date(t.vencimento) : new Date(t.data);
-    venc.setHours(0,0,0,0);
+    // Só exibe se tiver vencimento definido e a data já chegou
+    if (!t.vencimento) return false;
+    const venc = new Date(t.vencimento); venc.setHours(0,0,0,0);
     return venc <= hoje;
   });
   const cobrancaVencida = cobrancasAdmin.some(t => {
-    const venc = t.vencimento ? new Date(t.vencimento) : new Date(t.data);
-    venc.setHours(0,0,0,0);
+    const venc = new Date(t.vencimento); venc.setHours(0,0,0,0);
     return venc < hoje;
   });
   const minhasAvaliacoes = avaliacoes.filter(a => meusAlunos.some(al => al.id === a.alunoId));
