@@ -47,7 +47,8 @@ const STATUS_ICON = { pago: CheckCircle2, pendente: Clock, vencido: AlertCircle,
 
 const PROF_STATUS_CONFIG = {
   pago:         { label: 'Em dia',       color: '#34d399', bg: '#34d39915', border: '#34d39930', icon: CheckCircle2 },
-  pendente:     { label: 'Pendente',     color: '#fbbf24', bg: '#fbbf2415', border: '#fbbf2430', icon: Clock },
+  a_vencer:     { label: 'A vencer',     color: '#60a5fa', bg: '#60a5fa15', border: '#60a5fa30', icon: Clock },
+  pendente:     { label: 'Vence hoje',   color: '#fbbf24', bg: '#fbbf2415', border: '#fbbf2430', icon: Clock },
   vencido:      { label: 'Vencido',      color: '#ef4444', bg: '#ef444415', border: '#ef444430', icon: AlertCircle },
   sem_cobranca: { label: 'Sem cobrança', color: '#64748b', bg: '#64748b10', border: '#64748b25', icon: DollarSign },
 };
@@ -59,6 +60,8 @@ function statusFinanceiroProfessor(profId, transacoes) {
     t.professorId === profId && t.tipo === 'Mensalidade' && t.categoria !== 'despesa'
   );
   if (mensalidades.length === 0) return 'sem_cobranca';
+
+  // Verifica se alguma está vencida (vencimento < hoje e não paga)
   const temVencida = mensalidades.some(t => {
     if (t.status === 'pago') return false;
     const venc = t.vencimento ? new Date(t.vencimento) : new Date(t.data);
@@ -66,7 +69,26 @@ function statusFinanceiroProfessor(profId, transacoes) {
     return venc < hoje;
   });
   if (temVencida) return 'vencido';
-  if (mensalidades.some(t => t.status === 'pendente')) return 'pendente';
+
+  // Verifica se alguma vence hoje
+  const temHoje = mensalidades.some(t => {
+    if (t.status === 'pago') return false;
+    const venc = t.vencimento ? new Date(t.vencimento) : new Date(t.data);
+    venc.setHours(0, 0, 0, 0);
+    return venc.getTime() === hoje.getTime();
+  });
+  if (temHoje) return 'pendente';
+
+  // Verifica se há cobranças futuras ainda não pagas (a vencer)
+  const temFutura = mensalidades.some(t => {
+    if (t.status === 'pago') return false;
+    const venc = t.vencimento ? new Date(t.vencimento) : new Date(t.data);
+    venc.setHours(0, 0, 0, 0);
+    return venc > hoje;
+  });
+  if (temFutura) return 'a_vencer';
+
+  // Todas pagas
   return 'pago';
 }
 
@@ -170,6 +192,7 @@ export default function FinanceiroAdminView() {
 
   const countsPorStatus = {
     pago: professoresComStatus.filter(p => p.statusFinanceiro === 'pago').length,
+    a_vencer: professoresComStatus.filter(p => p.statusFinanceiro === 'a_vencer').length,
     pendente: professoresComStatus.filter(p => p.statusFinanceiro === 'pendente').length,
     vencido: professoresComStatus.filter(p => p.statusFinanceiro === 'vencido').length,
     sem_cobranca: professoresComStatus.filter(p => p.statusFinanceiro === 'sem_cobranca').length,
@@ -274,15 +297,15 @@ export default function FinanceiroAdminView() {
       {/* Abas */}
       <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
         {[
-          { id: 'professores', label: `👨‍🏫 Professores${countsPorStatus.vencido > 0 ? ` (${countsPorStatus.vencido})` : ''}` },
+          { id: 'professores', label: `👨‍🏫 Professores${countsPorStatus.vencido > 0 ? ` (${countsPorStatus.vencido} vencido${countsPorStatus.vencido > 1 ? 's' : ''})` : countsPorStatus.pendente > 0 ? ` (${countsPorStatus.pendente} vence hoje)` : ''}` },
           { id: 'transacoes', label: '💳 Transações' },
           { id: 'pix', label: '🔳 Configurar PIX' },
         ].map(a => (
           <button key={a.id} onClick={() => setAbaAtiva(a.id)}
             className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
             style={{
-              background: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef444415' : '#00d4ff15') : 'transparent',
-              color: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef4444' : '#00d4ff') : '#64748b',
+              background: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef444415' : a.id === 'professores' && countsPorStatus.pendente > 0 ? '#fbbf2415' : '#00d4ff15') : 'transparent',
+              color: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef4444' : a.id === 'professores' && countsPorStatus.pendente > 0 ? '#fbbf24' : '#00d4ff') : '#64748b',
             }}>
             {a.label}
           </button>
@@ -292,7 +315,7 @@ export default function FinanceiroAdminView() {
       {/* ABA PROFESSORES */}
       {abaAtiva === 'professores' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {Object.entries(PROF_STATUS_CONFIG).map(([key, cfg]) => {
               const Icon = cfg.icon;
               return (
