@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save, Copy, Eye } from 'lucide-react';
+import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save, Copy, Eye, Edit2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -149,6 +149,7 @@ export default function FinanceiroAdminView() {
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroProfStatus, setFiltroProfStatus] = useState('todos');
   const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyCobrancaProf());
   const [saved, setSaved] = useState(false);
   const [confirmando, setConfirmando] = useState(null);
@@ -234,9 +235,30 @@ export default function FinanceiroAdminView() {
     if (!form.valor) return alert('Preencha o valor');
     if (!form.descricao.trim()) return alert('Preencha a descrição');
     if (!form.professorId) return alert('Selecione um professor');
-    addTransacao({ ...form, valor: parseFloat(form.valor) || 0 });
+    if (editId) {
+      updateTransacao(editId, { ...form, valor: parseFloat(form.valor) || 0 });
+    } else {
+      addTransacao({ ...form, valor: parseFloat(form.valor) || 0 });
+    }
     setSaved(true);
-    setTimeout(() => { setSaved(false); setShowForm(false); setForm(emptyCobrancaProf()); }, 1200);
+    setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyCobrancaProf()); }, 1200);
+  };
+
+  const abrirEdicao = (t) => {
+    setForm({
+      descricao: t.descricao || '',
+      tipo: t.tipo || 'Mensalidade',
+      valor: String(t.valor || ''),
+      data: t.data || new Date().toISOString().split('T')[0],
+      vencimento: t.vencimento || '',
+      status: t.status || 'pendente',
+      professorId: t.professorId || '',
+      alunoId: t.alunoId || '',
+      observacoes: t.observacoes || '',
+      categoria: t.categoria || 'receita',
+    });
+    setEditId(t.id);
+    setShowForm(true);
   };
 
   const confirmarRecebido = async (id) => {
@@ -471,6 +493,13 @@ export default function FinanceiroAdminView() {
                           {confirmando === t.id ? '...' : 'Recebido'}
                         </button>
                       )}
+                      <button
+                        onClick={() => abrirEdicao(t)}
+                        title="Editar cobrança"
+                        className="p-1.5 rounded-xl transition-all hover:opacity-90"
+                        style={{ background: '#fbbf2415', color: '#fbbf24', border: '1px solid #fbbf2425' }}>
+                        <Edit2 size={13} />
+                      </button>
                       {t.status !== 'cancelado' && (
                         <button
                           onClick={() => updateTransacao(t.id, { status: 'cancelado' })}
@@ -654,8 +683,8 @@ export default function FinanceiroAdminView() {
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.8)' }}>
           <div className="w-full max-w-md rounded-2xl p-6 my-4" style={{ background: '#0d1525', border: `1px solid ${BORDER}` }}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-white">Nova Cobrança — Professor</h3>
-              <button onClick={() => setShowForm(false)}><X size={18} color="#6b7280" /></button>
+              <h3 className="font-bold text-white">{editId ? 'Editar Cobrança' : 'Nova Cobrança — Professor'}</h3>
+              <button onClick={() => { setShowForm(false); setEditId(null); setForm(emptyCobrancaProf()); }}><X size={18} color="#6b7280" /></button>
             </div>
             <div className="space-y-3">
               <div>
@@ -740,7 +769,7 @@ export default function FinanceiroAdminView() {
             </div>
             <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white"
               style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #00d4ff, #0088cc)' }}>
-              {saved ? '✓ Salvo!' : 'Salvar Cobrança'}
+              {saved ? '✓ Salvo!' : editId ? 'Salvar Alterações' : 'Salvar Cobrança'}
             </button>
           </div>
         </div>
