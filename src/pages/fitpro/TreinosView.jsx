@@ -289,7 +289,7 @@ export default function TreinosView() {
                     className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" title="Baixar PDF" style={{ color: '#34d399' }}>
                     <Download size={14} />
                   </button>
-                  {user?.role !== 'admin' && (
+                  {user?.role !== 'admin' && user?.role !== 'aluno' && (
                     <>
                       <button onClick={(e) => { e.stopPropagation(); setForm({ ...treino, sessoes: treino.sessoes || [] }); setEditId(treino.id); setShowForm(true); }}
                         className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" style={{ color: '#fbbf24' }}>
