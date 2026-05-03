@@ -407,7 +407,7 @@ export default function TreinosView() {
               {form.sessoes.map((sessao, si) => {
                 const cor = COR_SESSAO[si % COR_SESSAO.length];
                 return (
-                  <div key={sessao.id} className="mb-4 rounded-xl overflow-hidden" style={{ border: `1px solid ${cor}30` }}>
+                  <div key={sessao.id} className="mb-4 rounded-xl overflow-visible" style={{ border: `1px solid ${cor}30` }}>
                     <div className="flex items-center gap-2 p-3" style={{ background: `${cor}10` }}>
                       <span className="font-bold text-sm" style={{ color: cor }}>Sessão {String.fromCharCode(65 + si)}</span>
                       <input value={sessao.nome} onChange={e => setForm(f => ({ ...f, sessoes: f.sessoes.map(s => s.id === sessao.id ? { ...s, nome: e.target.value } : s) }))}
