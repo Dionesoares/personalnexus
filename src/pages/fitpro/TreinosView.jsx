@@ -33,6 +33,7 @@ export default function TreinosView() {
   const [collapsedSessoes, setCollapsedSessoes] = useState({});
   const [saved, setSaved] = useState(false);
   const [gifModal, setGifModal] = useState(null); // { nome, gifUrl, series, repeticoes, descanso, observacoes, dicas, cor }
+  const [bibSearch, setBibSearch] = useState({}); // { [sessaoId]: string }
 
   const [alunoId, setAlunoId] = useState('');
   useEffect(() => {
@@ -463,15 +464,33 @@ export default function TreinosView() {
                             ? all
                             : all.filter(b => !b.professorId || b.professorId === 'system' || b.professorId === 'admin' || b.professorId === user?.id);
                           if (bibDisponivel.length === 0) return null;
-                          const padrao = bibDisponivel.filter(b => !b.professorId || b.professorId === 'system' || b.professorId === 'admin');
-                          const meus = bibDisponivel.filter(b => b.professorId === user?.id);
+                          const busca = (bibSearch[sessao.id] || '').toLowerCase();
+                          const filtrados = busca.length > 0
+                            ? bibDisponivel.filter(b => b.nome?.toLowerCase().includes(busca)).slice(0, 20)
+                            : [];
                           return (
-                            <select onChange={e => { if (e.target.value) { const bEx = bibDisponivel.find(b => b.id === e.target.value); if (bEx) addFromBiblioteca(sessao.id, bEx); e.target.value = ''; }}}
-                              className="flex-1 px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                              <option value="">+ Da biblioteca...</option>
-                              {padrao.length > 0 && <optgroup label="📚 Biblioteca Padrão">{padrao.slice(0, 50).map(b => <option key={b.id} value={b.id}>{b.nome}</option>)}</optgroup>}
-                              {meus.length > 0 && <optgroup label="⭐ Meus Exercícios">{meus.slice(0, 50).map(b => <option key={b.id} value={b.id}>{b.nome}</option>)}</optgroup>}
-                            </select>
+                            <div className="flex-1 relative">
+                              <input
+                                value={bibSearch[sessao.id] || ''}
+                                onChange={e => setBibSearch(s => ({ ...s, [sessao.id]: e.target.value }))}
+                                placeholder="🔍 Buscar exercício..."
+                                className="w-full px-2 py-1 rounded-lg text-xs text-white outline-none"
+                                style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
+                              />
+                              {filtrados.length > 0 && (
+                                <div className="absolute left-0 right-0 top-full mt-1 rounded-xl overflow-hidden z-20 max-h-48 overflow-y-auto"
+                                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
+                                  {filtrados.map(b => (
+                                    <button key={b.id} type="button"
+                                      onMouseDown={() => { addFromBiblioteca(sessao.id, b); setBibSearch(s => ({ ...s, [sessao.id]: '' })); }}
+                                      className="w-full text-left px-3 py-2 text-xs text-white hover:bg-white/10 transition-all flex items-center gap-2">
+                                      <span className="text-slate-400">{b.grupoMuscular}</span>
+                                      <span>{b.nome}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           );
                         })()}
                       </div>
