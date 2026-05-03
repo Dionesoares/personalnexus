@@ -20,6 +20,14 @@
     "duracaoSemanas": {
       "type": "number"
     },
+    "dataInicio": {
+      "type": "string",
+      "format": "date"
+    },
+    "dataFim": {
+      "type": "string",
+      "format": "date"
+    },
     "sessoes": {
       "type": "array",
       "items": {

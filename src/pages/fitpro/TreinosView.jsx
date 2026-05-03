@@ -11,7 +11,7 @@ const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 const COR_SESSAO = ['#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa', '#fb923c'];
 
-const emptyTreino = { nome: '', objetivo: 'Hipertrofia', nivel: 'Intermediário', duracaoSemanas: 12, sessoes: [] };
+const emptyTreino = { nome: '', objetivo: 'Hipertrofia', nivel: 'Intermediário', duracaoSemanas: 12, dataInicio: '', dataFim: '', sessoes: [] };
 const emptyEx = () => ({ id: generateId(), nome: '', series: 3, repeticoes: '10-12', carga: 0, descanso: 60, tecnica: 'Normal', observacoes: '', grupoMuscular: 'Peito' });
 
 export default function TreinosView() {
@@ -48,10 +48,12 @@ export default function TreinosView() {
   }, [user?.id, alunos]);
 
   const alunosFiltrados = user?.role === 'professor' ? alunos.filter(a => professorId && a.professorId === professorId) : alunos;
+  const hoje = new Date().toISOString().split('T')[0];
+
   const treinosFiltrados = user?.role === 'professor'
     ? planosTreino.filter(t => alunosFiltrados.some(a => a.id === t.alunoId))
     : user?.role === 'aluno'
-    ? planosTreino.filter(t => t.alunoId === alunoId)
+    ? planosTreino.filter(t => t.alunoId === alunoId && (!t.dataInicio || t.dataInicio <= hoje))
     : planosTreino;
 
   const [alunoFilter, setAlunoFilter] = useState('');
@@ -276,6 +278,8 @@ export default function TreinosView() {
                   <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${color}15`, color }}>{treino.sessoes?.length || 0} sessões</span>
                   <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>{treino.duracaoSemanas} sem</span>
                   <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>{totalExs} exerc</span>
+                  {treino.dataInicio && <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>▶ {new Date(treino.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })}</span>}
+                  {treino.dataFim && <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>⏹ {new Date(treino.dataFim + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })}</span>}
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setSelectedTreino(treino)} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
@@ -341,6 +345,20 @@ export default function TreinosView() {
                 </div>
               </div>
               <div><label className="text-xs text-slate-400 block mb-1">Duração (semanas)</label><input type="number" value={form.duracaoSemanas} onChange={e => setForm(f => ({ ...f, duracaoSemanas: parseInt(e.target.value) || 1 }))} className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">📅 Data Inicial</label>
+                <input type="date" value={form.dataInicio || ''} onChange={e => setForm(f => ({ ...f, dataInicio: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">🏁 Data Final</label>
+                <input type="date" value={form.dataFim || ''} onChange={e => setForm(f => ({ ...f, dataFim: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
             </div>
 
             {/* Treino Padrão Automático */}
