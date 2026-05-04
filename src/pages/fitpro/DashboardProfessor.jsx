@@ -111,13 +111,13 @@ export default function DashboardProfessor({ onNav }) {
               {meusAlunos.length > 0 ? `Você tem ${meusAlunos.length} aluno${meusAlunos.length > 1 ? 's' : ''} sob sua orientação` : 'Comece cadastrando seu primeiro aluno'}
             </p>
           </div>
-          <div className="hidden md:flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button onClick={() => setShowEditarPerfil(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
               style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399' }}>
               <Settings size={14} />Meu Perfil
             </button>
-            <button onClick={() => setShowLinkModal(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+            <button onClick={() => setShowLinkModal(true)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
               style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)', color: '#38bdf8' }}>
               <Share2 size={14} />Convidar Aluno
             </button>
