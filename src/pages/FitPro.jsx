@@ -144,10 +144,20 @@ function AuthenticatedApp() {
 
 function FitProShell() {
   const { user } = useAuth();
-  const [showCadastro, setShowCadastro] = useState(false);
+  const urlParams = new URLSearchParams(window.location.search);
+  const cadastroParam = urlParams.get('cadastro');
+  const profParam = urlParams.get('prof');
+
+  const [showCadastro, setShowCadastro] = useState(!!cadastroParam);
 
   if (!user) {
-    if (showCadastro) return <CadastroPage onBack={() => setShowCadastro(false)} />;
+    if (showCadastro) return (
+      <CadastroPage
+        onBack={() => setShowCadastro(false)}
+        tipoInicial={cadastroParam === 'aluno' ? 'aluno' : undefined}
+        professorIdInicial={profParam || ''}
+      />
+    );
     return <LoginPage onCadastro={() => setShowCadastro(true)} />;
   }
 

@@ -7,11 +7,11 @@ import { addCredential, emailExists } from '../../lib/fitpro-storage';
 const estados = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 const emptyAddr = { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' };
 
-export default function CadastroPage({ onBack }) {
+export default function CadastroPage({ onBack, tipoInicial, professorIdInicial = '' }) {
   const { addAluno, addProfessor, professores } = useApp();
   const { login } = useAuth();
 
-  const [tipo, setTipo] = useState('escolha');
+  const [tipo, setTipo] = useState(tipoInicial || 'escolha');
   const [step, setStep] = useState(1);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ export default function CadastroPage({ onBack }) {
   const [peso, setPeso] = useState('');
   const [altura, setAltura] = useState('');
   const [objetivo, setObjetivo] = useState('');
-  const [professorId, setProfessorId] = useState('');
+  const [professorId, setProfessorId] = useState(professorIdInicial);
   const [cref, setCref] = useState('');
   const [especialidade, setEspecialidade] = useState('');
 

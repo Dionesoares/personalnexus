@@ -70,7 +70,9 @@ export default function DashboardProfessor({ onNav }) {
   const minhasPeriodizacoes = periodizacoes.filter(p => meusAlunos.some(al => al.id === p.alunoId));
 
   const baseUrl = window.location.origin;
-  const linkCadastro = `${baseUrl}/fitpro/cadastro`;
+  const linkCadastro = professorId
+    ? `${baseUrl}?cadastro=aluno&prof=${professorId}`
+    : `${baseUrl}?cadastro=aluno`;
 
   const copiar = (tipo) => {
     const texto = tipo === 'link' ? linkCadastro : `🏋️ FitPro - Cadastre-se como meu aluno!\n\nAcesse: ${linkCadastro}\n\nApós o cadastro, informe seu email para vinculação.`;
