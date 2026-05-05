@@ -97,7 +97,8 @@ function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta,
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     setSaving(true);
-    await onSave({ ...form, pasta: pasta || form.pasta || '', alunoId: alunoId || undefined });
+    // pasta sempre vem da prop (contexto da pasta selecionada), nunca do form
+    await onSave({ ...form, pasta: pasta, alunoId: alunoId || undefined });
     setSaving(false);
   };
 
@@ -105,7 +106,14 @@ function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta,
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.85)' }}>
       <div className="w-full max-w-2xl rounded-2xl p-6 my-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="font-bold text-white">{rotina ? 'Editar Rotina de Treino' : 'Nova Rotina de Treino'}</h3>
+          <div>
+            <h3 className="font-bold text-white">{rotina ? 'Editar Rotina de Treino' : 'Nova Rotina de Treino'}</h3>
+            {pasta && (
+              <p className="text-xs mt-0.5 flex items-center gap-1" style={{ color: '#a78bfa' }}>
+                <Folder size={11} />Pasta: <strong>{pasta}</strong>
+              </p>
+            )}
+          </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5"><X size={18} color="#6b7280" /></button>
         </div>
 
