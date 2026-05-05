@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy, Download } from 'lucide-react';
+import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy, Download, FolderPlus } from 'lucide-react';
 import { gerarPDFTreino } from '../../lib/fitpro-pdf';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
 import { TREINO_TEMPLATES, aplicarTemplate } from '../../lib/treinoTemplates';
+import PastaTreinoModal from './PastaTreinoModal';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -26,6 +27,7 @@ export default function TreinosView() {
     });
   }, [user?.id]);
 
+  const [showPastaModal, setShowPastaModal] = useState(false);
   const [selectedTreino, setSelectedTreino] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -68,6 +70,11 @@ export default function TreinosView() {
     if (editId) { updatePlanoTreino(editId, form); } else { addPlanoTreino(form); }
     setSaved(true);
     setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyTreino); }, 1200);
+  };
+
+  const handleSavePlanos = (planos) => {
+    planos.forEach(p => addPlanoTreino(p));
+    setShowPastaModal(false);
   };
 
   const addSessao = () => {
@@ -242,11 +249,18 @@ export default function TreinosView() {
       <div className="flex items-center justify-between">
         <div><h2 className="text-xl font-bold text-white">Planos de Treino</h2><p className="text-xs text-slate-500">{treinosExibidos.length} plano(s)</p></div>
         {user?.role === 'professor' && (
-          <button onClick={() => { setForm({ ...emptyTreino, alunoId: alunosFiltrados[0]?.id || '' }); setEditId(null); setShowForm(true); }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-            style={{ background: '#f472b620', color: '#f472b6', border: '1px solid #f472b630' }}>
-            <Plus size={14} />Criar Treino
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setShowPastaModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: '#a78bfa20', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
+              <FolderPlus size={14} />Nova Pasta
+            </button>
+            <button onClick={() => { setForm({ ...emptyTreino, alunoId: alunosFiltrados[0]?.id || '' }); setEditId(null); setShowForm(true); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: '#f472b620', color: '#f472b6', border: '1px solid #f472b630' }}>
+              <Plus size={14} />Criar Treino
+            </button>
+          </div>
         )}
       </div>
 
@@ -311,6 +325,16 @@ export default function TreinosView() {
             );
           })}
         </div>
+      )}
+
+      {/* Modal Nova Pasta */}
+      {showPastaModal && (
+        <PastaTreinoModal
+          onClose={() => setShowPastaModal(false)}
+          alunosFiltrados={alunosFiltrados}
+          exerciciosBiblioteca={exerciciosBiblioteca}
+          onSavePlanos={handleSavePlanos}
+        />
       )}
 
       {/* Form modal */}
@@ -444,6 +468,7 @@ export default function TreinosView() {
                                       <input value={ex.nome} onChange={e => updateExercicio(sessao.id, ex.id, 'nome', e.target.value)} placeholder="Exercício" className="col-span-2 px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
                                       <input type="number" value={ex.series} onChange={e => updateExercicio(sessao.id, ex.id, 'series', parseInt(e.target.value) || 1)} placeholder="Séries" className="px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
                                       <input value={ex.repeticoes} onChange={e => updateExercicio(sessao.id, ex.id, 'repeticoes', e.target.value)} placeholder="Reps" className="px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                                      <input type="number" value={ex.carga || ''} onChange={e => updateExercicio(sessao.id, ex.id, 'carga', parseFloat(e.target.value) || 0)} placeholder="Carga (kg)" className="col-span-2 px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
                                     </div>
                                     <button onClick={() => removeExercicio(sessao.id, ex.id)} className="text-red-400 text-xs mt-1 flex-shrink-0"><X size={12} /></button>
                                   </div>
