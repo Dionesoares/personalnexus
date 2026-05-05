@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy, Download, FolderPlus } from 'lucide-react';
+import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy, Download, FolderPlus, Folder, FolderOpen } from 'lucide-react';
 import { gerarPDFTreino } from '../../lib/fitpro-pdf';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
 import { TREINO_TEMPLATES, aplicarTemplate } from '../../lib/treinoTemplates';
 import PastaTreinoModal from './PastaTreinoModal';
+import TreinoCard from './TreinoCard';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -60,9 +61,16 @@ export default function TreinosView() {
     : planosTreino;
 
   const [alunoFilter, setAlunoFilter] = useState('');
+  const [pastasColapsadas, setPastasColapsadas] = useState({});
+
   const treinosExibidos = user?.role === 'aluno'
     ? treinosFiltrados
     : alunoFilter ? treinosFiltrados.filter(t => t.alunoId === alunoFilter) : treinosFiltrados;
+
+  // Agrupa por pasta (campo `pasta` salvo no plano)
+  const pastas = [...new Set(treinosExibidos.filter(t => t.pasta).map(t => t.pasta))].sort();
+  const treinosSemPasta = treinosExibidos.filter(t => !t.pasta);
+  const treinosPorPasta = (pasta) => treinosExibidos.filter(t => t.pasta === pasta);
 
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
@@ -274,56 +282,44 @@ export default function TreinosView() {
       {treinosExibidos.length === 0 ? (
         <div className="text-center py-16 text-slate-500"><Dumbbell size={40} className="mx-auto mb-3 opacity-30" /><p>Nenhum plano de treino criado</p></div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {treinosExibidos.map((treino, i) => {
-            const aluno = alunos.find(a => a.id === treino.alunoId);
-            const totalExs = treino.sessoes?.reduce((a, s) => a + s.exercicios.length, 0) || 0;
-            const colors = ['#f472b6', '#a78bfa', '#34d399', '#60a5fa', '#fb923c', '#fbbf24'];
-            const color = colors[i % 6];
+        <div className="space-y-6">
+          {/* Pastas */}
+          {pastas.map(pasta => {
+            const planosDaPasta = treinosPorPasta(pasta);
+            const isOpen = !pastasColapsadas[pasta];
             return (
-              <motion.div key={treino.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="p-5 rounded-2xl cursor-pointer hover:opacity-90 transition-all"
-                style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-black mb-3" style={{ background: `${color}20`, color }}>
-                  {String.fromCharCode(65 + i)}
-                </div>
-                <h3 className="font-bold text-white mb-1">{treino.nome}</h3>
-                <p className="text-xs text-slate-500 mb-3">{aluno?.nome} • {treino.nivel}</p>
-                <div className="flex gap-2 flex-wrap mb-3">
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${color}15`, color }}>{treino.sessoes?.length || 0} sessões</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>{treino.duracaoSemanas} sem</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>{totalExs} exerc</span>
-                  {treino.dataInicio && <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>▶ {new Date(treino.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })}</span>}
-                  {treino.dataFim && <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>⏹ {new Date(treino.dataFim + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })}</span>}
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setSelectedTreino(treino)} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
-                    Ver Planilha
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); gerarPDFTreino(treino, aluno); }}
-                    className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" title="Baixar PDF" style={{ color: '#34d399' }}>
-                    <Download size={14} />
-                  </button>
-                  {user?.role !== 'admin' && user?.role !== 'aluno' && (
-                    <>
-                      <button onClick={(e) => { e.stopPropagation(); setForm({ ...treino, sessoes: treino.sessoes || [] }); setEditId(treino.id); setShowForm(true); }}
-                        className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" style={{ color: '#fbbf24' }}>
-                        <Edit2 size={14} />
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); const clone = { ...treino, id: undefined, nome: `${treino.nome} (cópia)`, sessoes: (treino.sessoes || []).map(s => ({ ...s, id: generateId(), exercicios: (s.exercicios || []).map(ex => ({ ...ex, id: generateId() })) })) }; addPlanoTreino(clone); }}
-                        className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" title="Clonar treino" style={{ color: '#60a5fa' }}>
-                        <Copy size={14} />
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); if (confirm('Excluir este treino?')) deletePlanoTreino(treino.id); }}
-                        className="px-3 py-2 rounded-xl text-xs hover:bg-red-500/10 transition-all" style={{ color: '#ef4444' }}>
-                        <Trash2 size={14} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </motion.div>
+              <div key={pasta} className="rounded-2xl overflow-hidden" style={{ border: '1px solid #a78bfa30' }}>
+                {/* Header da pasta */}
+                <button
+                  onClick={() => setPastasColapsadas(p => ({ ...p, [pasta]: !p[pasta] }))}
+                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-white/5 transition-all"
+                  style={{ background: '#a78bfa0a' }}>
+                  {isOpen
+                    ? <FolderOpen size={18} color="#a78bfa" className="flex-shrink-0" />
+                    : <Folder size={18} color="#a78bfa" className="flex-shrink-0" />}
+                  <span className="font-bold text-white flex-1 text-left">{pasta}</span>
+                  <span className="text-xs text-slate-400">{planosDaPasta.length} plano{planosDaPasta.length !== 1 ? 's' : ''}</span>
+                  {isOpen ? <ChevronUp size={15} color="#6b7280" /> : <ChevronDown size={15} color="#6b7280" />}
+                </button>
+                {/* Treinos dentro da pasta */}
+                {isOpen && (
+                  <div className="p-4 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {planosDaPasta.map((treino, i) => <TreinoCard key={treino.id} treino={treino} i={i} alunos={alunos} user={user} setSelectedTreino={setSelectedTreino} setForm={setForm} setEditId={setEditId} setShowForm={setShowForm} addPlanoTreino={addPlanoTreino} deletePlanoTreino={deletePlanoTreino} />)}
+                  </div>
+                )}
+              </div>
             );
           })}
+
+          {/* Treinos sem pasta */}
+          {treinosSemPasta.length > 0 && (
+            <div className="space-y-3">
+              {pastas.length > 0 && <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Sem pasta</p>}
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {treinosSemPasta.map((treino, i) => <TreinoCard key={treino.id} treino={treino} i={i} alunos={alunos} user={user} setSelectedTreino={setSelectedTreino} setForm={setForm} setEditId={setEditId} setShowForm={setShowForm} addPlanoTreino={addPlanoTreino} deletePlanoTreino={deletePlanoTreino} />)}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
