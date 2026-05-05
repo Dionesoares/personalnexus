@@ -1,51 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { FolderPlus, Folder, FolderOpen, Plus, X, Edit2, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, GripVertical } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { FolderPlus, Folder, FolderOpen, Plus, X, Edit2, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, GripVertical, CalendarDays, Sparkles, Users, CheckCircle2, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
-
+import { aplicarTemplate, TREINO_TEMPLATES } from '../../lib/treinoTemplates';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 const COR_SESSAO = ['#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa', '#fb923c'];
 const PASTA_CORES = ['#a78bfa', '#f472b6', '#34d399', '#60a5fa', '#fb923c', '#fbbf24'];
-
-const emptyRotina = () => ({
-  nome: '',
-  descricao: '',
-  nivel: 'Intermediário',
-  objetivo: 'Hipertrofia',
-  sessoes: [],
-  cor: PASTA_CORES[0],
-});
-
-const emptyEx = () => ({
-  id: generateId(),
-  nome: '',
-  series: 3,
-  repeticoes: '10-12',
-  carga: 0,
-  descanso: 60,
-  grupoMuscular: '',
-  observacoes: '',
-});
-
-const emptySessao = (idx) => ({
-  id: generateId(),
-  nome: `Treino ${String.fromCharCode(65 + idx)}`,
-  dia: 'Segunda-feira',
-  exercicios: [],
-});
-
 const DIAS = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+const emptyRotina = () => ({ nome: '', descricao: '', nivel: 'Intermediário', objetivo: 'Hipertrofia', sessoes: [], cor: PASTA_CORES[0] });
+const emptyEx = () => ({ id: generateId(), nome: '', series: 3, repeticoes: '10-12', carga: 0, descanso: 60, grupoMuscular: '', observacoes: '' });
+const emptySessao = (idx) => ({ id: generateId(), nome: `Treino ${String.fromCharCode(65 + idx)}`, dia: 'Segunda-feira', exercicios: [] });
+
+const inp = "w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none";
+const inpStyle = { background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' };
 
 // ─── Modal de Rotina (criar/editar) ─────────────────────────────────────────
-function RotinaModal({ rotina, exerciciosBiblioteca, onSave, onClose }) {
+function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta, addPlanoTreino, onSave, onClose }) {
   const [form, setForm] = useState(rotina || emptyRotina());
   const [collapsedSessoes, setCollapsedSessoes] = useState({});
   const [bibSearch, setBibSearch] = useState({});
   const [saving, setSaving] = useState(false);
+  const [alunoId, setAlunoId] = useState('');
+  const [gerandoAnual, setGerandoAnual] = useState(false);
+  const [planoAnualGerado, setPlanoAnualGerado] = useState(false);
 
   const addSessao = () => setForm(f => ({ ...f, sessoes: [...f.sessoes, emptySessao(f.sessoes.length)] }));
   const removeSessao = (id) => setForm(f => ({ ...f, sessoes: f.sessoes.filter(s => s.id !== id) }));
@@ -54,9 +37,7 @@ function RotinaModal({ rotina, exerciciosBiblioteca, onSave, onClose }) {
   const addEx = (sessaoId) => setForm(f => ({ ...f, sessoes: f.sessoes.map(s => s.id === sessaoId ? { ...s, exercicios: [...s.exercicios, emptyEx()] } : s) }));
   const removeEx = (sessaoId, exId) => setForm(f => ({ ...f, sessoes: f.sessoes.map(s => s.id === sessaoId ? { ...s, exercicios: s.exercicios.filter(e => e.id !== exId) } : s) }));
   const updateEx = (sessaoId, exId, field, val) => setForm(f => ({
-    ...f, sessoes: f.sessoes.map(s => s.id === sessaoId ? {
-      ...s, exercicios: s.exercicios.map(e => e.id === exId ? { ...e, [field]: val } : e)
-    } : s)
+    ...f, sessoes: f.sessoes.map(s => s.id === sessaoId ? { ...s, exercicios: s.exercicios.map(e => e.id === exId ? { ...e, [field]: val } : e) } : s)
   }));
 
   const addFromBib = (sessaoId, bEx) => {
@@ -77,22 +58,65 @@ function RotinaModal({ rotina, exerciciosBiblioteca, onSave, onClose }) {
     }));
   };
 
+  // Gera plano anual automático: 12 planos mensais para o aluno selecionado
+  const handleGerarPlanoAnual = async () => {
+    if (!alunoId) return alert('Selecione um aluno para gerar o plano anual');
+    setGerandoAnual(true);
+    const base = new Date();
+    const sessoesBase = form.sessoes.length > 0 ? form.sessoes : (() => {
+      const t = aplicarTemplate(form.nivel, alunoId, exerciciosBiblioteca || []);
+      return t ? t.sessoes : [];
+    })();
+
+    const planos = [];
+    for (let m = 0; m < 12; m++) {
+      const inicio = new Date(base.getFullYear(), base.getMonth() + m, 1);
+      const fim = new Date(base.getFullYear(), base.getMonth() + m + 1, 0);
+      planos.push({
+        nome: `${form.nome || pasta || 'Treino'} — ${MESES[inicio.getMonth()]} ${inicio.getFullYear()}`,
+        alunoId,
+        objetivo: form.objetivo,
+        nivel: form.nivel,
+        duracaoSemanas: 4,
+        dataInicio: inicio.toISOString().split('T')[0],
+        dataFim: fim.toISOString().split('T')[0],
+        sessoes: sessoesBase.map(s => ({ ...s, id: generateId(), exercicios: (s.exercicios || []).map(e => ({ ...e, id: generateId() })) })),
+        pasta: pasta || '',
+      });
+    }
+
+    for (const p of planos) { await addPlanoTreino(p); }
+    setGerandoAnual(false);
+    setPlanoAnualGerado(true);
+    setTimeout(() => setPlanoAnualGerado(false), 3000);
+  };
+
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     setSaving(true);
-    await onSave(form);
+    await onSave({ ...form, alunoId: alunoId || undefined });
     setSaving(false);
   };
-
-  const inp = "w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none";
-  const inpStyle = { background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' };
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.85)' }}>
       <div className="w-full max-w-2xl rounded-2xl p-6 my-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="font-bold text-white">{rotina ? 'Editar Rotina' : 'Nova Rotina de Treino'}</h3>
+          <h3 className="font-bold text-white">{rotina ? 'Editar Rotina de Treino' : 'Nova Rotina de Treino'}</h3>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5"><X size={18} color="#6b7280" /></button>
+        </div>
+
+        {/* Seleção de Aluno */}
+        <div className="mb-4 p-4 rounded-2xl" style={{ background: '#60a5fa08', border: '1px solid #60a5fa25' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <Users size={14} color="#60a5fa" />
+            <span className="text-xs font-semibold text-white">Aluno (opcional)</span>
+            <span className="text-xs text-slate-500">— para gerar plano anual ou vincular ao treino</span>
+          </div>
+          <select value={alunoId} onChange={e => setAlunoId(e.target.value)} className={inp} style={inpStyle}>
+            <option value="">Selecionar aluno...</option>
+            {alunos.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+          </select>
         </div>
 
         {/* Info básica */}
@@ -121,7 +145,6 @@ function RotinaModal({ rotina, exerciciosBiblioteca, onSave, onClose }) {
               </select>
             </div>
           </div>
-          {/* Cor da rotina */}
           <div>
             <label className="text-xs text-slate-400 block mb-2">Cor</label>
             <div className="flex gap-2">
@@ -132,6 +155,34 @@ function RotinaModal({ rotina, exerciciosBiblioteca, onSave, onClose }) {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Botão Plano Anual Automático */}
+        <div className="mb-5 p-4 rounded-2xl" style={{ background: '#a78bfa08', border: '1px solid #a78bfa30' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <CalendarDays size={15} color="#a78bfa" />
+            <span className="text-sm font-bold text-white">Gerar Plano Anual Automático</span>
+          </div>
+          <p className="text-xs text-slate-400 mb-3">
+            Cria automaticamente <strong className="text-white">12 planos mensais editáveis</strong> para o aluno selecionado, usando as sessões desta rotina (ou o template padrão do nível escolhido).
+          </p>
+          <button
+            onClick={handleGerarPlanoAnual}
+            disabled={gerandoAnual || planoAnualGerado}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all"
+            style={{
+              background: planoAnualGerado ? 'linear-gradient(135deg, #34d399, #059669)' : gerandoAnual ? '#a78bfa40' : 'linear-gradient(135deg, #a78bfa, #7c3aed)',
+              color: '#fff',
+              opacity: gerandoAnual ? 0.7 : 1
+            }}>
+            {planoAnualGerado
+              ? <><CheckCircle2 size={14} />12 planos criados com sucesso!</>
+              : gerandoAnual
+              ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Gerando 12 meses...</>
+              : <><Zap size={14} />Gerar 12 Planos Mensais em 1 Clique</>
+            }
+          </button>
+          {!alunoId && <p className="text-xs text-yellow-400 mt-2 text-center">⚠️ Selecione um aluno acima para habilitar</p>}
         </div>
 
         {/* Sessões */}
@@ -208,7 +259,6 @@ function RotinaModal({ rotina, exerciciosBiblioteca, onSave, onClose }) {
                       </Droppable>
                     </DragDropContext>
 
-                    {/* Adicionar exercício / busca biblioteca */}
                     <div className="flex gap-2 mt-1">
                       <button onClick={() => addEx(sessao.id)} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs"
                         style={{ background: `${cor}10`, color: cor }}>
@@ -241,8 +291,8 @@ function RotinaModal({ rotina, exerciciosBiblioteca, onSave, onClose }) {
 
         <button onClick={handleSave} disabled={saving}
           className="w-full py-3 rounded-xl font-semibold text-sm text-white"
-          style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}>
-          {saving ? '⏳ Salvando...' : <><Save size={14} className="inline mr-2" />{rotina ? 'Salvar Alterações' : 'Criar Rotina'}</>}
+          style={{ background: 'linear-gradient(135deg, #f472b6, #db2777)' }}>
+          {saving ? '⏳ Salvando...' : <><Save size={14} className="inline mr-2" />{rotina ? 'Salvar Alterações' : 'Criar Rotina de Treino'}</>}
         </button>
       </div>
     </div>
@@ -275,9 +325,37 @@ function NovaPastaModal({ onSave, onClose }) {
   );
 }
 
+// ─── Card de Rotina ──────────────────────────────────────────────────────────
+function RotinaCard({ rotina, i, onEdit, onDelete }) {
+  const cor = rotina.cor || COR_SESSAO[i % COR_SESSAO.length];
+  const totalExs = rotina.sessoes?.reduce((a, s) => a + (s.exercicios?.length || 0), 0) || 0;
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      className="p-4 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${cor}20` }}>
+          <Dumbbell size={18} style={{ color: cor }} />
+        </div>
+        <div className="flex gap-1">
+          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-white/5"><Edit2 size={13} color="#fbbf24" /></button>
+          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-500/10"><Trash2 size={13} color="#ef4444" /></button>
+        </div>
+      </div>
+      <h4 className="font-bold text-white text-sm mb-1 truncate">{rotina.nome}</h4>
+      {rotina.descricao && <p className="text-xs text-slate-500 mb-2 truncate">{rotina.descricao}</p>}
+      <div className="flex gap-1.5 flex-wrap">
+        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${cor}15`, color: cor }}>{rotina.sessoes?.length || 0} sessões</span>
+        <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>{totalExs} exerc.</span>
+        {rotina.nivel && <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>{rotina.nivel}</span>}
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Página Principal ────────────────────────────────────────────────────────
 export default function BibliotecaTreinosView({ initialNovaPasta = false, onNovaPastaCriada }) {
-  const { bibliotecaTreinos, addBibliotecaTreino, updateBibliotecaTreino, deleteBibliotecaTreino, exerciciosBiblioteca } = useApp();
+  const { bibliotecaTreinos, addBibliotecaTreino, updateBibliotecaTreino, deleteBibliotecaTreino, exerciciosBiblioteca, alunos, addPlanoTreino } = useApp();
   const { user } = useAuth();
 
   const [professorId, setProfessorId] = useState('');
@@ -290,7 +368,10 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
 
   const minhas = (bibliotecaTreinos || []).filter(b => !professorId || b.professorId === professorId || b.professorId === user?.id);
 
-  // Pastas: lista distinta de nomes de pasta
+  const alunosFiltrados = professorId
+    ? (alunos || []).filter(a => a.professorId === professorId)
+    : (alunos || []);
+
   const [pastas, setPastas] = useState(() => {
     try { return JSON.parse(localStorage.getItem('fitpro_bib_pastas') || '[]'); } catch { return []; }
   });
@@ -298,11 +379,10 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
 
   const [pastasAbertas, setPastasAbertas] = useState({});
   const [showNovaPasta, setShowNovaPasta] = useState(initialNovaPasta);
-  const [editandoPasta, setEditandoPasta] = useState(null); // { idx, nome }
+  const [editandoPasta, setEditandoPasta] = useState(null);
   const [showRotinaModal, setShowRotinaModal] = useState(null); // null | 'new' | rotina obj
-  const [pastaSelecionada, setPastaSelecionada] = useState(''); // pasta onde criar rotina
+  const [pastaSelecionada, setPastaSelecionada] = useState('');
 
-  // Sincroniza abertura do modal se prop mudar
   useEffect(() => { if (initialNovaPasta) setShowNovaPasta(true); }, [initialNovaPasta]);
 
   const handleCriarPasta = (nome) => {
@@ -316,11 +396,8 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
 
   const handleRenamePasta = (oldNome, newNome) => {
     if (!newNome.trim() || oldNome === newNome) { setEditandoPasta(null); return; }
-    // Atualiza todas as rotinas daquela pasta
-    const rotinasNaPasta = minhas.filter(b => b.pasta === oldNome);
-    rotinasNaPasta.forEach(r => updateBibliotecaTreino(r.id, { ...r, pasta: newNome }));
-    const novas = pastas.map(p => p === oldNome ? newNome : p);
-    savePastas(novas);
+    minhas.filter(b => b.pasta === oldNome).forEach(r => updateBibliotecaTreino(r.id, { ...r, pasta: newNome }));
+    savePastas(pastas.map(p => p === oldNome ? newNome : p));
     setEditandoPasta(null);
   };
 
@@ -332,11 +409,8 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
 
   const handleSaveRotina = async (form) => {
     const payload = { ...form, pasta: pastaSelecionada, professorId: professorId || user?.id };
-    if (form.id) {
-      await updateBibliotecaTreino(form.id, payload);
-    } else {
-      await addBibliotecaTreino(payload);
-    }
+    if (form.id) { await updateBibliotecaTreino(form.id, payload); }
+    else { await addBibliotecaTreino(payload); }
     setShowRotinaModal(null);
     setPastaSelecionada('');
   };
@@ -394,22 +468,18 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
                     className="flex items-center gap-2 flex-1 min-w-0">
                     {isOpen ? <FolderOpen size={18} color="#a78bfa" /> : <Folder size={18} color="#a78bfa" />}
                     {editando ? (
-                      <input
-                        autoFocus
-                        defaultValue={pasta}
+                      <input autoFocus defaultValue={pasta}
                         onBlur={e => handleRenamePasta(pasta, e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') handleRenamePasta(pasta, e.target.value); if (e.key === 'Escape') setEditandoPasta(null); }}
                         className="flex-1 px-2 py-0.5 rounded-lg text-sm text-white outline-none"
                         style={{ background: '#1e2a3a', border: '1px solid #a78bfa40' }}
-                        onClick={e => e.stopPropagation()}
-                      />
+                        onClick={e => e.stopPropagation()} />
                     ) : (
                       <span className="font-bold text-white text-left flex-1 truncate">{pasta}</span>
                     )}
                     <span className="text-xs text-slate-400 flex-shrink-0">{rotinas.length} rotina{rotinas.length !== 1 ? 's' : ''}</span>
                     {isOpen ? <ChevronUp size={15} color="#6b7280" /> : <ChevronDown size={15} color="#6b7280" />}
                   </button>
-                  {/* Ações da pasta */}
                   <div className="flex gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
                     <button onClick={() => { setPastaSelecionada(pasta); setShowRotinaModal('new'); }}
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold"
@@ -434,9 +504,9 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
                       <div className="text-center py-6">
                         <p className="text-xs text-slate-500 mb-3">Nenhuma rotina nesta pasta</p>
                         <button onClick={() => { setPastaSelecionada(pasta); setShowRotinaModal('new'); }}
-                          className="flex items-center gap-1.5 mx-auto px-3 py-1.5 rounded-xl text-xs font-semibold"
+                          className="flex items-center gap-1.5 mx-auto px-4 py-2 rounded-xl text-xs font-semibold"
                           style={{ background: '#f472b615', color: '#f472b6', border: '1px solid #f472b625' }}>
-                          <Plus size={11} />Criar primeira rotina
+                          <Plus size={11} />Criar rotina de treino
                         </button>
                       </div>
                     ) : (
@@ -454,7 +524,6 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
             );
           })}
 
-          {/* Rotinas sem pasta */}
           {rotinasSemPasta.length > 0 && (
             <div>
               {pastas.length > 0 && <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-3">Sem pasta</p>}
@@ -470,45 +539,20 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
         </div>
       )}
 
-      {/* Modais */}
       {showNovaPasta && <NovaPastaModal onSave={handleCriarPasta} onClose={() => setShowNovaPasta(false)} />}
 
       {showRotinaModal && (
         <RotinaModal
           rotina={showRotinaModal !== 'new' ? showRotinaModal : null}
           exerciciosBiblioteca={exerciciosBiblioteca}
+          alunos={alunosFiltrados}
+          professorId={professorId}
+          pasta={pastaSelecionada}
+          addPlanoTreino={addPlanoTreino}
           onSave={handleSaveRotina}
           onClose={() => { setShowRotinaModal(null); setPastaSelecionada(''); }}
         />
       )}
     </div>
-  );
-}
-
-// ─── Card de Rotina ──────────────────────────────────────────────────────────
-function RotinaCard({ rotina, i, onEdit, onDelete }) {
-  const cor = rotina.cor || COR_SESSAO[i % COR_SESSAO.length];
-  const totalExs = rotina.sessoes?.reduce((a, s) => a + (s.exercicios?.length || 0), 0) || 0;
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className="p-4 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${cor}20` }}>
-          <Dumbbell size={18} style={{ color: cor }} />
-        </div>
-        <div className="flex gap-1">
-          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-white/5"><Edit2 size={13} color="#fbbf24" /></button>
-          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-500/10"><Trash2 size={13} color="#ef4444" /></button>
-        </div>
-      </div>
-      <h4 className="font-bold text-white text-sm mb-1 truncate">{rotina.nome}</h4>
-      {rotina.descricao && <p className="text-xs text-slate-500 mb-2 truncate">{rotina.descricao}</p>}
-      <div className="flex gap-1.5 flex-wrap">
-        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${cor}15`, color: cor }}>{rotina.sessoes?.length || 0} sessões</span>
-        <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>{totalExs} exerc.</span>
-        {rotina.nivel && <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>{rotina.nivel}</span>}
-      </div>
-    </motion.div>
   );
 }
