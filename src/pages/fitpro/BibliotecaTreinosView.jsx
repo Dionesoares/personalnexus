@@ -97,7 +97,7 @@ function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta,
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     setSaving(true);
-    await onSave({ ...form, alunoId: alunoId || undefined });
+    await onSave({ ...form, pasta: pasta || form.pasta || '', alunoId: alunoId || undefined });
     setSaving(false);
   };
 
@@ -414,7 +414,9 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
   };
 
   const handleSaveRotina = async (form) => {
-    const payload = { ...form, pasta: pastaSelecionada, professorId: professorId || user?.id };
+    // usa a pasta do próprio form se vier preenchida, senão fallback para pastaSelecionada
+    const pastaFinal = form.pasta || pastaSelecionada || '';
+    const payload = { ...form, pasta: pastaFinal, professorId: professorId || user?.id };
     if (form.id) { await updateBibliotecaTreino(form.id, payload); }
     else { await addBibliotecaTreino(payload); }
     setShowRotinaModal(null);
