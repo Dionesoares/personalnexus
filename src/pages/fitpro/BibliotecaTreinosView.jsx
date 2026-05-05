@@ -117,11 +117,6 @@ function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta,
             <span className="text-xs font-semibold text-white">Salvar na Pasta</span>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setPastaEscolhida('')}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: pastaEscolhida === '' ? '#64748b30' : 'rgba(255,255,255,0.04)', color: pastaEscolhida === '' ? '#94a3b8' : '#64748b', border: `1px solid ${pastaEscolhida === '' ? '#64748b40' : 'rgba(255,255,255,0.06)'}` }}>
-              Sem pasta
-            </button>
             {(pastas || []).map(p => (
               <button key={p} onClick={() => setPastaEscolhida(p)}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
