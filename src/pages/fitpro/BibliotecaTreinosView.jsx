@@ -395,6 +395,9 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
     setPastasAbertas(p => ({ ...p, [nome]: true }));
     setShowNovaPasta(false);
     if (onNovaPastaCriada) onNovaPastaCriada(nome);
+    // Abre o modal de criação de rotina já dentro da pasta recém-criada
+    setPastaSelecionada(nome);
+    setShowRotinaModal('new');
   };
 
   const handleRenamePasta = (oldNome, newNome) => {
