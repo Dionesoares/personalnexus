@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Save, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy, Download, FolderPlus, Folder, FolderOpen } from 'lucide-react';
+import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy, Download, FolderPlus, Folder, FolderOpen } from 'lucide-react';
 import { gerarPDFTreino } from '../../lib/fitpro-pdf';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -62,6 +62,9 @@ export default function TreinosView() {
 
   const [alunoFilter, setAlunoFilter] = useState('');
   const [pastasColapsadas, setPastasColapsadas] = useState({});
+  const [pastaForm, setPastaForm] = useState(''); // pasta selecionada/digitada no form
+  const [novaPastaNome, setNovaPastaNome] = useState(''); // campo "nova pasta"
+  const [criandoNovaPasta, setCriandoNovaPasta] = useState(false);
 
   const treinosExibidos = user?.role === 'aluno'
     ? treinosFiltrados
@@ -75,9 +78,14 @@ export default function TreinosView() {
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     if (!form.alunoId) return alert('Selecione um aluno');
-    if (editId) { updatePlanoTreino(editId, form); } else { addPlanoTreino(form); }
+    const pastaFinal = criandoNovaPasta ? novaPastaNome.trim() : pastaForm;
+    const payload = { ...form, pasta: pastaFinal || undefined };
+    if (editId) { updatePlanoTreino(editId, payload); } else { addPlanoTreino(payload); }
     setSaved(true);
-    setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyTreino); }, 1200);
+    setTimeout(() => {
+      setSaved(false); setShowForm(false); setEditId(null);
+      setForm(emptyTreino); setPastaForm(''); setNovaPastaNome(''); setCriandoNovaPasta(false);
+    }, 1200);
   };
 
   const handleSavePlanos = (planos) => {
@@ -304,7 +312,7 @@ export default function TreinosView() {
                 {/* Treinos dentro da pasta */}
                 {isOpen && (
                   <div className="p-4 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-                    {planosDaPasta.map((treino, i) => <TreinoCard key={treino.id} treino={treino} i={i} alunos={alunos} user={user} setSelectedTreino={setSelectedTreino} setForm={setForm} setEditId={setEditId} setShowForm={setShowForm} addPlanoTreino={addPlanoTreino} deletePlanoTreino={deletePlanoTreino} />)}
+                    {planosDaPasta.map((treino, i) => <TreinoCard key={treino.id} treino={treino} i={i} alunos={alunos} user={user} setSelectedTreino={setSelectedTreino} onEdit={t => { setForm({ ...t, sessoes: t.sessoes || [] }); setEditId(t.id); setPastaForm(t.pasta || ''); setCriandoNovaPasta(false); setShowForm(true); }} addPlanoTreino={addPlanoTreino} deletePlanoTreino={deletePlanoTreino} />)}
                   </div>
                 )}
               </div>
@@ -316,7 +324,7 @@ export default function TreinosView() {
             <div className="space-y-3">
               {pastas.length > 0 && <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Sem pasta</p>}
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {treinosSemPasta.map((treino, i) => <TreinoCard key={treino.id} treino={treino} i={i} alunos={alunos} user={user} setSelectedTreino={setSelectedTreino} setForm={setForm} setEditId={setEditId} setShowForm={setShowForm} addPlanoTreino={addPlanoTreino} deletePlanoTreino={deletePlanoTreino} />)}
+                {treinosSemPasta.map((treino, i) => <TreinoCard key={treino.id} treino={treino} i={i} alunos={alunos} user={user} setSelectedTreino={setSelectedTreino} onEdit={t => { setForm({ ...t, sessoes: t.sessoes || [] }); setEditId(t.id); setPastaForm(t.pasta || ''); setCriandoNovaPasta(false); setShowForm(true); }} addPlanoTreino={addPlanoTreino} deletePlanoTreino={deletePlanoTreino} />)}
               </div>
             </div>
           )}
@@ -523,7 +531,65 @@ export default function TreinosView() {
               {form.sessoes.length === 0 && <p className="text-xs text-slate-500 text-center py-4">Clique em "Adicionar Sessão" para começar</p>}
             </div>
 
-            <button onClick={handleSave} className="w-full py-3 rounded-xl font-semibold text-sm text-white" style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f472b6, #db2777)' }}>
+            {/* Seletor de Pasta */}
+            {user?.role === 'professor' && (
+              <div className="mt-4 p-4 rounded-2xl" style={{ background: '#a78bfa08', border: '1px solid #a78bfa25' }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Folder size={15} color="#a78bfa" />
+                  <span className="text-sm font-semibold text-white">Salvar em Pasta</span>
+                  <span className="text-xs text-slate-500">(opcional)</span>
+                </div>
+
+                {/* Pastas existentes */}
+                {pastas.length > 0 && !criandoNovaPasta && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <button
+                      onClick={() => setPastaForm('')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                      style={{ background: pastaForm === '' ? '#64748b30' : 'rgba(255,255,255,0.04)', color: pastaForm === '' ? '#94a3b8' : '#64748b', border: `1px solid ${pastaForm === '' ? '#64748b40' : 'rgba(255,255,255,0.06)'}` }}>
+                      Sem pasta
+                    </button>
+                    {pastas.map(p => (
+                      <button key={p}
+                        onClick={() => setPastaForm(p)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                        style={{ background: pastaForm === p ? '#a78bfa25' : 'rgba(255,255,255,0.04)', color: pastaForm === p ? '#a78bfa' : '#94a3b8', border: `1px solid ${pastaForm === p ? '#a78bfa40' : 'rgba(255,255,255,0.06)'}` }}>
+                        <Folder size={11} />
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Toggle nova pasta */}
+                {!criandoNovaPasta ? (
+                  <button
+                    onClick={() => { setCriandoNovaPasta(true); setPastaForm(''); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                    style={{ background: '#a78bfa15', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
+                    <Plus size={11} />Nova pasta
+                  </button>
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <Folder size={14} color="#a78bfa" className="flex-shrink-0" />
+                    <input
+                      autoFocus
+                      value={novaPastaNome}
+                      onChange={e => setNovaPastaNome(e.target.value)}
+                      placeholder="Nome da nova pasta..."
+                      className="flex-1 px-3 py-2 rounded-xl text-sm text-white outline-none"
+                      style={{ background: '#1e2a3a', border: '1px solid #a78bfa40' }}
+                    />
+                    <button onClick={() => { setCriandoNovaPasta(false); setNovaPastaNome(''); }}
+                      className="p-2 rounded-xl hover:bg-white/5">
+                      <X size={14} color="#6b7280" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white" style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f472b6, #db2777)' }}>
               {saved ? '✓ Salvo!' : 'Salvar Plano de Treino'}
             </button>
           </div>

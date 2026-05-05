@@ -8,7 +8,7 @@ const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 const COLORS = ['#f472b6', '#a78bfa', '#34d399', '#60a5fa', '#fb923c', '#fbbf24'];
 
-export default function TreinoCard({ treino, i, alunos, user, setSelectedTreino, setForm, setEditId, setShowForm, addPlanoTreino, deletePlanoTreino }) {
+export default function TreinoCard({ treino, i, alunos, user, setSelectedTreino, onEdit, addPlanoTreino, deletePlanoTreino }) {
   const aluno = alunos.find(a => a.id === treino.alunoId);
   const totalExs = treino.sessoes?.reduce((a, s) => a + s.exercicios.length, 0) || 0;
   const color = COLORS[i % COLORS.length];
@@ -39,7 +39,7 @@ export default function TreinoCard({ treino, i, alunos, user, setSelectedTreino,
         </button>
         {user?.role !== 'admin' && user?.role !== 'aluno' && (
           <>
-            <button onClick={() => { setForm({ ...treino, sessoes: treino.sessoes || [] }); setEditId(treino.id); setShowForm(true); }}
+            <button onClick={() => onEdit(treino)}
               className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" style={{ color: '#fbbf24' }}>
               <Edit2 size={14} />
             </button>
