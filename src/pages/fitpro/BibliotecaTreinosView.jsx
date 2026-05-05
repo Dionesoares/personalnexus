@@ -21,7 +21,7 @@ const inp = "w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none";
 const inpStyle = { background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' };
 
 // ─── Modal de Rotina (criar/editar) ─────────────────────────────────────────
-function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta, addPlanoTreino, onSave, onClose }) {
+function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta, addBibliotecaTreino, onSave, onClose }) {
   const [form, setForm] = useState(rotina || emptyRotina());
   const [collapsedSessoes, setCollapsedSessoes] = useState({});
   const [bibSearch, setBibSearch] = useState({});
@@ -58,7 +58,7 @@ function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta,
     }));
   };
 
-  // Gera plano anual automático: 12 planos mensais para o aluno selecionado
+  // Gera plano anual automático: 12 registros mensais salvos na BibliotecaTreino (NÃO em PlanoTreino/Meus Treinos)
   const handleGerarPlanoAnual = async () => {
     if (!alunoId) return alert('Selecione um aluno para gerar o plano anual');
     setGerandoAnual(true);
@@ -74,18 +74,21 @@ function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta,
       const fim = new Date(base.getFullYear(), base.getMonth() + m + 1, 0);
       planos.push({
         nome: `${form.nome || pasta || 'Treino'} — ${MESES[inicio.getMonth()]} ${inicio.getFullYear()}`,
+        descricao: `Plano mensal gerado automaticamente`,
         alunoId,
         objetivo: form.objetivo,
         nivel: form.nivel,
-        duracaoSemanas: 4,
-        dataInicio: inicio.toISOString().split('T')[0],
-        dataFim: fim.toISOString().split('T')[0],
+        cor: form.cor,
         sessoes: sessoesBase.map(s => ({ ...s, id: generateId(), exercicios: (s.exercicios || []).map(e => ({ ...e, id: generateId() })) })),
         pasta: pasta || '',
+        professorId: professorId || '',
+        tipo: 'plano_mensal',
+        dataInicio: inicio.toISOString().split('T')[0],
+        dataFim: fim.toISOString().split('T')[0],
       });
     }
 
-    for (const p of planos) { await addPlanoTreino(p); }
+    for (const p of planos) { await addBibliotecaTreino(p); }
     setGerandoAnual(false);
     setPlanoAnualGerado(true);
     setTimeout(() => setPlanoAnualGerado(false), 3000);
@@ -355,7 +358,7 @@ function RotinaCard({ rotina, i, onEdit, onDelete }) {
 
 // ─── Página Principal ────────────────────────────────────────────────────────
 export default function BibliotecaTreinosView({ initialNovaPasta = false, onNovaPastaCriada }) {
-  const { bibliotecaTreinos, addBibliotecaTreino, updateBibliotecaTreino, deleteBibliotecaTreino, exerciciosBiblioteca, alunos, addPlanoTreino } = useApp();
+  const { bibliotecaTreinos, addBibliotecaTreino, updateBibliotecaTreino, deleteBibliotecaTreino, exerciciosBiblioteca, alunos } = useApp();
   const { user } = useAuth();
 
   const [professorId, setProfessorId] = useState('');
@@ -548,7 +551,7 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
           alunos={alunosFiltrados}
           professorId={professorId}
           pasta={pastaSelecionada}
-          addPlanoTreino={addPlanoTreino}
+          addBibliotecaTreino={addBibliotecaTreino}
           onSave={handleSaveRotina}
           onClose={() => { setShowRotinaModal(null); setPastaSelecionada(''); }}
         />
