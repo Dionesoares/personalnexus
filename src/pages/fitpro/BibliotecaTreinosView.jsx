@@ -383,10 +383,14 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
   const [pastasAbertas, setPastasAbertas] = useState({});
   const [showNovaPasta, setShowNovaPasta] = useState(initialNovaPasta);
   const [editandoPasta, setEditandoPasta] = useState(null);
-  const [showRotinaModal, setShowRotinaModal] = useState(null); // null | 'new' | rotina obj
-  const [pastaSelecionada, setPastaSelecionada] = useState('');
+  // { mode: 'new'|'edit', pasta: string, rotina: obj|null }
+  const [rotinaModalState, setRotinaModalState] = useState(null);
 
   useEffect(() => { if (initialNovaPasta) setShowNovaPasta(true); }, [initialNovaPasta]);
+
+  const abrirNovaRotina = (pasta) => setRotinaModalState({ mode: 'new', pasta, rotina: null });
+  const abrirEditarRotina = (pasta, rotina) => setRotinaModalState({ mode: 'edit', pasta, rotina });
+  const fecharRotinaModal = () => setRotinaModalState(null);
 
   const handleCriarPasta = (nome) => {
     if (pastas.includes(nome)) return alert('Já existe uma pasta com esse nome');
@@ -395,9 +399,7 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
     setPastasAbertas(p => ({ ...p, [nome]: true }));
     setShowNovaPasta(false);
     if (onNovaPastaCriada) onNovaPastaCriada(nome);
-    // Abre o modal de criação de rotina já dentro da pasta recém-criada
-    setPastaSelecionada(nome);
-    setShowRotinaModal('new');
+    abrirNovaRotina(nome);
   };
 
   const handleRenamePasta = (oldNome, newNome) => {
@@ -414,13 +416,11 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
   };
 
   const handleSaveRotina = async (form) => {
-    // usa a pasta do próprio form se vier preenchida, senão fallback para pastaSelecionada
-    const pastaFinal = form.pasta || pastaSelecionada || '';
+    const pastaFinal = rotinaModalState?.pasta || '';
     const payload = { ...form, pasta: pastaFinal, professorId: professorId || user?.id };
     if (form.id) { await updateBibliotecaTreino(form.id, payload); }
     else { await addBibliotecaTreino(payload); }
-    setShowRotinaModal(null);
-    setPastaSelecionada('');
+    fecharRotinaModal();
   };
 
   const handleDeleteRotina = async (id) => {
@@ -489,7 +489,7 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
                     {isOpen ? <ChevronUp size={15} color="#6b7280" /> : <ChevronDown size={15} color="#6b7280" />}
                   </button>
                   <div className="flex gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => { setPastaSelecionada(pasta); setShowRotinaModal('new'); }}
+                    <button onClick={() => abrirNovaRotina(pasta)}
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold"
                       style={{ background: '#f472b615', color: '#f472b6', border: '1px solid #f472b625' }}>
                       <Plus size={11} />Rotina
@@ -511,7 +511,7 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
                     {rotinas.length === 0 ? (
                       <div className="text-center py-6">
                         <p className="text-xs text-slate-500 mb-3">Nenhuma rotina nesta pasta</p>
-                        <button onClick={() => { setPastaSelecionada(pasta); setShowRotinaModal('new'); }}
+                        <button onClick={() => abrirNovaRotina(pasta)}
                           className="flex items-center gap-1.5 mx-auto px-4 py-2 rounded-xl text-xs font-semibold"
                           style={{ background: '#f472b615', color: '#f472b6', border: '1px solid #f472b625' }}>
                           <Plus size={11} />Criar rotina de treino
@@ -521,7 +521,7 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
                       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                         {rotinas.map((rotina, i) => (
                           <RotinaCard key={rotina.id} rotina={rotina} i={i}
-                            onEdit={() => { setPastaSelecionada(pasta); setShowRotinaModal(rotina); }}
+                            onEdit={() => abrirEditarRotina(pasta, rotina)}
                             onDelete={() => handleDeleteRotina(rotina.id)} />
                         ))}
                       </div>
@@ -538,7 +538,7 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                 {rotinasSemPasta.map((rotina, i) => (
                   <RotinaCard key={rotina.id} rotina={rotina} i={i}
-                    onEdit={() => { setPastaSelecionada(''); setShowRotinaModal(rotina); }}
+                    onEdit={() => abrirEditarRotina('', rotina)}
                     onDelete={() => handleDeleteRotina(rotina.id)} />
                 ))}
               </div>
@@ -549,16 +549,16 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
 
       {showNovaPasta && <NovaPastaModal onSave={handleCriarPasta} onClose={() => setShowNovaPasta(false)} />}
 
-      {showRotinaModal && (
+      {rotinaModalState && (
         <RotinaModal
-          rotina={showRotinaModal !== 'new' ? showRotinaModal : null}
+          rotina={rotinaModalState.rotina}
           exerciciosBiblioteca={exerciciosBiblioteca}
           alunos={alunosFiltrados}
           professorId={professorId}
-          pasta={pastaSelecionada}
+          pasta={rotinaModalState.pasta}
           addBibliotecaTreino={addBibliotecaTreino}
           onSave={handleSaveRotina}
-          onClose={() => { setShowRotinaModal(null); setPastaSelecionada(''); }}
+          onClose={fecharRotinaModal}
         />
       )}
     </div>
