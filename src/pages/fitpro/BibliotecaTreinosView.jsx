@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FolderPlus, Folder, FolderOpen, Plus, X, Edit2, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, GripVertical, CalendarDays, Sparkles, Users, CheckCircle2, Zap } from 'lucide-react';
+import { FolderPlus, Folder, FolderOpen, Plus, X, Edit2, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, GripVertical, CalendarDays, Users, CheckCircle2, Zap, ArrowRightLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
@@ -21,8 +21,9 @@ const inp = "w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none";
 const inpStyle = { background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' };
 
 // ─── Modal de Rotina (criar/editar) ─────────────────────────────────────────
-function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta, addBibliotecaTreino, onSave, onClose }) {
+function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta, pastas, addBibliotecaTreino, onSave, onClose }) {
   const [form, setForm] = useState(rotina || emptyRotina());
+  const [pastaEscolhida, setPastaEscolhida] = useState(pasta || '');
   const [collapsedSessoes, setCollapsedSessoes] = useState({});
   const [bibSearch, setBibSearch] = useState({});
   const [saving, setSaving] = useState(false);
@@ -97,24 +98,38 @@ function RotinaModal({ rotina, exerciciosBiblioteca, alunos, professorId, pasta,
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     setSaving(true);
-    // pasta sempre vem da prop (contexto da pasta selecionada), nunca do form
-    await onSave({ ...form, pasta: pasta, alunoId: alunoId || undefined });
+    await onSave({ ...form, pasta: pastaEscolhida, alunoId: alunoId || undefined });
     setSaving(false);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ background: 'rgba(0,0,0,0.85)' }}>
       <div className="w-full max-w-2xl rounded-2xl p-6 my-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="font-bold text-white">{rotina ? 'Editar Rotina de Treino' : 'Nova Rotina de Treino'}</h3>
-            {pasta && (
-              <p className="text-xs mt-0.5 flex items-center gap-1" style={{ color: '#a78bfa' }}>
-                <Folder size={11} />Pasta: <strong>{pasta}</strong>
-              </p>
-            )}
-          </div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-white">{rotina ? 'Editar Rotina de Treino' : 'Nova Rotina de Treino'}</h3>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5"><X size={18} color="#6b7280" /></button>
+        </div>
+
+        {/* Seletor de Pasta */}
+        <div className="mb-4 p-3 rounded-2xl" style={{ background: '#a78bfa08', border: '1px solid #a78bfa30' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <Folder size={13} color="#a78bfa" />
+            <span className="text-xs font-semibold text-white">Salvar na Pasta</span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setPastaEscolhida('')}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+              style={{ background: pastaEscolhida === '' ? '#64748b30' : 'rgba(255,255,255,0.04)', color: pastaEscolhida === '' ? '#94a3b8' : '#64748b', border: `1px solid ${pastaEscolhida === '' ? '#64748b40' : 'rgba(255,255,255,0.06)'}` }}>
+              Sem pasta
+            </button>
+            {(pastas || []).map(p => (
+              <button key={p} onClick={() => setPastaEscolhida(p)}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                style={{ background: pastaEscolhida === p ? '#a78bfa25' : 'rgba(255,255,255,0.04)', color: pastaEscolhida === p ? '#a78bfa' : '#94a3b8', border: `1px solid ${pastaEscolhida === p ? '#a78bfa40' : 'rgba(255,255,255,0.06)'}` }}>
+                <Folder size={10} />{p}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Seleção de Aluno */}
@@ -336,8 +351,44 @@ function NovaPastaModal({ onSave, onClose }) {
   );
 }
 
+// ─── Modal Mover Rotina para Pasta ───────────────────────────────────────────
+function MoverPastaModal({ rotina, pastas, onMover, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full max-w-sm rounded-2xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="font-bold text-white text-sm">Mover Rotina</h3>
+            <p className="text-xs text-slate-500 truncate max-w-[200px]">{rotina.nome}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5"><X size={16} color="#6b7280" /></button>
+        </div>
+        <div className="space-y-2">
+          <button onClick={() => onMover('')}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-all hover:bg-white/5"
+            style={{ border: '1px solid rgba(255,255,255,0.07)', color: rotina.pasta === '' || !rotina.pasta ? '#94a3b8' : '#64748b' }}>
+            <Folder size={14} color="#64748b" />
+            <span>Sem pasta</span>
+            {(!rotina.pasta) && <span className="ml-auto text-xs text-slate-500">atual</span>}
+          </button>
+          {pastas.map(p => (
+            <button key={p} onClick={() => onMover(p)}
+              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-all hover:bg-white/5"
+              style={{ border: `1px solid ${rotina.pasta === p ? '#a78bfa40' : 'rgba(255,255,255,0.07)'}`, background: rotina.pasta === p ? '#a78bfa10' : 'transparent', color: rotina.pasta === p ? '#a78bfa' : '#94a3b8' }}>
+              <Folder size={14} color={rotina.pasta === p ? '#a78bfa' : '#64748b'} />
+              <span>{p}</span>
+              {rotina.pasta === p && <span className="ml-auto text-xs text-slate-500">atual</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Card de Rotina ──────────────────────────────────────────────────────────
-function RotinaCard({ rotina, i, onEdit, onDelete }) {
+function RotinaCard({ rotina, i, onEdit, onDelete, onMover }) {
   const cor = rotina.cor || COR_SESSAO[i % COR_SESSAO.length];
   const totalExs = rotina.sessoes?.reduce((a, s) => a + (s.exercicios?.length || 0), 0) || 0;
 
@@ -349,6 +400,7 @@ function RotinaCard({ rotina, i, onEdit, onDelete }) {
           <Dumbbell size={18} style={{ color: cor }} />
         </div>
         <div className="flex gap-1">
+          <button onClick={onMover} className="p-1.5 rounded-lg hover:bg-white/5" title="Mover para pasta"><ArrowRightLeft size={13} color="#60a5fa" /></button>
           <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-white/5"><Edit2 size={13} color="#fbbf24" /></button>
           <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-500/10"><Trash2 size={13} color="#ef4444" /></button>
         </div>
@@ -393,6 +445,8 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
   const [editandoPasta, setEditandoPasta] = useState(null);
   // { mode: 'new'|'edit', pasta: string, rotina: obj|null }
   const [rotinaModalState, setRotinaModalState] = useState(null);
+  // rotina sendo movida de pasta
+  const [moverRotina, setMoverRotina] = useState(null);
 
   useEffect(() => { if (initialNovaPasta) setShowNovaPasta(true); }, [initialNovaPasta]);
 
@@ -424,8 +478,8 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
   };
 
   const handleSaveRotina = async (form) => {
-    const pastaFinal = rotinaModalState?.pasta || '';
-    const payload = { ...form, pasta: pastaFinal, professorId: professorId || user?.id };
+    // pasta já vem definida pelo seletor dentro do modal (form.pasta)
+    const payload = { ...form, professorId: professorId || user?.id };
     if (form.id) { await updateBibliotecaTreino(form.id, payload); }
     else { await addBibliotecaTreino(payload); }
     fecharRotinaModal();
@@ -434,6 +488,12 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
   const handleDeleteRotina = async (id) => {
     if (!confirm('Excluir esta rotina?')) return;
     await deleteBibliotecaTreino(id);
+  };
+
+  const handleMoverRotina = async (novaPasta) => {
+    if (!moverRotina) return;
+    await updateBibliotecaTreino(moverRotina.id, { ...moverRotina, pasta: novaPasta });
+    setMoverRotina(null);
   };
 
   const rotinasDaPasta = (pasta) => minhas.filter(b => b.pasta === pasta);
@@ -530,7 +590,8 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
                         {rotinas.map((rotina, i) => (
                           <RotinaCard key={rotina.id} rotina={rotina} i={i}
                             onEdit={() => abrirEditarRotina(pasta, rotina)}
-                            onDelete={() => handleDeleteRotina(rotina.id)} />
+                            onDelete={() => handleDeleteRotina(rotina.id)}
+                            onMover={() => setMoverRotina(rotina)} />
                         ))}
                       </div>
                     )}
@@ -547,7 +608,8 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
                 {rotinasSemPasta.map((rotina, i) => (
                   <RotinaCard key={rotina.id} rotina={rotina} i={i}
                     onEdit={() => abrirEditarRotina('', rotina)}
-                    onDelete={() => handleDeleteRotina(rotina.id)} />
+                    onDelete={() => handleDeleteRotina(rotina.id)}
+                    onMover={() => setMoverRotina(rotina)} />
                 ))}
               </div>
             </div>
@@ -564,9 +626,19 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
           alunos={alunosFiltrados}
           professorId={professorId}
           pasta={rotinaModalState.pasta}
+          pastas={pastas}
           addBibliotecaTreino={addBibliotecaTreino}
           onSave={handleSaveRotina}
           onClose={fecharRotinaModal}
+        />
+      )}
+
+      {moverRotina && (
+        <MoverPastaModal
+          rotina={moverRotina}
+          pastas={pastas}
+          onMover={handleMoverRotina}
+          onClose={() => setMoverRotina(null)}
         />
       )}
     </div>
