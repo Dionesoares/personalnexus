@@ -16,7 +16,7 @@ const COR_SESSAO = ['#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#a78bfa', '#fb9
 const emptyTreino = { nome: '', objetivo: 'Hipertrofia', nivel: 'Intermediário', duracaoSemanas: 12, dataInicio: '', dataFim: '', sessoes: [] };
 const emptyEx = () => ({ id: generateId(), nome: '', series: 3, repeticoes: '10-12', carga: 0, descanso: 60, tecnica: 'Normal', observacoes: '', grupoMuscular: 'Peito' });
 
-export default function TreinosView() {
+export default function TreinosView({ onNav }) {
   const { planosTreino, alunos, exerciciosBiblioteca, addPlanoTreino, updatePlanoTreino, deletePlanoTreino } = useApp();
   const { user } = useAuth();
 
@@ -266,7 +266,7 @@ export default function TreinosView() {
         <div><h2 className="text-xl font-bold text-white">Planos de Treino</h2><p className="text-xs text-slate-500">{treinosExibidos.length} plano(s)</p></div>
         {user?.role === 'professor' && (
           <div className="flex gap-2">
-            <button onClick={() => setShowPastaModal(true)}
+            <button onClick={() => onNav ? onNav('biblioteca-treinos') : null}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
               style={{ background: '#a78bfa20', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
               <FolderPlus size={14} />Nova Pasta

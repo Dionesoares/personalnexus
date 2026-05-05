@@ -17,6 +17,7 @@ export function FitProAppProvider({ children }) {
   const [transacoes, setTransacoes] = useState([]);
   const [planosCorrida, setPlanosCorrida] = useState([]);
   const [agenda, setAgenda] = useState([]);
+  const [bibliotecaTreinos, setBibliotecaTreinos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Carrega todos os dados na inicialização
@@ -24,7 +25,7 @@ export function FitProAppProvider({ children }) {
     async function loadAll() {
       try {
         const [
-          al, pr, av, pt, per, esp, ex, prod, tr, pc, ag
+          al, pr, av, pt, per, esp, ex, prod, tr, pc, ag, bt
         ] = await Promise.all([
           base44.entities.Aluno.list(),
           base44.entities.Professor.list(),
@@ -37,6 +38,7 @@ export function FitProAppProvider({ children }) {
           base44.entities.Transacao.list(),
           base44.entities.PlanoCorrida.list(),
           base44.entities.Agenda.list(),
+          base44.entities.BibliotecaTreino.list(),
         ]);
         setAlunos(al);
         setProfessores(pr);
@@ -49,6 +51,7 @@ export function FitProAppProvider({ children }) {
         setTransacoes(tr);
         setPlanosCorrida(pc);
         setAgenda(ag);
+        setBibliotecaTreinos(bt);
       } catch (e) {
         console.error('[FitPro] loadAll error:', e);
       } finally {
@@ -208,6 +211,21 @@ export function FitProAppProvider({ children }) {
     setPlanosCorrida(s => s.filter(x => x.id !== id));
   }, []);
 
+  // ── Biblioteca de Treinos (Pastas/Rotinas) ──
+  const addBibliotecaTreino = useCallback(async (item) => {
+    const created = await base44.entities.BibliotecaTreino.create(item);
+    setBibliotecaTreinos(s => [...s, created]);
+    return created.id;
+  }, []);
+  const updateBibliotecaTreino = useCallback(async (id, item) => {
+    const updated = await base44.entities.BibliotecaTreino.update(id, item);
+    setBibliotecaTreinos(s => s.map(x => x.id === id ? updated : x));
+  }, []);
+  const deleteBibliotecaTreino = useCallback(async (id) => {
+    await base44.entities.BibliotecaTreino.delete(id);
+    setBibliotecaTreinos(s => s.filter(x => x.id !== id));
+  }, []);
+
   // ── Agenda ──
   const addAgendaEvento = useCallback(async (ev) => {
     const created = await base44.entities.Agenda.create(ev);
@@ -227,7 +245,7 @@ export function FitProAppProvider({ children }) {
     // data
     alunos, professores, avaliacoes, planosTreino, periodizacoes,
     especialistas, exerciciosBiblioteca, produtos, transacoes,
-    planosCorrida, agenda, loading,
+    planosCorrida, agenda, bibliotecaTreinos, loading,
     // alunos
     addAluno, updateAluno, deleteAluno,
     // professores
@@ -250,6 +268,8 @@ export function FitProAppProvider({ children }) {
     addPlanoCorrida, updatePlanoCorrida, deletePlanoCorrida,
     // agenda
     addAgendaEvento, updateAgendaEvento, deleteAgendaEvento,
+    // biblioteca de treinos
+    addBibliotecaTreino, updateBibliotecaTreino, deleteBibliotecaTreino,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

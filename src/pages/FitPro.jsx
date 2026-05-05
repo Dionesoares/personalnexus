@@ -19,6 +19,7 @@ import PeriodizacaoView from './fitpro/PeriodizacaoView';
 import ProfessoresView from './fitpro/ProfessoresView';
 import FinanceiroView from './fitpro/FinanceiroView';
 import BibliotecaView from './fitpro/BibliotecaView';
+import BibliotecaTreinosView from './fitpro/BibliotecaTreinosView';
 import ProdutosView from './fitpro/ProdutosView';
 import PedidosView from './fitpro/PedidosView';
 import RelatoriosView from './fitpro/RelatoriosView';
@@ -63,7 +64,7 @@ function AuthenticatedApp() {
     }
     if (activeView === 'alunos') return <AlunosView roleOverride={user.role} />;
     if (activeView === 'avaliacao') return <AvaliacaoFisicaView />;
-    if (activeView === 'treinos') return <TreinosView />;
+    if (activeView === 'treinos') return <TreinosView onNav={setActiveView} />;
     if (activeView === 'especialistas' || activeView === 'parceiros' || activeView === 'servicos') return <EspecialistasView />;
     if (activeView === 'usuarios') return <GerenciarUsuariosView />;
     if (activeView === 'avaliacoes') return <MinhasAvaliacoesView />;
@@ -72,6 +73,7 @@ function AuthenticatedApp() {
     if (activeView === 'professores') return <ProfessoresView />;
     if (activeView === 'financeiro') return isAdmin ? <FinanceiroAdminView /> : <FinanceiroView />;
     if (activeView === 'biblioteca') return <BibliotecaView />;
+    if (activeView === 'biblioteca-treinos') return <BibliotecaTreinosView />;
     if (activeView === 'shop') return <ProdutosView />;
     if (activeView === 'pedidos') return <PedidosView />;
     if (activeView === 'relatorios') return <RelatoriosView />;
