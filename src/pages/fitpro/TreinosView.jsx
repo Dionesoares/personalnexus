@@ -468,6 +468,13 @@ export default function TreinosView({ onNav }) {
                                       <GripVertical size={14} color="#475569" />
                                     </div>
                                     <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style={{ background: `${cor}25`, color: cor }}>{ei + 1}</span>
+                                    {/* Thumbnail GIF */}
+                                    {(() => {
+                                      const gifUrl = ex.gifUrl || (exerciciosBiblioteca || []).find(b => b.nome?.toLowerCase() === ex.nome?.toLowerCase())?.gifUrl;
+                                      return gifUrl ? (
+                                        <img src={gifUrl} alt={ex.nome} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" style={{ background: '#0a0e1a' }} />
+                                      ) : null;
+                                    })()}
                                     <div className="flex-1 grid grid-cols-2 gap-1">
                                       <input value={ex.nome} onChange={e => updateExercicio(sessao.id, ex.id, 'nome', e.target.value)} placeholder="Exercício" className="col-span-2 px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
                                       <input type="number" value={ex.series} onChange={e => updateExercicio(sessao.id, ex.id, 'series', parseInt(e.target.value) || 1)} placeholder="Séries" className="px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
@@ -507,17 +514,24 @@ export default function TreinosView({ onNav }) {
                                 style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
                               />
                               {filtrados.length > 0 && (
-                                <div className="absolute left-0 right-0 top-full mt-1 rounded-xl overflow-hidden z-20 max-h-48 overflow-y-auto"
-                                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
-                                  {filtrados.map(b => (
-                                    <button key={b.id} type="button"
-                                      onMouseDown={() => { addFromBiblioteca(sessao.id, b); setBibSearch(s => ({ ...s, [sessao.id]: '' })); }}
-                                      className="w-full text-left px-3 py-2 text-xs text-white hover:bg-white/10 transition-all flex items-center gap-2">
-                                      <span className="text-slate-400">{b.grupoMuscular}</span>
-                                      <span>{b.nome}</span>
-                                    </button>
-                                  ))}
-                                </div>
+                               <div className="absolute left-0 right-0 top-full mt-1 rounded-xl overflow-hidden z-20 max-h-64 overflow-y-auto"
+                                 style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
+                                 {filtrados.map(b => (
+                                   <button key={b.id} type="button"
+                                     onMouseDown={() => { addFromBiblioteca(sessao.id, b); setBibSearch(s => ({ ...s, [sessao.id]: '' })); }}
+                                     className="w-full text-left px-3 py-2 text-xs text-white hover:bg-white/10 transition-all flex items-center gap-2">
+                                     {b.gifUrl ? (
+                                       <img src={b.gifUrl} alt={b.nome} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" style={{ background: '#0a0e1a' }} />
+                                     ) : (
+                                       <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-base" style={{ background: 'rgba(255,255,255,0.06)' }}>💪</div>
+                                     )}
+                                     <div className="flex flex-col min-w-0">
+                                       <span className="text-white truncate">{b.nome}</span>
+                                       <span className="text-slate-400 text-xs">{b.grupoMuscular}</span>
+                                     </div>
+                                   </button>
+                                 ))}
+                               </div>
                               )}
                             </div>
                           );
