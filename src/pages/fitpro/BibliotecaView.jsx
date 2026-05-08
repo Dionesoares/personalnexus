@@ -1,4 +1,34 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+
+// Helper para grupos com estado de expansão independente
+function GrupoSection({ grupo, exsDoGrupo, cor, canEdit, onSelect, onEdit, onDelete }) {
+  const [expanded, setExpanded] = useState(true);
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: '#0d1525', border: `1px solid ${cor}25` }}>
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-all"
+        style={{ background: `${cor}08` }}>
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${cor}20` }}>
+          <span className="text-sm">💪</span>
+        </div>
+        <span className="font-bold text-white flex-1 text-left">{grupo}</span>
+        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${cor}15`, color: cor }}>{exsDoGrupo.length}</span>
+        {expanded
+          ? <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+          : <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>}
+      </button>
+      {expanded && (
+        <div className="p-2 space-y-1">
+          {exsDoGrupo.map(ex => (
+            <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
+              onSelect={onSelect} onEdit={onEdit} onDelete={onDelete} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 import { BookOpen, Plus, X, Trash2, Edit2, Search, ImagePlus, Loader2, Folder, FolderOpen, ChevronDown, ChevronRight, FolderPlus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -83,8 +113,16 @@ export default function BibliotecaView() {
   // Todos os exercícios
   const todosExercicios = exerciciosBiblioteca || [];
 
-  // Biblioteca padrão: criados pelo admin (sem professorId ou professorId === 'system' ou role admin)
-  const bibliotecaPadrao = todosExercicios.filter(e => !e.professorId || e.professorId === 'system' || e.professorId === 'admin');
+  // Biblioteca padrão: exercícios públicos (sem professorId, criados pelo sistema ou criados pelo admin)
+  const adminIds = todosExercicios
+    .filter(e => e.professorId && !todosExercicios.find(x => x.id === e.professorId))
+    .map(e => e.professorId);
+  const bibliotecaPadrao = todosExercicios.filter(e =>
+    !e.professorId ||
+    e.professorId === 'system' ||
+    e.professorId === 'admin' ||
+    e.publico === true
+  );
 
   // Exercícios do professor logado
   const meusExercicios = todosExercicios.filter(e => e.professorId === user?.id);
@@ -165,8 +203,11 @@ export default function BibliotecaView() {
 
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
-    // Exercícios do professor sempre ficam marcados com professorId
-    const data = { ...form, professorId: user?.id, updatedAt: new Date().toISOString() };
+    // Admin cria exercícios públicos sem professorId (ficam na biblioteca padrão para todos)
+    // Professor marca com seu próprio professorId
+    const data = isAdmin
+      ? { ...form, professorId: '', publico: true, updatedAt: new Date().toISOString() }
+      : { ...form, professorId: user?.id, updatedAt: new Date().toISOString() };
     if (editId) updateExercicioBiblioteca(editId, data);
     else addExercicioBiblioteca({ ...data, createdAt: new Date().toISOString() });
     setSaved(true);
@@ -389,7 +430,7 @@ export default function BibliotecaView() {
         </div>
       )}
 
-      {/* Lista de exercícios filtrados */}
+      {/* Lista de exercícios filtrados — agrupada por grupo muscular */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-500">
           <BookOpen size={40} className="mx-auto mb-3 opacity-30" />
@@ -402,7 +443,8 @@ export default function BibliotecaView() {
             </button>
           )}
         </div>
-      ) : (
+      ) : filtroGrupo || search ? (
+        // Quando há filtro ativo: lista simples
         <div className="rounded-2xl overflow-hidden space-y-1 p-2" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
           {filtered.map(ex => (
             <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
@@ -410,6 +452,33 @@ export default function BibliotecaView() {
               onEdit={openEdit}
               onDelete={deleteExercicioBiblioteca} />
           ))}
+        </div>
+      ) : (
+        // Sem filtro: agrupado por grupo muscular
+        <div className="space-y-3">
+          {GRUPOS.filter(g => filtered.some(e => e.grupoMuscular === g)).map(grupo => (
+            <GrupoSection
+              key={grupo}
+              grupo={grupo}
+              exsDoGrupo={filtered.filter(e => e.grupoMuscular === grupo)}
+              cor={GROUP_COLORS[grupo] || '#64748b'}
+              canEdit={canEdit}
+              onSelect={setSelectedEx}
+              onEdit={openEdit}
+              onDelete={deleteExercicioBiblioteca}
+            />
+          ))}
+          {/* Exercícios sem grupo muscular reconhecido */}
+          {filtered.filter(e => !GRUPOS.includes(e.grupoMuscular)).length > 0 && (
+            <div className="rounded-2xl overflow-hidden space-y-1 p-2" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+              {filtered.filter(e => !GRUPOS.includes(e.grupoMuscular)).map(ex => (
+                <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
+                  onSelect={setSelectedEx}
+                  onEdit={openEdit}
+                  onDelete={deleteExercicioBiblioteca} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
