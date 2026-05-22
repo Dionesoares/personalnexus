@@ -38,11 +38,8 @@ export default function LoginPage({ onCadastro }) {
           <div className="absolute bottom-32 right-10 w-48 h-48 rounded-full opacity-5" style={{ background: 'radial-gradient(circle, #a78bfa, transparent)' }} />
         </div>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#00d4ff20', border: '1px solid #00d4ff30' }}>
-            <Zap size={20} color="#00d4ff" />
-          </div>
-          <span className="font-bold text-white">Personal Fit Up</span>
-          <span className="text-xs px-2 py-0.5 rounded-full ml-1" style={{ background: '#00d4ff15', color: '#00d4ff', border: '1px solid #00d4ff25' }}>Assessment Platform</span>
+          <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/7d6ea416b_Gemini_Generated_Image_azqnjaazqnjaazqn.png" alt="Personal Fit Up" className="w-12 h-12 rounded-full object-cover" />
+          <span className="font-bold text-white text-lg">Personal Fit Up</span>
         </div>
         <div>
           <h1 className="text-4xl font-black text-white leading-tight mb-6">
@@ -70,13 +67,13 @@ export default function LoginPage({ onCadastro }) {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <Zap size={20} color="#00d4ff" /><span className="font-bold text-white text-lg">Personal Fit Up</span>
+            <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/7d6ea416b_Gemini_Generated_Image_azqnjaazqnjaazqn.png" alt="Personal Fit Up" className="w-10 h-10 rounded-full object-cover" />
+            <span className="font-bold text-white text-lg">Personal Fit Up</span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h2>
           <p className="text-slate-400 text-sm mb-6">Faça login para acessar sua área</p>
 
           <div className="mb-6">
-            <p className="text-xs text-slate-500 mb-3">Acesso rápido (demo):</p>
             <div className="grid grid-cols-3 gap-2">
               {demoAccounts.map(acc => (
                 <button key={acc.role} onClick={() => fillDemo(acc)}
