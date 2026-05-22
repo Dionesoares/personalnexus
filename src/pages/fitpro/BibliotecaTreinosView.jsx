@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FolderPlus, Folder, FolderOpen, Plus, X, Edit2, Trash2, ChevronDown, ChevronUp, Copy, Dumbbell, ArrowRightLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { generateId } from '../../lib/fitpro-storage';
 
-const PASTAS_KEY = 'fitpro_bib_pastas';
+function getPastasKey(professorId) {
+  return `fitpro_bib_pastas_${professorId}`;
+}
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -133,10 +135,31 @@ export default function BibliotecaTreinosView() {
     b.professorId === professorId
   );
 
+  const pastasKey = getPastasKey(professorId);
+
   const [pastas, setPastas] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(PASTAS_KEY) || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(getPastasKey(professorId)) || '[]'); } catch { return []; }
   });
-  const savePastas = (p) => { setPastas(p); localStorage.setItem(PASTAS_KEY, JSON.stringify(p)); };
+  const savePastas = (p) => { setPastas(p); localStorage.setItem(pastasKey, JSON.stringify(p)); };
+
+  // Sincroniza pastas: se algum treino salvo no banco tem uma pasta que não está no localStorage, adiciona
+  useEffect(() => {
+    if (!professorId) return;
+    const pastasDosBanco = [...new Set(minhas.filter(b => b.pasta).map(b => b.pasta))];
+    setPastas(prev => {
+      const merged = [...prev];
+      let changed = false;
+      pastasDosBanco.forEach(p => {
+        if (!merged.includes(p)) { merged.push(p); changed = true; }
+      });
+      if (changed) {
+        localStorage.setItem(pastasKey, JSON.stringify(merged));
+        return merged;
+      }
+      return prev;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minhas.length, professorId]);
 
   const [pastasAbertas, setPastasAbertas] = useState({});
   const [showNovaPasta, setShowNovaPasta] = useState(false);

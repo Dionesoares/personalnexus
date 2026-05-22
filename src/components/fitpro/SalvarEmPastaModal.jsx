@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { X, Folder, FolderOpen, FolderPlus, Check, ChevronRight } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 
-const PASTAS_KEY = 'fitpro_bib_pastas';
-
-function getPastas() {
-  try { return JSON.parse(localStorage.getItem(PASTAS_KEY) || '[]'); } catch { return []; }
+function getPastasKey(professorId) {
+  return `fitpro_bib_pastas_${professorId}`;
 }
 
-function savePastasStorage(pastas) {
-  localStorage.setItem(PASTAS_KEY, JSON.stringify(pastas));
+function getPastas(professorId) {
+  try { return JSON.parse(localStorage.getItem(getPastasKey(professorId)) || '[]'); } catch { return []; }
+}
+
+function savePastasStorage(professorId, pastas) {
+  localStorage.setItem(getPastasKey(professorId), JSON.stringify(pastas));
 }
 
 export default function SalvarEmPastaModal({ treino, onClose }) {
@@ -19,7 +21,7 @@ export default function SalvarEmPastaModal({ treino, onClose }) {
   // professorId correto — user.linkedId é o ID do registro Professor
   const professorId = user?.linkedId || user?.id || '';
 
-  const [pastas, setPastas] = useState(getPastas);
+  const [pastas, setPastas] = useState(() => getPastas(professorId));
   const [pastaSelecionada, setPastaSelecionada] = useState('');
   const [criandoNova, setCriandoNova] = useState(false);
   const [nomePasta, setNomePasta] = useState('Nova pasta');
@@ -34,7 +36,7 @@ export default function SalvarEmPastaModal({ treino, onClose }) {
       nome = `${nome} (${n})`;
     }
     const novas = [...pastas, nome];
-    savePastasStorage(novas);
+    savePastasStorage(professorId, novas);
     setPastas(novas);
     setPastaSelecionada(nome);
     setCriandoNova(false);
