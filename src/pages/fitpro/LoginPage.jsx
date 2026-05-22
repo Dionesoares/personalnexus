@@ -41,14 +41,14 @@ export default function LoginPage({ onCadastro }) {
           <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#00d4ff20', border: '1px solid #00d4ff30' }}>
             <Zap size={20} color="#00d4ff" />
           </div>
-          <span className="font-bold text-white">FitPro</span>
+          <span className="font-bold text-white">Personal Fit Up</span>
           <span className="text-xs px-2 py-0.5 rounded-full ml-1" style={{ background: '#00d4ff15', color: '#00d4ff', border: '1px solid #00d4ff25' }}>Assessment Platform</span>
         </div>
         <div>
           <h1 className="text-4xl font-black text-white leading-tight mb-6">
-            Transforme <span style={{ color: '#00d4ff' }}>Resultados</span> em Dados Reais
+            Personal <span style={{ color: '#00d4ff' }}>Fit Up</span>
           </h1>
-          <p className="text-slate-400 mb-8">Plataforma completa de avaliação física, treinos personalizados e especialidades.</p>
+          <p className="text-slate-400 mb-8">A plataforma definitiva para centralizar seus treinos, avaliações e periodizações — tudo em uma interface limpa, minimalista, desenvolvida de personal para personal.</p>
           <div className="space-y-3">
             {[
               { icon: '📊', text: 'Avaliação por dobras cutâneas (Jackson & Pollock)' },
@@ -63,14 +63,14 @@ export default function LoginPage({ onCadastro }) {
             ))}
           </div>
         </div>
-        <p className="text-xs text-slate-600">FitPro Assessment System v2.0 © 2025</p>
+        <p className="text-xs text-slate-600">Personal Fit Up © 2025</p>
       </div>
 
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <Zap size={20} color="#00d4ff" /><span className="font-bold text-white text-lg">FitPro</span>
+            <Zap size={20} color="#00d4ff" /><span className="font-bold text-white text-lg">Personal Fit Up</span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h2>
           <p className="text-slate-400 text-sm mb-6">Faça login para acessar sua área</p>
