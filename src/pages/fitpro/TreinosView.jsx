@@ -410,15 +410,43 @@ export default function TreinosView({ onNav }) {
                         <span key={i} className="text-xs px-2 py-0.5 rounded-lg text-slate-300" style={{ background: 'rgba(255,255,255,0.06)' }}>{s.nome.split('—')[0].trim()}</span>
                       ))}
                     </div>
-                    <button
-                      onClick={() => {
-                        const template = aplicarTemplate(form.nivel, form.alunoId, exerciciosBiblioteca || []);
-                        if (template) setForm(f => ({ ...f, nome: template.nome, objetivo: template.objetivo, duracaoSemanas: template.duracaoSemanas, sessoes: template.sessoes }));
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
-                      style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', color: '#fff' }}>
-                      <Sparkles size={12} />Aplicar Treino Padrão Automático
-                    </button>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={() => {
+                          const template = aplicarTemplate(form.nivel, form.alunoId, exerciciosBiblioteca || []);
+                          if (template) setForm(f => ({ ...f, nome: template.nome, objetivo: template.objetivo, duracaoSemanas: template.duracaoSemanas, sessoes: template.sessoes }));
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
+                        style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', color: '#fff' }}>
+                        <Sparkles size={12} />Aplicar Treino Padrão Automático
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!form.alunoId) return alert('Selecione um aluno primeiro');
+                          const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+                          const base = new Date();
+                          for (let m = 0; m < 12; m++) {
+                            const template = aplicarTemplate(form.nivel, form.alunoId, exerciciosBiblioteca || []);
+                            if (!template) break;
+                            const inicio = new Date(base.getFullYear(), base.getMonth() + m, 1);
+                            const fim = new Date(base.getFullYear(), base.getMonth() + m + 1, 0);
+                            await addPlanoTreino({
+                              ...template,
+                              nome: `${template.nome} — ${MESES[inicio.getMonth()]} ${inicio.getFullYear()}`,
+                              alunoId: form.alunoId,
+                              dataInicio: inicio.toISOString().split('T')[0],
+                              dataFim: fim.toISOString().split('T')[0],
+                              pasta: pastaForm || undefined,
+                            });
+                          }
+                          setSaved(true);
+                          setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyTreino); setPastaForm(''); setNovaPastaNome(''); setCriandoNovaPasta(false); }, 1500);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
+                        style={{ background: 'linear-gradient(135deg, #34d399, #059669)', color: '#fff' }}>
+                        <Sparkles size={12} />Aplicar 12 Treinos Padrão
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -557,12 +585,6 @@ export default function TreinosView({ onNav }) {
                 {/* Pastas existentes */}
                 {pastas.length > 0 && !criandoNovaPasta && (
                   <div className="flex flex-wrap gap-2 mb-3">
-                    <button
-                      onClick={() => setPastaForm('')}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-                      style={{ background: pastaForm === '' ? '#64748b30' : 'rgba(255,255,255,0.04)', color: pastaForm === '' ? '#94a3b8' : '#64748b', border: `1px solid ${pastaForm === '' ? '#64748b40' : 'rgba(255,255,255,0.06)'}` }}>
-                      Sem pasta
-                    </button>
                     {pastas.map(p => (
                       <button key={p}
                         onClick={() => setPastaForm(p)}
