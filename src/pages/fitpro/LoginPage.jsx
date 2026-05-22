@@ -38,7 +38,7 @@ export default function LoginPage({ onCadastro }) {
           <div className="absolute bottom-32 right-10 w-48 h-48 rounded-full opacity-5" style={{ background: 'radial-gradient(circle, #a78bfa, transparent)' }} />
         </div>
         <div className="flex items-center gap-4">
-          <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/8d69b3525_RosaeVerdeIlustradoDiadaMulherCarto1.jpg" alt="Personal Fit Up" className="w-28 h-28 object-contain flex-shrink-0" style={{ mixBlendMode: 'screen' }} />
+          <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/8d69b3525_RosaeVerdeIlustradoDiadaMulherCarto1.jpg" alt="Personal Fit Up" className="w-28 h-28 object-contain flex-shrink-0" style={{ mixBlendMode: 'screen', filter: 'brightness(1.2) contrast(1.1)' }} />
           <span className="font-black text-white text-4xl leading-tight">Personal <span style={{ color: '#00d4ff' }}>Fit Up</span></span>
         </div>
         <div>
@@ -65,7 +65,7 @@ export default function LoginPage({ onCadastro }) {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-start">
-            <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/8d69b3525_RosaeVerdeIlustradoDiadaMulherCarto1.jpg" alt="Personal Fit Up" className="w-20 h-20 object-contain flex-shrink-0" style={{ mixBlendMode: 'screen' }} />
+            <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/8d69b3525_RosaeVerdeIlustradoDiadaMulherCarto1.jpg" alt="Personal Fit Up" className="w-20 h-20 object-contain flex-shrink-0" style={{ mixBlendMode: 'screen', filter: 'brightness(1.2) contrast(1.1)' }} />
             <span className="font-black text-white text-3xl leading-tight">Personal <span style={{ color: '#00d4ff' }}>Fit Up</span></span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h2>
