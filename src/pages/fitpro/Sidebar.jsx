@@ -60,7 +60,7 @@ function SidebarContent({ navItems, activeView, onNav, isMobile, onClose }) {
     <div className="flex flex-col h-full" style={{ background: '#080d1a', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
       <div className="p-5 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-2">
-          <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/8d69b3525_RosaeVerdeIlustradoDiadaMulherCarto1.jpg" alt="Personal Fit Up" className="w-8 h-8 rounded-full object-cover flex-shrink-0" style={{ mixBlendMode: 'screen', filter: 'brightness(1.2) contrast(1.1)' }} />
+          <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/215ffc816_ChatGPTImage22demaide202612_55_13.png" alt="Personal Fit Up" className="w-8 h-8 rounded-full object-cover flex-shrink-0" style={{ mixBlendMode: 'screen', filter: 'brightness(1.2) contrast(1.1)' }} />
           <span className="font-bold text-white text-sm">Personal Fit Up</span>
           <span className="text-xs px-1.5 py-0.5 rounded-md" style={{ background: `${roleColor}15`, color: roleColor, border: `1px solid ${roleColor}25` }}>{roleLabel}</span>
         </div>
