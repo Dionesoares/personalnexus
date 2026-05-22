@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FolderPlus, Folder, FolderOpen, Plus, X, Edit2, Trash2, ChevronDown, ChevronUp, Copy, Dumbbell, ArrowRightLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
-import { getCredentials, generateId } from '../../lib/fitpro-storage';
+import { generateId } from '../../lib/fitpro-storage';
+
+const PASTAS_KEY = 'fitpro_bib_pastas';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -124,22 +126,17 @@ export default function BibliotecaTreinosView() {
   const { bibliotecaTreinos, addBibliotecaTreino, updateBibliotecaTreino, deleteBibliotecaTreino } = useApp();
   const { user } = useAuth();
 
-  const [professorId, setProfessorId] = useState('');
-  useEffect(() => {
-    getCredentials().then(creds => {
-      const mine = creds.find(c => c.id === user?.id);
-      setProfessorId(mine?.linkedId || '');
-    });
-  }, [user?.id]);
+  // professorId correto: user.linkedId (ID do registro Professor)
+  const professorId = user?.linkedId || user?.id || '';
 
   const minhas = (bibliotecaTreinos || []).filter(b =>
-    !professorId || b.professorId === professorId || b.professorId === user?.id
+    b.professorId === professorId
   );
 
   const [pastas, setPastas] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('fitpro_bib_pastas') || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(PASTAS_KEY) || '[]'); } catch { return []; }
   });
-  const savePastas = (p) => { setPastas(p); localStorage.setItem('fitpro_bib_pastas', JSON.stringify(p)); };
+  const savePastas = (p) => { setPastas(p); localStorage.setItem(PASTAS_KEY, JSON.stringify(p)); };
 
   const [pastasAbertas, setPastasAbertas] = useState({});
   const [showNovaPasta, setShowNovaPasta] = useState(false);
@@ -193,12 +190,12 @@ export default function BibliotecaTreinosView() {
 
   const handleMoverRotina = async (novaPasta) => {
     if (!moverRotina) return;
-    await updateBibliotecaTreino(moverRotina.id, { ...moverRotina, pasta: novaPasta });
+    const { id, ...rest } = moverRotina;
+    await updateBibliotecaTreino(id, { ...rest, pasta: novaPasta });
     setMoverRotina(null);
   };
 
   const rotinasDaPasta = (pasta) => minhas.filter(b => b.pasta === pasta);
-  const rotinasSemPasta = minhas.filter(b => !b.pasta);
 
   return (
     <div className="space-y-5">
@@ -208,7 +205,7 @@ export default function BibliotecaTreinosView() {
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Folder size={20} color="#a78bfa" />Treinos Personalizados
           </h2>
-          <p className="text-xs text-slate-500">{minhas.length} treino(s) em {pastas.length} pasta(s)</p>
+          <p className="text-xs text-slate-500">{minhas.filter(b => b.pasta).length} treino(s) em {pastas.length} pasta(s)</p>
         </div>
         <button onClick={() => setShowNovaPasta(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
@@ -225,7 +222,7 @@ export default function BibliotecaTreinosView() {
       </div>
 
       {/* Estado vazio */}
-      {pastas.length === 0 && rotinasSemPasta.length === 0 ? (
+      {pastas.length === 0 ? (
         <div className="text-center py-20">
           <FolderPlus size={48} className="mx-auto mb-4 opacity-20 text-slate-400" />
           <p className="text-slate-400 font-semibold mb-1">Nenhuma pasta criada ainda</p>
@@ -301,21 +298,7 @@ export default function BibliotecaTreinosView() {
             );
           })}
 
-          {/* Treinos sem pasta */}
-          {rotinasSemPasta.length > 0 && (
-            <div>
-              {pastas.length > 0 && <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-3">Sem pasta</p>}
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-                {rotinasSemPasta.map((rotina, i) => (
-                  <RotinaCard key={rotina.id} rotina={rotina} i={i}
-                    onEdit={() => setRenomearRotina(rotina)}
-                    onDelete={() => handleDeleteRotina(rotina.id)}
-                    onClonar={() => handleClonarRotina(rotina)}
-                    onMover={() => setMoverRotina(rotina)} />
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
       )}
 
