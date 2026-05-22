@@ -25,6 +25,9 @@
     },
     "cor": {
       "type": "string"
+    },
+    "pasta": {
+      "type": "string"
     }
   },
   "required": [
