@@ -38,9 +38,7 @@ export default function LoginPage({ onCadastro }) {
           <div className="absolute bottom-32 right-10 w-48 h-48 rounded-full opacity-5" style={{ background: 'radial-gradient(circle, #a78bfa, transparent)' }} />
         </div>
         <div className="flex items-center gap-4">
-          <div className="rounded-2xl p-2 flex-shrink-0" style={{ background: '#0a0e1a' }}>
-            <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/e7beefce1_RosaeVerdeIlustradoDiadaMulherCarto3.png" alt="Personal Fit Up" className="w-28 h-28 object-contain" />
-          </div>
+          <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/e7beefce1_RosaeVerdeIlustradoDiadaMulherCarto3.png" alt="Personal Fit Up" className="w-28 h-28 object-contain flex-shrink-0" style={{ mixBlendMode: 'screen' }} />
           <span className="font-black text-white text-4xl leading-tight">Personal <span style={{ color: '#00d4ff' }}>Fit Up</span></span>
         </div>
         <div>
@@ -67,9 +65,7 @@ export default function LoginPage({ onCadastro }) {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-start">
-            <div className="rounded-xl p-1.5 flex-shrink-0" style={{ background: '#0a0e1a' }}>
-              <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/e7beefce1_RosaeVerdeIlustradoDiadaMulherCarto3.png" alt="Personal Fit Up" className="w-20 h-20 object-contain" />
-            </div>
+            <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/e7beefce1_RosaeVerdeIlustradoDiadaMulherCarto3.png" alt="Personal Fit Up" className="w-20 h-20 object-contain flex-shrink-0" style={{ mixBlendMode: 'screen' }} />
             <span className="font-black text-white text-3xl leading-tight">Personal <span style={{ color: '#00d4ff' }}>Fit Up</span></span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h2>
