@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy, Download, FolderPlus, Folder, FolderOpen } from 'lucide-react';
+import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy, Download, Folder, FolderOpen } from 'lucide-react';
 import { gerarPDFTreino } from '../../lib/fitpro-pdf';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -62,9 +62,15 @@ export default function TreinosView({ onNav }) {
 
   const [alunoFilter, setAlunoFilter] = useState('');
   const [pastasColapsadas, setPastasColapsadas] = useState({});
-  const [pastaForm, setPastaForm] = useState(''); // pasta selecionada/digitada no form
-  const [novaPastaNome, setNovaPastaNome] = useState(''); // campo "nova pasta"
-  const [criandoNovaPasta, setCriandoNovaPasta] = useState(false);
+  const [pastaForm, setPastaForm] = useState(''); // pasta selecionada no form
+
+  // Pastas criadas em "Treinos Personalizados" (localStorage por professor)
+  const pastasPersonalizadas = (() => {
+    try {
+      const pid = user?.linkedId || user?.id || '';
+      return JSON.parse(localStorage.getItem(`fitpro_bib_pastas_${pid}`) || '[]');
+    } catch { return []; }
+  })();
 
   const treinosExibidos = user?.role === 'aluno'
     ? treinosFiltrados
@@ -78,13 +84,12 @@ export default function TreinosView({ onNav }) {
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
     if (!form.alunoId) return alert('Selecione um aluno');
-    const pastaFinal = criandoNovaPasta ? novaPastaNome.trim() : pastaForm;
-    const payload = { ...form, pasta: pastaFinal || undefined };
+    const payload = { ...form, pasta: pastaForm || undefined };
     if (editId) { updatePlanoTreino(editId, payload); } else { addPlanoTreino(payload); }
     setSaved(true);
     setTimeout(() => {
       setSaved(false); setShowForm(false); setEditId(null);
-      setForm(emptyTreino); setPastaForm(''); setNovaPastaNome(''); setCriandoNovaPasta(false);
+      setForm(emptyTreino); setPastaForm('');
     }, 1200);
   };
 
@@ -265,18 +270,11 @@ export default function TreinosView({ onNav }) {
       <div className="flex items-center justify-between">
         <div><h2 className="text-xl font-bold text-white">Planos de Treino</h2><p className="text-xs text-slate-500">{treinosExibidos.length} plano(s)</p></div>
         {user?.role === 'professor' && (
-          <div className="flex gap-2">
-            <button onClick={() => onNav ? onNav('biblioteca-treinos') : null}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: '#a78bfa20', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
-              <FolderPlus size={14} />Nova Pasta
-            </button>
-            <button onClick={() => { setForm({ ...emptyTreino, alunoId: alunosFiltrados[0]?.id || '' }); setEditId(null); setShowForm(true); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: '#f472b620', color: '#f472b6', border: '1px solid #f472b630' }}>
-              <Plus size={14} />Criar Treino
-            </button>
-          </div>
+          <button onClick={() => { setForm({ ...emptyTreino, alunoId: alunosFiltrados[0]?.id || '' }); setEditId(null); setShowForm(true); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+            style={{ background: '#f472b620', color: '#f472b6', border: '1px solid #f472b630' }}>
+            <Plus size={14} />Criar Treino
+          </button>
         )}
       </div>
 
@@ -312,7 +310,7 @@ export default function TreinosView({ onNav }) {
                 {/* Treinos dentro da pasta */}
                 {isOpen && (
                   <div className="p-4 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-                    {planosDaPasta.map((treino, i) => <TreinoCard key={treino.id} treino={treino} i={i} alunos={alunos} user={user} setSelectedTreino={setSelectedTreino} onEdit={t => { setForm({ ...t, sessoes: t.sessoes || [] }); setEditId(t.id); setPastaForm(t.pasta || ''); setCriandoNovaPasta(false); setShowForm(true); }} addPlanoTreino={addPlanoTreino} deletePlanoTreino={deletePlanoTreino} />)}
+                    {planosDaPasta.map((treino, i) => <TreinoCard key={treino.id} treino={treino} i={i} alunos={alunos} user={user} setSelectedTreino={setSelectedTreino} onEdit={t => { setForm({ ...t, sessoes: t.sessoes || [] }); setEditId(t.id); setPastaForm(t.pasta || ''); setShowForm(true); }} addPlanoTreino={addPlanoTreino} deletePlanoTreino={deletePlanoTreino} />)}
                   </div>
                 )}
               </div>
@@ -324,7 +322,7 @@ export default function TreinosView({ onNav }) {
             <div className="space-y-3">
               {pastas.length > 0 && <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Sem pasta</p>}
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {treinosSemPasta.map((treino, i) => <TreinoCard key={treino.id} treino={treino} i={i} alunos={alunos} user={user} setSelectedTreino={setSelectedTreino} onEdit={t => { setForm({ ...t, sessoes: t.sessoes || [] }); setEditId(t.id); setPastaForm(t.pasta || ''); setCriandoNovaPasta(false); setShowForm(true); }} addPlanoTreino={addPlanoTreino} deletePlanoTreino={deletePlanoTreino} />)}
+                {treinosSemPasta.map((treino, i) => <TreinoCard key={treino.id} treino={treino} i={i} alunos={alunos} user={user} setSelectedTreino={setSelectedTreino} onEdit={t => { setForm({ ...t, sessoes: t.sessoes || [] }); setEditId(t.id); setPastaForm(t.pasta || ''); setShowForm(true); }} addPlanoTreino={addPlanoTreino} deletePlanoTreino={deletePlanoTreino} />)}
               </div>
             </div>
           )}
@@ -440,7 +438,7 @@ export default function TreinosView({ onNav }) {
                             });
                           }
                           setSaved(true);
-                          setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyTreino); setPastaForm(''); setNovaPastaNome(''); setCriandoNovaPasta(false); }, 1500);
+                          setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyTreino); setPastaForm(''); }, 1500);
                         }}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
                         style={{ background: 'linear-gradient(135deg, #34d399, #059669)', color: '#fff' }}>
@@ -581,45 +579,19 @@ export default function TreinosView({ onNav }) {
                   <span className="text-sm font-semibold text-white">Salvar em Pasta</span>
                   <span className="text-xs text-slate-500">(opcional)</span>
                 </div>
-
-                {/* Pastas existentes */}
-                {pastas.length > 0 && !criandoNovaPasta && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {pastas.map(p => (
+                {pastasPersonalizadas.length === 0 ? (
+                  <p className="text-xs text-slate-500">Nenhuma pasta criada ainda. Crie pastas em <strong className="text-white">Treinos Personalizados</strong>.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {pastasPersonalizadas.map(p => (
                       <button key={p}
-                        onClick={() => setPastaForm(p)}
+                        onClick={() => setPastaForm(pastaForm === p ? '' : p)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
                         style={{ background: pastaForm === p ? '#a78bfa25' : 'rgba(255,255,255,0.04)', color: pastaForm === p ? '#a78bfa' : '#94a3b8', border: `1px solid ${pastaForm === p ? '#a78bfa40' : 'rgba(255,255,255,0.06)'}` }}>
                         <Folder size={11} />
                         {p}
                       </button>
                     ))}
-                  </div>
-                )}
-
-                {/* Toggle nova pasta */}
-                {!criandoNovaPasta ? (
-                  <button
-                    onClick={() => { setCriandoNovaPasta(true); setPastaForm(''); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-                    style={{ background: '#a78bfa15', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
-                    <Plus size={11} />Nova pasta
-                  </button>
-                ) : (
-                  <div className="flex gap-2 items-center">
-                    <Folder size={14} color="#a78bfa" className="flex-shrink-0" />
-                    <input
-                      autoFocus
-                      value={novaPastaNome}
-                      onChange={e => setNovaPastaNome(e.target.value)}
-                      placeholder="Nome da nova pasta..."
-                      className="flex-1 px-3 py-2 rounded-xl text-sm text-white outline-none"
-                      style={{ background: '#1e2a3a', border: '1px solid #a78bfa40' }}
-                    />
-                    <button onClick={() => { setCriandoNovaPasta(false); setNovaPastaNome(''); }}
-                      className="p-2 rounded-xl hover:bg-white/5">
-                      <X size={14} color="#6b7280" />
-                    </button>
                   </div>
                 )}
               </div>
