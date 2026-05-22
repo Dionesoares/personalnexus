@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { X, Folder, FolderPlus, Check } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
+import { getCredentials } from '../../lib/fitpro-storage';
 
 const CARD = '#0d1525';
 
 export default function SalvarEmPastaModal({ treino, onClose }) {
   const { addBibliotecaTreino } = useApp();
   const { user } = useAuth();
+  const [professorId, setProfessorId] = useState('');
+
+  useEffect(() => {
+    getCredentials().then(creds => {
+      const mine = creds.find(c => c.id === user?.id);
+      setProfessorId(mine?.linkedId || user?.id || '');
+    });
+  }, [user?.id]);
 
   const [pastas, setPastas] = useState(() => {
     try { return JSON.parse(localStorage.getItem('fitpro_bib_pastas') || '[]'); } catch { return []; }
@@ -38,7 +47,7 @@ export default function SalvarEmPastaModal({ treino, onClose }) {
       objetivo: treino.objetivo,
       sessoes: treino.sessoes || [],
       pasta: pastaSelecionada,
-      professorId: user?.id || '',
+      professorId: professorId || user?.id || '',
       alunoId: treino.alunoId,
       cor: '#a78bfa',
       origem: 'meus-treinos',
