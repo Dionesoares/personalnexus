@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Copy, Trash2 } from 'lucide-react';
+import { Download, Edit2, Copy, Trash2, FolderInput } from 'lucide-react';
 import { gerarPDFTreino } from '../../lib/fitpro-pdf';
 import { generateId } from '../../lib/fitpro-storage';
+import SalvarEmPastaModal from '../../components/fitpro/SalvarEmPastaModal';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -12,6 +13,7 @@ export default function TreinoCard({ treino, i, alunos, user, setSelectedTreino,
   const aluno = alunos.find(a => a.id === treino.alunoId);
   const totalExs = treino.sessoes?.reduce((a, s) => a + s.exercicios.length, 0) || 0;
   const color = COLORS[i % COLORS.length];
+  const [showSalvarPasta, setShowSalvarPasta] = useState(false);
 
   return (
     <motion.div key={treino.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -39,6 +41,10 @@ export default function TreinoCard({ treino, i, alunos, user, setSelectedTreino,
         </button>
         {user?.role !== 'admin' && user?.role !== 'aluno' && (
           <>
+            <button onClick={() => setShowSalvarPasta(true)}
+              className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" title="Salvar em Treinos Personalizados" style={{ color: '#a78bfa' }}>
+              <FolderInput size={14} />
+            </button>
             <button onClick={() => onEdit(treino)}
               className="px-3 py-2 rounded-xl text-xs hover:bg-white/5 transition-all" style={{ color: '#fbbf24' }}>
               <Edit2 size={14} />
@@ -56,6 +62,7 @@ export default function TreinoCard({ treino, i, alunos, user, setSelectedTreino,
           </>
         )}
       </div>
+      {showSalvarPasta && <SalvarEmPastaModal treino={treino} onClose={() => setShowSalvarPasta(false)} />}
     </motion.div>
   );
 }

@@ -500,7 +500,7 @@ export default function BibliotecaTreinosView({ initialNovaPasta = false, onNova
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Folder size={20} color="#a78bfa" />Biblioteca de Treinos
+            <Folder size={20} color="#a78bfa" />Treinos Personalizados
           </h2>
           <p className="text-xs text-slate-500">{minhas.length} rotina(s) em {pastas.length} pasta(s)</p>
         </div>
