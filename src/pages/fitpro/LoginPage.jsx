@@ -37,9 +37,8 @@ export default function LoginPage({ onCadastro }) {
           <div className="absolute top-20 left-10 w-64 h-64 rounded-full opacity-5" style={{ background: 'radial-gradient(circle, #00d4ff, transparent)' }} />
           <div className="absolute bottom-32 right-10 w-48 h-48 rounded-full opacity-5" style={{ background: 'radial-gradient(circle, #a78bfa, transparent)' }} />
         </div>
-        <div className="flex items-center gap-3">
-          <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/7d6ea416b_Gemini_Generated_Image_azqnjaazqnjaazqn.png" alt="Personal Fit Up" className="w-12 h-12 rounded-full object-cover" />
-          <span className="font-bold text-white text-lg">Personal Fit Up</span>
+        <div className="flex justify-center">
+          <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/7d6ea416b_Gemini_Generated_Image_azqnjaazqnjaazqn.png" alt="Personal Fit Up" className="w-28 h-28 rounded-full object-cover" />
         </div>
         <div>
           <h1 className="text-4xl font-black text-white leading-tight mb-6">
@@ -66,9 +65,8 @@ export default function LoginPage({ onCadastro }) {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
-          <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/7d6ea416b_Gemini_Generated_Image_azqnjaazqnjaazqn.png" alt="Personal Fit Up" className="w-10 h-10 rounded-full object-cover" />
-            <span className="font-bold text-white text-lg">Personal Fit Up</span>
+          <div className="lg:hidden flex justify-center mb-8">
+            <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/7d6ea416b_Gemini_Generated_Image_azqnjaazqnjaazqn.png" alt="Personal Fit Up" className="w-24 h-24 rounded-full object-cover" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h2>
           <p className="text-slate-400 text-sm mb-6">Faça login para acessar sua área</p>
