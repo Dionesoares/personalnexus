@@ -38,13 +38,11 @@ export default function LoginPage({ onCadastro }) {
           <div className="absolute bottom-32 right-10 w-48 h-48 rounded-full opacity-5" style={{ background: 'radial-gradient(circle, #a78bfa, transparent)' }} />
         </div>
         <div className="flex items-center gap-3">
-          <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/472ebeae8_RosaeVerdeIlustradoDiadaMulherCarto2.png" alt="Personal Fit Up" className="w-16 h-16 object-contain" />
-          <span className="font-black text-white text-2xl">Personal <span style={{ color: '#a78bfa' }}>Fit Up</span></span>
+          <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/e7beefce1_RosaeVerdeIlustradoDiadaMulherCarto3.png" alt="Personal Fit Up" className="w-20 h-20 object-contain" style={{ mixBlendMode: 'screen' }} />
+          <span className="font-black text-white text-3xl">Personal <span style={{ color: '#00d4ff' }}>Fit Up</span></span>
         </div>
         <div>
-          <h1 className="text-4xl font-black text-white leading-tight mb-6">
-            Personal <span style={{ color: '#00d4ff' }}>Fit Up</span>
-          </h1>
+
           <p className="text-slate-400 mb-8">A plataforma definitiva para centralizar seus treinos, avaliações e periodizações — tudo em uma interface limpa, minimalista, desenvolvida de personal para personal.</p>
           <div className="space-y-3">
             {[
@@ -67,8 +65,8 @@ export default function LoginPage({ onCadastro }) {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-start">
-            <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/472ebeae8_RosaeVerdeIlustradoDiadaMulherCarto2.png" alt="Personal Fit Up" className="w-14 h-14 object-contain" />
-            <span className="font-black text-white text-xl">Personal <span style={{ color: '#a78bfa' }}>Fit Up</span></span>
+            <img src="https://media.base44.com/images/public/69ea31515b70bc9ef16762b9/e7beefce1_RosaeVerdeIlustradoDiadaMulherCarto3.png" alt="Personal Fit Up" className="w-16 h-16 object-contain" style={{ mixBlendMode: 'screen' }} />
+            <span className="font-black text-white text-2xl">Personal <span style={{ color: '#00d4ff' }}>Fit Up</span></span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h2>
           <p className="text-slate-400 text-sm mb-6">Faça login para acessar sua área</p>
