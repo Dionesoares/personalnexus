@@ -26,6 +26,12 @@
     },
     "data": {
       "type": "string"
+    },
+    "resposta": {
+      "type": "string"
+    },
+    "dataResposta": {
+      "type": "string"
     }
   },
   "required": [
