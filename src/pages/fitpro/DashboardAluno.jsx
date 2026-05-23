@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock, AlertCircle, QrCode } from 'lucide-react';
+import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock, AlertCircle, QrCode, MessageCircle } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { calcularIdade } from '../../lib/fitpro-calculations';
@@ -11,7 +11,7 @@ const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
 export default function DashboardAluno({ onNav }) {
-  const { alunos, avaliacoes, planosTreino, periodizacoes, especialistas, transacoes } = useApp();
+  const { alunos, professores, avaliacoes, planosTreino, periodizacoes, especialistas, transacoes } = useApp();
   const { user } = useAuth();
   const [showEditarPerfil, setShowEditarPerfil] = useState(false);
   const [showPixModal, setShowPixModal] = useState(false);
@@ -37,6 +37,7 @@ export default function DashboardAluno({ onNav }) {
   }, [resolvedAlunoId, alunos]);
 
   const aluno = alunos.find(a => a.id === resolvedAlunoId);
+  const professor = professores?.find(p => p.id === aluno?.professorId);
   const minhasAvaliacoes = avaliacoes.filter(a => a.alunoId === resolvedAlunoId).sort((a, b) => new Date(b.data) - new Date(a.data));
 
   // Pendência financeira
@@ -76,11 +77,22 @@ export default function DashboardAluno({ onNav }) {
             <p className="text-slate-400 text-sm mb-1">Bem-vindo 👋</p>
             <h2 className="text-2xl font-black text-white">{aluno?.nome?.split(' ')[0] || user?.nome?.split(' ')[0]}</h2>
           </div>
-          <button onClick={() => setShowEditarPerfil(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-            style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
-            <Settings size={13} />Editar Perfil
-          </button>
+          <div className="flex flex-col gap-2 items-end">
+            <button onClick={() => setShowEditarPerfil(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+              style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
+              <Settings size={13} />Editar Perfil
+            </button>
+            {professor?.telefone && (
+              <button onClick={() => {
+                const tel = professor.telefone.replace(/\D/g, '');
+                window.open(`https://wa.me/55${tel}`, '_blank');
+              }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+                style={{ background: 'rgba(37,211,102,0.15)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)' }}>
+                <MessageCircle size={13} />Falar com Professor
+              </button>
+            )}
+          </div>
         </div>
         {aluno && (
           <div className="flex gap-2 mt-3 flex-wrap">

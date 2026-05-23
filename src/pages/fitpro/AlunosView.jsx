@@ -323,6 +323,16 @@ export default function AlunosView({ roleOverride }) {
                     <div className="font-semibold text-white">{aluno.nome}</div>
                     <div className="text-xs text-slate-400">{aluno.objetivo} • {aluno.peso}kg • {aluno.altura}cm</div>
                   </div>
+                  {aluno.telefone && (
+                    <button onClick={e => {
+                      e.stopPropagation();
+                      const tel = aluno.telefone.replace(/\D/g, '');
+                      window.open(`https://wa.me/55${tel}`, '_blank');
+                    }} className="p-1.5 rounded-lg hover:bg-green-500/10 transition-all" title="WhatsApp do aluno"
+                      style={{ color: '#25d366' }}>
+                      <MessageCircle size={15} />
+                    </button>
+                  )}
                   <button onClick={e => { e.stopPropagation(); handleDelete(aluno.id); }}
                     className="p-1.5 rounded-lg hover:bg-red-500/10 transition-all mr-1" style={{ color: '#ef4444' }}>
                     <Trash2 size={14} />

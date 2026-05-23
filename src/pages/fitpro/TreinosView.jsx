@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, GripVertical, Edit2, Copy, Download, Folder, FolderOpen } from 'lucide-react';
+import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, Pause, Square, GripVertical, Edit2, Copy, Download, Folder, FolderOpen, Timer, CheckCircle2, Circle } from 'lucide-react';
 import { gerarPDFTreino } from '../../lib/fitpro-pdf';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -37,6 +37,32 @@ export default function TreinosView({ onNav }) {
   const [saved, setSaved] = useState(false);
   const [gifModal, setGifModal] = useState(null); // { nome, gifUrl, series, repeticoes, descanso, observacoes, dicas, cor }
   const [bibSearch, setBibSearch] = useState({}); // { [sessaoId]: string }
+  const [exConcluidosMap, setExConcluidosMap] = useState({}); // { [exId]: boolean }
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const timerRef = useRef(null);
+
+  React.useEffect(() => {
+    if (timerRunning) {
+      timerRef.current = setInterval(() => setTimerSeconds(s => s + 1), 1000);
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [timerRunning]);
+
+  const formatTimer = (s) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return h > 0
+      ? `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+      : `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  };
+
+  const toggleExConcluido = (exId) => {
+    setExConcluidosMap(m => ({ ...m, [exId]: !m[exId] }));
+  };
 
   const [alunoId, setAlunoId] = useState('');
   useEffect(() => {
@@ -145,7 +171,7 @@ export default function TreinosView({ onNav }) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => setSelectedTreino(null)} className="p-2 rounded-xl hover:bg-white/5"><ChevronRight size={18} color="#9ca3af" className="rotate-180" /></button>
+          <button onClick={() => { setSelectedTreino(null); setTimerRunning(false); setTimerSeconds(0); setExConcluidosMap({}); }} className="p-2 rounded-xl hover:bg-white/5"><ChevronRight size={18} color="#9ca3af" className="rotate-180" /></button>
           <div className="flex-1"><h2 className="text-lg font-bold text-white">{treino.nome}</h2><p className="text-xs text-slate-500">{aluno?.nome} • {treino.nivel} • {treino.duracaoSemanas} semanas</p></div>
           <button onClick={() => gerarPDFTreino(treino, aluno)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
@@ -153,6 +179,40 @@ export default function TreinosView({ onNav }) {
             <Download size={13} />PDF
           </button>
         </div>
+
+        {/* Botão Iniciar Treino + Cronômetro */}
+        {user?.role === 'aluno' && (
+          <div className="flex items-center gap-3 p-4 rounded-2xl" style={{ background: timerRunning ? '#f472b610' : '#0d1525', border: `1px solid ${timerRunning ? '#f472b640' : 'rgba(255,255,255,0.07)'}` }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#f472b620' }}>
+              <Timer size={18} color="#f472b6" />
+            </div>
+            <div className="flex-1">
+              <div className="text-xs text-slate-400 mb-0.5">{timerRunning ? 'Treino em andamento' : 'Pronto para treinar?'}</div>
+              <div className="text-2xl font-black text-white tabular-nums">{formatTimer(timerSeconds)}</div>
+            </div>
+            <div className="flex gap-2">
+              {!timerRunning && timerSeconds === 0 ? (
+                <button onClick={() => setTimerRunning(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+                  style={{ background: 'linear-gradient(135deg, #f472b6, #db2777)', color: '#fff' }}>
+                  <Play size={14} fill="#fff" />Iniciar Treino
+                </button>
+              ) : (
+                <>
+                  <button onClick={() => setTimerRunning(r => !r)}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+                    style={{ background: timerRunning ? '#fbbf2420' : '#34d39920' }}>
+                    {timerRunning ? <Pause size={15} color="#fbbf24" /> : <Play size={15} color="#34d399" fill="#34d399" />}
+                  </button>
+                  <button onClick={() => { setTimerRunning(false); setTimerSeconds(0); setExConcluidosMap({}); }}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-red-500/10 transition-all">
+                    <Square size={15} color="#ef4444" fill="#ef4444" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-3">
           {[{ label: 'Sessões', value: treino.sessoes?.length || 0, color: '#f472b6' }, { label: 'Exercícios', value: totalExs, color: '#a78bfa' }, { label: 'Semanas', value: treino.duracaoSemanas, color: '#fbbf24' }].map(k => (
@@ -222,7 +282,17 @@ export default function TreinosView({ onNav }) {
                     const gifUrl = ex.gifUrl || gifMap[ex.nome?.toLowerCase()];
                     const bibEx = (exerciciosBiblioteca || []).find(b => b.nome?.toLowerCase() === ex.nome?.toLowerCase());
                     return (
-                    <div key={ex.id} className="p-3 rounded-xl flex items-center gap-3" style={{ background: `${cor}08`, border: `1px solid ${cor}15` }}>
+                    <div key={ex.id} className="p-3 rounded-xl flex items-center gap-3 transition-all" style={{ background: exConcluidosMap[ex.id] ? `${cor}18` : `${cor}08`, border: `1px solid ${exConcluidosMap[ex.id] ? cor + '50' : cor + '15'}` }}>
+                      {/* Checkbox de conclusão (só para aluno) */}
+                      {user?.role === 'aluno' && (
+                        <button onClick={() => toggleExConcluido(ex.id)}
+                          className="flex-shrink-0 transition-all hover:scale-110"
+                          title={exConcluidosMap[ex.id] ? 'Marcar como pendente' : 'Marcar como concluído'}>
+                          {exConcluidosMap[ex.id]
+                            ? <CheckCircle2 size={22} color={cor} fill={cor + '40'} />
+                            : <Circle size={22} color="#475569" />}
+                        </button>
+                      )}
                       {/* Thumbnail GIF pequeno — clica para expandir */}
                       <button
                         onClick={() => gifUrl && setGifModal({ nome: ex.nome, gifUrl, series: ex.series, repeticoes: ex.repeticoes, descanso: ex.descanso, carga: ex.carga, tecnica: ex.tecnica, observacoes: ex.observacoes, dicas: bibEx?.dicas, execucao: bibEx?.execucao, errosComuns: bibEx?.errosComuns, cor })}
@@ -243,7 +313,8 @@ export default function TreinosView({ onNav }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: `${cor}25`, color: cor }}>{ei + 1}</span>
-                          <span className="text-sm font-semibold text-white truncate">{ex.nome}</span>
+                          <span className={`text-sm font-semibold truncate ${exConcluidosMap[ex.id] ? 'line-through opacity-60' : 'text-white'}`}
+                            style={{ color: exConcluidosMap[ex.id] ? cor : undefined }}>{ex.nome}</span>
                         </div>
                         <div className="flex gap-2 flex-wrap text-xs">
                           <span className="px-2 py-0.5 rounded-lg font-bold" style={{ background: `${cor}20`, color: cor }}>{ex.series}×{ex.repeticoes}</span>
