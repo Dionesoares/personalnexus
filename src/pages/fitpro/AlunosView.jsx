@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter, MessageCircle, Eye, EyeOff, MessageSquare, Bell } from 'lucide-react';
+import AlunoListItem from '../../components/fitpro/AlunoListItem';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, addCredential } from '../../lib/fitpro-storage';
 import { calcularIdade, calcularIMC, classificarIMC } from '../../lib/fitpro-calculations';
@@ -330,68 +331,20 @@ export default function AlunosView({ roleOverride }) {
           <p>Nenhum aluno encontrado</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {filtered.map((aluno, i) => {
-            const avsAluno = avaliacoes.filter(a => a.alunoId === aluno.id);
-            const treinosAluno = planosTreino.filter(t => t.alunoId === aluno.id);
-            const colors = ['#a78bfa','#fb923c','#34d399','#60a5fa','#f472b6'];
-            return (
-              <motion.div key={aluno.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="p-4 rounded-2xl cursor-pointer hover:opacity-90 transition-all"
-                style={{ background: CARD, border: `1px solid ${BORDER}` }}
-                onClick={() => setSelectedAluno(aluno)}>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-black text-white" style={{ background: colors[i % 5] + '25' }}>
-                    {aluno.nome.charAt(0)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-white">{aluno.nome}</div>
-                    <div className="text-xs text-slate-400">{aluno.objetivo} • {aluno.peso}kg • {aluno.altura}cm</div>
-                  </div>
-                  {/* Botão Ver Feedback */}
-                  <button onClick={e => { e.stopPropagation(); setVerFeedbackAluno(aluno); }}
-                    className="relative flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                    style={{ background: feedbacksNaoLidos[aluno.id] ? '#60a5fa20' : 'rgba(255,255,255,0.04)', color: feedbacksNaoLidos[aluno.id] ? '#60a5fa' : '#64748b', border: `1px solid ${feedbacksNaoLidos[aluno.id] ? '#60a5fa40' : 'rgba(255,255,255,0.06)'}` }}
-                    title="Ver feedbacks do aluno">
-                    <MessageSquare size={13} />
-                    <span className="hidden sm:inline">Ver Feedback</span>
-                    {feedbacksNaoLidos[aluno.id] > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white flex items-center justify-center font-bold"
-                        style={{ background: '#ef4444', fontSize: 9 }}>
-                        {feedbacksNaoLidos[aluno.id]}
-                      </span>
-                    )}
-                  </button>
-                  {aluno.telefone && (
-                    <button onClick={e => {
-                      e.stopPropagation();
-                      const tel = aluno.telefone.replace(/\D/g, '');
-                      window.open(`https://wa.me/55${tel}`, '_blank');
-                    }} className="p-1.5 rounded-lg hover:bg-green-500/10 transition-all" title="WhatsApp do aluno"
-                      style={{ color: '#25d366' }}>
-                      <MessageCircle size={15} />
-                    </button>
-                  )}
-                  <button onClick={e => { e.stopPropagation(); handleDelete(aluno.id); }}
-                    className="p-1.5 rounded-lg hover:bg-red-500/10 transition-all mr-1" style={{ color: '#ef4444' }}>
-                    <Trash2 size={14} />
-                  </button>
-                  <ChevronRight size={16} color="#374151" />
-                </div>
-                <div className="flex gap-3 mt-3">
-                  {[
-                    { label: 'Avaliações', value: avsAluno.length, color: '#fb923c' },
-                    { label: 'Treinos', value: treinosAluno.length, color: '#f472b6' },
-                  ].map((s, j) => (
-                    <div key={j} className="flex-1 p-2 rounded-xl text-center" style={{ background: `${s.color}08`, border: `1px solid ${s.color}20` }}>
-                      <div className="text-sm font-bold" style={{ color: s.color }}>{s.value}</div>
-                      <div className="text-xs text-slate-500">{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            );
-          })}
+        <div className="flex flex-col gap-2">
+          {filtered.map((aluno, i) => (
+            <AlunoListItem
+              key={aluno.id}
+              aluno={aluno}
+              i={i}
+              avaliacoes={avaliacoes}
+              planosTreino={planosTreino}
+              feedbacksNaoLidos={feedbacksNaoLidos}
+              onVerPerfil={setSelectedAluno}
+              onVerFeedback={setVerFeedbackAluno}
+              onDelete={id => { if (confirm('Excluir este aluno?')) handleDelete(id); }}
+            />
+          ))}
         </div>
       )}
 
