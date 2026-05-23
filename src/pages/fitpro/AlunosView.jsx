@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter, MessageCircle, Eye, EyeOff } from 'lucide-react';
+import { Users, Search, Plus, ChevronRight, Activity, Dumbbell, Calendar, Phone, Mail, Trash2, Edit2, Save, X, Filter, MessageCircle, Eye, EyeOff, MessageSquare, Bell } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, addCredential } from '../../lib/fitpro-storage';
 import { calcularIdade, calcularIMC, classificarIMC } from '../../lib/fitpro-calculations';
+import { base44 } from '@/api/base44Client';
+import VerFeedbackModal from '../../components/fitpro/VerFeedbackModal';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -47,6 +49,18 @@ export default function AlunosView({ roleOverride }) {
 
   const [senhaNovo, setSenhaNovo] = useState('');
   const [showSenha, setShowSenha] = useState(false);
+  const [feedbacksNaoLidos, setFeedbacksNaoLidos] = useState({}); // { [alunoId]: count }
+  const [verFeedbackAluno, setVerFeedbackAluno] = useState(null);
+
+  // Carrega feedbacks não lidos ao montar
+  useEffect(() => {
+    if (role !== 'professor' && role !== 'admin') return;
+    base44.entities.FeedbackTreino.filter({ lido: false }).then(list => {
+      const mapa = {};
+      list.forEach(f => { mapa[f.alunoId] = (mapa[f.alunoId] || 0) + 1; });
+      setFeedbacksNaoLidos(mapa);
+    });
+  }, [role]);
 
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
@@ -278,6 +292,17 @@ export default function AlunosView({ roleOverride }) {
         )}
       </div>
 
+      {/* Alerta de feedbacks não lidos */}
+      {Object.keys(feedbacksNaoLidos).length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+          style={{ background: '#60a5fa0d', border: '1px solid #60a5fa35' }}>
+          <Bell size={16} color="#60a5fa" />
+          <p className="text-sm text-slate-300 flex-1">
+            <span className="font-bold text-white">{Object.values(feedbacksNaoLidos).reduce((a, b) => a + b, 0)}</span> novo(s) feedback(s) de treino não lido(s)
+          </p>
+        </div>
+      )}
+
       {/* Search & filters */}
       <div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-48">
@@ -323,6 +348,20 @@ export default function AlunosView({ roleOverride }) {
                     <div className="font-semibold text-white">{aluno.nome}</div>
                     <div className="text-xs text-slate-400">{aluno.objetivo} • {aluno.peso}kg • {aluno.altura}cm</div>
                   </div>
+                  {/* Botão Ver Feedback */}
+                  <button onClick={e => { e.stopPropagation(); setVerFeedbackAluno(aluno); }}
+                    className="relative flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    style={{ background: feedbacksNaoLidos[aluno.id] ? '#60a5fa20' : 'rgba(255,255,255,0.04)', color: feedbacksNaoLidos[aluno.id] ? '#60a5fa' : '#64748b', border: `1px solid ${feedbacksNaoLidos[aluno.id] ? '#60a5fa40' : 'rgba(255,255,255,0.06)'}` }}
+                    title="Ver feedbacks do aluno">
+                    <MessageSquare size={13} />
+                    <span className="hidden sm:inline">Ver Feedback</span>
+                    {feedbacksNaoLidos[aluno.id] > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white flex items-center justify-center font-bold"
+                        style={{ background: '#ef4444', fontSize: 9 }}>
+                        {feedbacksNaoLidos[aluno.id]}
+                      </span>
+                    )}
+                  </button>
                   {aluno.telefone && (
                     <button onClick={e => {
                       e.stopPropagation();
@@ -354,6 +393,21 @@ export default function AlunosView({ roleOverride }) {
             );
           })}
         </div>
+      )}
+
+      {/* Modal Ver Feedback */}
+      {verFeedbackAluno && (
+        <VerFeedbackModal
+          aluno={verFeedbackAluno}
+          onClose={() => setVerFeedbackAluno(null)}
+          onMarcarLido={() => {
+            setFeedbacksNaoLidos(prev => {
+              const n = { ...prev };
+              delete n[verFeedbackAluno.id];
+              return n;
+            });
+          }}
+        />
       )}
 
       {/* Form modal para novo aluno */}

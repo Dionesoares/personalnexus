@@ -1,0 +1,36 @@
+{
+  "name": "FeedbackTreino",
+  "type": "object",
+  "properties": {
+    "treinoId": {
+      "type": "string"
+    },
+    "treinoNome": {
+      "type": "string"
+    },
+    "alunoId": {
+      "type": "string"
+    },
+    "alunoNome": {
+      "type": "string"
+    },
+    "professorId": {
+      "type": "string"
+    },
+    "mensagem": {
+      "type": "string"
+    },
+    "lido": {
+      "type": "boolean",
+      "default": false
+    },
+    "data": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "treinoId",
+    "alunoId",
+    "mensagem"
+  ]
+}

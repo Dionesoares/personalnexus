@@ -18,6 +18,7 @@ export function FitProAppProvider({ children }) {
   const [planosCorrida, setPlanosCorrida] = useState([]);
   const [agenda, setAgenda] = useState([]);
   const [bibliotecaTreinos, setBibliotecaTreinos] = useState([]);
+  const [feedbacksTreino, setFeedbacksTreino] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Carrega todos os dados na inicialização

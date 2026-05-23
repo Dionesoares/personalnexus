@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Edit2, Copy, Trash2, FolderInput } from 'lucide-react';
+import { Download, Edit2, Copy, Trash2, FolderInput, MessageSquarePlus } from 'lucide-react';
 import { gerarPDFTreino } from '../../lib/fitpro-pdf';
 import { generateId } from '../../lib/fitpro-storage';
 import SalvarEmPastaModal from '../../components/fitpro/SalvarEmPastaModal';
+import FeedbackTreinoModal from '../../components/fitpro/FeedbackTreinoModal';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -14,6 +15,7 @@ export default function TreinoCard({ treino, i, alunos, user, setSelectedTreino,
   const totalExs = treino.sessoes?.reduce((a, s) => a + s.exercicios.length, 0) || 0;
   const color = COLORS[i % COLORS.length];
   const [showSalvarPasta, setShowSalvarPasta] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   return (
     <motion.div key={treino.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -31,7 +33,8 @@ export default function TreinoCard({ treino, i, alunos, user, setSelectedTreino,
         {treino.dataInicio && <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>▶ {new Date(treino.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>}
         {treino.dataFim && <span className="text-xs px-2 py-0.5 rounded-full text-slate-400" style={{ background: 'rgba(255,255,255,0.05)' }}>⏹ {new Date(treino.dataFim + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>}
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-col">
+        <div className="flex gap-2">
         <button onClick={() => setSelectedTreino(treino)} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
           Ver Planilha
         </button>
@@ -61,8 +64,18 @@ export default function TreinoCard({ treino, i, alunos, user, setSelectedTreino,
             </button>
           </>
         )}
+        </div>
+        {/* Botão Feedback — só para aluno */}
+        {user?.role === 'aluno' && (
+          <button onClick={() => setShowFeedback(true)}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all"
+            style={{ background: '#60a5fa12', color: '#60a5fa', border: '1px solid #60a5fa25' }}>
+            <MessageSquarePlus size={13} />Feedback do Treino
+          </button>
+        )}
       </div>
       {showSalvarPasta && <SalvarEmPastaModal treino={treino} onClose={() => setShowSalvarPasta(false)} />}
+      {showFeedback && <FeedbackTreinoModal treino={treino} aluno={alunos?.find(a => a.id === treino.alunoId)} onClose={() => setShowFeedback(false)} />}
     </motion.div>
   );
 }
