@@ -5,7 +5,7 @@ import { gerarPDFTreino } from '../../lib/fitpro-pdf';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials, generateId } from '../../lib/fitpro-storage';
-import { TREINO_TEMPLATES, aplicarTemplate } from '../../lib/treinoTemplates';
+import { TREINO_TEMPLATES, aplicarTemplate, gerarPlanosAnuais } from '../../lib/treinoTemplates';
 import PastaTreinoModal from './PastaTreinoModal';
 import TreinoCard from './TreinoCard';
 
@@ -492,21 +492,16 @@ export default function TreinosView({ onNav }) {
                       <button
                         onClick={async () => {
                           if (!form.alunoId) return alert('Selecione um aluno primeiro');
-                          const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-                          const base = new Date();
-                          for (let m = 0; m < 12; m++) {
-                            const template = aplicarTemplate(form.nivel, form.alunoId, exerciciosBiblioteca || []);
-                            if (!template) break;
-                            const inicio = new Date(base.getFullYear(), base.getMonth() + m, 1);
-                            const fim = new Date(base.getFullYear(), base.getMonth() + m + 1, 0);
-                            await addPlanoTreino({
-                              ...template,
-                              nome: `${template.nome} — ${MESES[inicio.getMonth()]} ${inicio.getFullYear()}`,
-                              alunoId: form.alunoId,
-                              dataInicio: inicio.toISOString().split('T')[0],
-                              dataFim: fim.toISOString().split('T')[0],
-                              pasta: pastaForm || undefined,
-                            });
+                          const planos = gerarPlanosAnuais(
+                            form.nivel,
+                            form.alunoId,
+                            exerciciosBiblioteca || [],
+                            new Date(),
+                            pastaForm || undefined
+                          );
+                          if (!planos.length) return alert('Nível sem template configurado');
+                          for (const plano of planos) {
+                            await addPlanoTreino(plano);
                           }
                           setSaved(true);
                           setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyTreino); setPastaForm(''); }, 1500);
