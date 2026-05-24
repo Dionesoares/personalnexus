@@ -48,6 +48,9 @@
         "type": "string"
       }
     },
+    "imagemUrl": {
+      "type": "string"
+    },
     "endereco": {
       "type": "object"
     }
