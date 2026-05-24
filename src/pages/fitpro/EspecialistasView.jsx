@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Stethoscope, Plus, X, Star, Edit2, Trash2, Percent, ShoppingCart } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Stethoscope, Plus, X, Star, Edit2, Trash2, Percent, ShoppingCart, Upload, ImageIcon } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import ModalPagamentoParceiro from '../../components/fitpro/ModalPagamentoParceiro';
+import { base44 } from '@/api/base44Client';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -10,7 +11,7 @@ const emptyEsp = {
   nome: '', especialidade: 'Nutricionista', email: '', telefone: '', whatsapp: '',
   descricao: '', valorConsulta: '', disponibilidade: '', parceiro: false, avaliacao: 5.0,
   percentualComissao: 10, modeloComissao: 'por_contratacao', observacoesComerciais: '',
-  formasPagamento: ['pix'],
+  formasPagamento: ['pix'], imagemUrl: '',
   endereco: { rua: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' }
 };
 
@@ -33,6 +34,17 @@ export default function EspecialistasView() {
   const [filtro, setFiltro] = useState('todos');
   const [saved, setSaved] = useState(false);
   const [espPagamento, setEspPagamento] = useState(null);
+  const [uploadingImg, setUploadingImg] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingImg(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setForm(p => ({ ...p, imagemUrl: file_url }));
+    setUploadingImg(false);
+  };
 
   const especialidadesUnicas = [...new Set(especialistas.map(e => e.especialidade))];
   const filtrados = filtro === 'todos' ? especialistas
@@ -84,7 +96,12 @@ export default function EspecialistasView() {
             style={{ background: CARD, border: `1px solid ${esp.parceiro ? '#34d39930' : BORDER}` }}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{EMOJIS[esp.especialidade] || '👨‍⚕️'}</span>
+                <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0"
+                  style={{ background: '#1e2a3a' }}>
+                  {esp.imagemUrl
+                    ? <img src={esp.imagemUrl} alt={esp.nome} className="w-full h-full object-cover" />
+                    : <span className="text-2xl">{EMOJIS[esp.especialidade] || '👨‍⚕️'}</span>}
+                </div>
                 <div>
                   <div className="font-semibold text-white text-sm">{esp.nome}</div>
                   <div className="text-xs text-slate-500">{esp.especialidade}</div>
@@ -161,6 +178,30 @@ export default function EspecialistasView() {
               <button onClick={() => { setShowForm(false); setEditId(null); }}><X size={18} color="#6b7280" /></button>
             </div>
             <div className="space-y-3">
+              {/* Upload de imagem */}
+              <div>
+                <label className="text-xs text-slate-400 block mb-2">Foto do Especialista</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    {form.imagemUrl
+                      ? <img src={form.imagemUrl} alt="foto" className="w-full h-full object-cover" />
+                      : <ImageIcon size={22} color="#475569" />}
+                  </div>
+                  <div className="flex-1">
+                    <button type="button" onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImg}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all"
+                      style={{ background: '#60a5fa15', color: '#60a5fa', border: '1px solid #60a5fa30', opacity: uploadingImg ? 0.6 : 1 }}>
+                      <Upload size={13} />
+                      {uploadingImg ? 'Enviando...' : 'Carregar Foto'}
+                    </button>
+                    <p className="text-xs text-slate-600 mt-1">JPG, PNG ou WEBP</p>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </div>
+              </div>
+
               {[
                 { label: 'Nome', field: 'nome', placeholder: 'Nome completo' },
                 { label: 'Email', field: 'email', placeholder: 'email@exemplo.com' },
