@@ -7,6 +7,7 @@ import { getCredentials, addCredential } from '../../lib/fitpro-storage';
 import { calcularIdade, calcularIMC, classificarIMC } from '../../lib/fitpro-calculations';
 import { base44 } from '@/api/base44Client';
 import VerFeedbackModal from '../../components/fitpro/VerFeedbackModal';
+import PARQVerRespostasModal from '../../components/fitpro/PARQVerRespostasModal';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -52,6 +53,8 @@ export default function AlunosView({ roleOverride }) {
   const [showSenha, setShowSenha] = useState(false);
   const [feedbacksNaoLidos, setFeedbacksNaoLidos] = useState({}); // { [alunoId]: count }
   const [verFeedbackAluno, setVerFeedbackAluno] = useState(null);
+  const [verPARQAluno, setVerPARQAluno] = useState(null);
+  const [enviandoPARQ, setEnviandoPARQ] = useState(false);
 
   // Carrega feedbacks não lidos ao montar
   useEffect(() => {
@@ -62,6 +65,10 @@ export default function AlunosView({ roleOverride }) {
       setFeedbacksNaoLidos(mapa);
     });
   }, [role]);
+
+  const handleEnviarPARQ = (aluno) => {
+    setVerPARQAluno(aluno);
+  };
 
   const handleSave = async () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
@@ -342,6 +349,7 @@ export default function AlunosView({ roleOverride }) {
               feedbacksNaoLidos={feedbacksNaoLidos}
               onVerPerfil={setSelectedAluno}
               onVerFeedback={setVerFeedbackAluno}
+              onEnviarPARQ={handleEnviarPARQ}
               onDelete={id => { if (confirm('Excluir este aluno?')) handleDelete(id); }}
             />
           ))}
@@ -360,6 +368,15 @@ export default function AlunosView({ roleOverride }) {
               return n;
             });
           }}
+        />
+      )}
+
+      {/* Modal Ver PAR-Q */}
+      {verPARQAluno && (
+        <PARQVerRespostasModal
+          aluno={verPARQAluno}
+          professorId={professorId}
+          onClose={() => setVerPARQAluno(null)}
         />
       )}
 

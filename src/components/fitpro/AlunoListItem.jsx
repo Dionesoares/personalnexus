@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, MessageCircle, MessageSquare, ChevronDown, ChevronUp, Maximize2 } from 'lucide-react';
+import { Trash2, MessageCircle, MessageSquare, ChevronDown, ChevronUp, Maximize2, ClipboardList } from 'lucide-react';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 const COLORS = ['#a78bfa','#fb923c','#34d399','#60a5fa','#f472b6'];
 
-export default function AlunoListItem({ aluno, i, avaliacoes, planosTreino, feedbacksNaoLidos, onVerPerfil, onVerFeedback, onDelete }) {
+export default function AlunoListItem({ aluno, i, avaliacoes, planosTreino, feedbacksNaoLidos, onVerPerfil, onVerFeedback, onEnviarPARQ, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const color = COLORS[i % COLORS.length];
   const avsAluno = avaliacoes.filter(a => a.alunoId === aluno.id);
@@ -83,6 +83,12 @@ export default function AlunoListItem({ aluno, i, avaliacoes, planosTreino, feed
                     <MessageCircle size={13} />WhatsApp
                   </button>
                 )}
+                <button onClick={e => { e.stopPropagation(); onEnviarPARQ(aluno); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:bg-purple-500/10"
+                  style={{ color: '#a78bfa', background: '#a78bfa10', border: '1px solid #a78bfa25' }}
+                  title="Enviar/Ver PAR-Q">
+                  <ClipboardList size={13} />PAR-Q
+                </button>
                 <button onClick={e => { e.stopPropagation(); onDelete(aluno.id); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:bg-red-500/10 ml-auto"
                   style={{ color: '#ef4444', background: '#ef444410', border: '1px solid #ef444425' }}>

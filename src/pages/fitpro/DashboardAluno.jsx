@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock, AlertCircle, QrCode, MessageCircle } from 'lucide-react';
+import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock, AlertCircle, QrCode, MessageCircle, ClipboardList } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { calcularIdade } from '../../lib/fitpro-calculations';
 import ModalEditarPerfil from '../../components/fitpro/ModalEditarPerfil';
 import { ModalPixAluno } from '../../components/fitpro/PixProfessorConfig';
+import PARQResponderModal from '../../components/fitpro/PARQResponderModal';
+import { base44 } from '@/api/base44Client';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -17,6 +19,8 @@ export default function DashboardAluno({ onNav }) {
   const [showPixModal, setShowPixModal] = useState(false);
   const [pixTransacao, setPixTransacao] = useState(null);
   const [professorIdAluno, setProfessorIdAluno] = useState('');
+  const [showPARQ, setShowPARQ] = useState(false);
+  const [temPARQPendente, setTemPARQPendente] = useState(false);
 
   const [resolvedAlunoId, setResolvedAlunoId] = useState('');
   useEffect(() => {
@@ -35,6 +39,13 @@ export default function DashboardAluno({ onNav }) {
     const aluno = alunos.find(a => a.id === resolvedAlunoId);
     if (aluno?.professorId) setProfessorIdAluno(aluno.professorId);
   }, [resolvedAlunoId, alunos]);
+
+  // Verifica se há PAR-Q pendente para este aluno
+  useEffect(() => {
+    if (!resolvedAlunoId) return;
+    base44.entities.PARQResposta.filter({ alunoId: resolvedAlunoId, status: 'pendente' })
+      .then(list => setTemPARQPendente(list.length > 0));
+  }, [resolvedAlunoId]);
 
   const aluno = alunos.find(a => a.id === resolvedAlunoId);
   const professor = professores?.find(p => p.id === aluno?.professorId);
@@ -90,6 +101,13 @@ export default function DashboardAluno({ onNav }) {
               }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
                 style={{ background: 'rgba(37,211,102,0.15)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)' }}>
                 <MessageCircle size={13} />Falar com Professor
+              </button>
+            )}
+            {temPARQPendente && (
+              <button onClick={() => setShowPARQ(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all animate-pulse"
+                style={{ background: 'rgba(167,139,250,0.2)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.4)' }}>
+                <ClipboardList size={13} />Responder PAR-Q
               </button>
             )}
           </div>
@@ -306,6 +324,9 @@ export default function DashboardAluno({ onNav }) {
       )}
       {showEditarPerfil && (
         <ModalEditarPerfil user={user} tipoUsuario="aluno" onClose={() => setShowEditarPerfil(false)} />
+      )}
+      {showPARQ && (
+        <PARQResponderModal onClose={() => { setShowPARQ(false); setTemPARQPendente(false); }} />
       )}
     </div>
   );
