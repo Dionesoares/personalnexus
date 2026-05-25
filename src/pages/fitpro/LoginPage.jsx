@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Mail, Lock, Eye, EyeOff, LogIn, Shield, UserCheck, Users, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/FitProContext';
+import EsqueciSenhaModal from '../../components/fitpro/EsqueciSenhaModal';
 
 const demoAccounts = [
   { role: 'Admin', email: 'admin@fitpro.com', password: 'admin123', icon: Shield, color: '#00d4ff', desc: 'Acesso total' },
@@ -16,6 +17,7 @@ export default function LoginPage({ onCadastro }) {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showEsqueci, setShowEsqueci] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -108,6 +110,12 @@ export default function LoginPage({ onCadastro }) {
               </div>
             </div>
             {error && <div className="text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} />{error}</div>}
+            <div className="flex justify-end">
+              <button type="button" onClick={() => setShowEsqueci(true)}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                Esqueci minha senha
+              </button>
+            </div>
             <button type="submit" disabled={loading}
               className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-all"
               style={{ background: 'linear-gradient(135deg, #00d4ff, #0099cc)', color: '#fff' }}>
@@ -132,6 +140,7 @@ export default function LoginPage({ onCadastro }) {
 
         </div>
       </div>
+      {showEsqueci && <EsqueciSenhaModal onClose={() => setShowEsqueci(false)} />}
     </div>
   );
 }
