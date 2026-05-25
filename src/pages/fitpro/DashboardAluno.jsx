@@ -89,35 +89,35 @@ export default function DashboardAluno({ onNav }) {
           <div>
             <p className="text-slate-400 text-sm mb-1">Bem-vindo 👋</p>
             <h2 className="text-2xl font-black text-white">{aluno?.nome?.split(' ')[0] || user?.nome?.split(' ')[0]}</h2>
-          </div>
-          <div className="flex flex-col gap-2 items-end">
-            <button onClick={() => setShowEditarPerfil(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
-              <Settings size={13} />Editar Perfil
-            </button>
-            <button onClick={() => setShowSolicitarVinculo(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399', border: '1px solid rgba(52,211,153,0.3)' }}>
-              <UserCheck size={13} />Solicitar Professor
-            </button>
-            {professor?.telefone && (
-              <button onClick={() => {
-                const tel = professor.telefone.replace(/\D/g, '');
-                window.open(`https://wa.me/55${tel}`, '_blank');
-              }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-                style={{ background: 'rgba(37,211,102,0.15)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)' }}>
-                <MessageCircle size={13} />Falar com Professor
+            <div className="flex flex-wrap gap-2 mt-2">
+              <button onClick={() => setShowSolicitarVinculo(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+                style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399', border: '1px solid rgba(52,211,153,0.3)' }}>
+                <UserCheck size={13} />Solicitar Professor
               </button>
-            )}
-            {temPARQPendente && (
-              <button onClick={() => setShowPARQ(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all animate-pulse"
-                style={{ background: 'rgba(167,139,250,0.2)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.4)' }}>
-                <ClipboardList size={13} />Responder PAR-Q
-              </button>
-            )}
+              {professor?.telefone && (
+                <button onClick={() => {
+                  const tel = professor.telefone.replace(/\D/g, '');
+                  window.open(`https://wa.me/55${tel}`, '_blank');
+                }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+                  style={{ background: 'rgba(37,211,102,0.15)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)' }}>
+                  <MessageCircle size={13} />Falar com Professor
+                </button>
+              )}
+              {temPARQPendente && (
+                <button onClick={() => setShowPARQ(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all animate-pulse"
+                  style={{ background: 'rgba(167,139,250,0.2)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.4)' }}>
+                  <ClipboardList size={13} />Responder PAR-Q
+                </button>
+              )}
+            </div>
           </div>
+          <button onClick={() => setShowEditarPerfil(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all flex-shrink-0"
+            style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
+            <Settings size={13} />Editar Perfil
+          </button>
         </div>
         {aluno && (
           <div className="flex gap-2 mt-3 flex-wrap">
