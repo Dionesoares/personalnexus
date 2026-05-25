@@ -106,53 +106,53 @@ export default function ProdutosView() {
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-500"><ShoppingBag size={40} className="mx-auto mb-3 opacity-30" /><p>Nenhum produto cadastrado</p></div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {filtered.map((prod, i) => {
             const color = CATEGORIA_COLOR[prod.categoria] || '#64748b';
             const temPromocao = prod.precoPromocional > 0 && prod.precoPromocional < prod.preco;
             return (
               <motion.div key={prod.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${prod.ativo ? BORDER : 'rgba(255,255,255,0.03)'}`, opacity: prod.ativo ? 1 : 0.6 }}>
-                <div className="w-full rounded-xl mb-3 overflow-hidden flex items-center justify-center"
-                  style={{ aspectRatio: '1/1', background: prod.imagemUrl ? '#f8f8f8' : `${color}10` }}>
+                className="rounded-xl overflow-hidden flex flex-col" style={{ background: CARD, border: `1px solid ${prod.ativo ? BORDER : 'rgba(255,255,255,0.03)'}`, opacity: prod.ativo ? 1 : 0.6 }}>
+                {/* Imagem */}
+                <div className="w-full overflow-hidden flex items-center justify-center relative"
+                  style={{ aspectRatio: '1/1', background: prod.imagemUrl ? '#f0f0f0' : `${color}12` }}>
                   {prod.imagemUrl ? (
-                    <img src={prod.imagemUrl} alt={prod.nome}
-                      className="w-full h-full"
-                      style={{ objectFit: 'contain', objectPosition: 'center' }} />
+                    <img src={prod.imagemUrl} alt={prod.nome} className="w-full h-full" style={{ objectFit: 'contain' }} />
                   ) : (
-                    <Package size={36} style={{ color }} />
+                    <Package size={28} style={{ color }} />
+                  )}
+                  {prod.destaque && <span className="absolute top-1.5 left-1.5 text-xs">⭐</span>}
+                  {temPromocao && (
+                    <span className="absolute top-1.5 right-1.5 text-xs px-1.5 py-0.5 rounded-full font-bold"
+                      style={{ background: '#ef444490', color: '#fff' }}>OFF</span>
                   )}
                 </div>
-                <div className="flex items-start justify-between mb-1">
-                  <h3 className="font-bold text-white text-sm flex-1">{prod.nome}</h3>
-                  {prod.destaque && <span className="text-xs px-1.5 py-0.5 rounded-full ml-2 flex-shrink-0" style={{ background: '#fbbf2415', color: '#fbbf24' }}>⭐</span>}
-                </div>
-                <div className="flex gap-2 mb-2">
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${color}15`, color }}>{prod.categoria}</span>
-                  {prod.estoque !== undefined && <span className="text-xs text-slate-500 py-0.5">Estoque: {prod.estoque}{prod.unidade}</span>}
-                </div>
-                {prod.descricao && <p className="text-xs text-slate-500 mb-2 line-clamp-2">{prod.descricao}</p>}
-                <div className="flex items-center justify-between mt-3">
-                  <div>
+                {/* Info */}
+                <div className="p-2 flex flex-col flex-1">
+                  <p className="text-xs font-semibold text-white leading-tight line-clamp-2 mb-1">{prod.nome}</p>
+                  <span className="text-xs px-1.5 py-0.5 rounded-full inline-block mb-1 self-start" style={{ background: `${color}15`, color, fontSize: 10 }}>{prod.categoria}</span>
+                  <div className="mt-auto">
                     {temPromocao ? (
                       <>
-                        <div className="text-xs text-slate-500 line-through">R$ {prod.preco.toFixed(2)}</div>
-                        <div className="text-lg font-bold text-green-400">R$ {prod.precoPromocional.toFixed(2)}</div>
+                        <div className="text-slate-500 line-through" style={{ fontSize: 10 }}>R$ {prod.preco.toFixed(2)}</div>
+                        <div className="text-sm font-bold text-green-400">R$ {prod.precoPromocional.toFixed(2)}</div>
                       </>
                     ) : (
-                      <div className="text-lg font-bold" style={{ color: '#34d399' }}>R$ {parseFloat(prod.preco || 0).toFixed(2)}</div>
+                      <div className="text-sm font-bold" style={{ color: '#34d399' }}>R$ {parseFloat(prod.preco || 0).toFixed(2)}</div>
                     )}
+                    <div className="text-slate-600 mt-0.5" style={{ fontSize: 10 }}>Estoque: {prod.estoque || 0} {prod.unidade}</div>
                   </div>
                   {isAdmin && (
-                    <div className="flex gap-1">
-                      <button onClick={() => toggleAtivo(prod.id, prod.ativo)} className="px-2 py-1.5 rounded-lg text-xs"
-                        style={{ background: prod.ativo ? '#34d39915' : '#64748b15', color: prod.ativo ? '#34d399' : '#64748b' }}>
-                        {prod.ativo ? 'Ativo' : 'Inativo'}
+                    <div className="flex gap-1 mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <button onClick={() => toggleAtivo(prod.id, prod.ativo)}
+                        className="flex-1 py-1 rounded-lg text-center transition-all"
+                        style={{ background: prod.ativo ? '#34d39915' : '#64748b15', color: prod.ativo ? '#34d399' : '#64748b', fontSize: 10 }}>
+                        {prod.ativo ? '✓ Ativo' : 'Inativo'}
                       </button>
                       <button onClick={() => { setForm({ ...prod, preco: String(prod.preco), precoPromocional: String(prod.precoPromocional || ''), estoque: String(prod.estoque || '') }); setEditId(prod.id); setShowForm(true); }}
-                        className="p-1.5 rounded-lg hover:bg-white/5" style={{ color: '#94a3b8' }}><Edit2 size={13} /></button>
+                        className="p-1 rounded-lg hover:bg-white/5" style={{ color: '#94a3b8' }}><Edit2 size={11} /></button>
                       <button onClick={() => { if (confirm('Excluir?')) deleteProduto(prod.id); }}
-                        className="p-1.5 rounded-lg hover:bg-red-500/10" style={{ color: '#ef4444' }}><Trash2 size={13} /></button>
+                        className="p-1 rounded-lg hover:bg-red-500/10" style={{ color: '#ef4444' }}><Trash2 size={11} /></button>
                     </div>
                   )}
                 </div>

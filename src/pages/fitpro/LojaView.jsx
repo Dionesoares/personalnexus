@@ -73,48 +73,48 @@ export default function LojaView() {
   const ProductCard = ({ prod }) => {
     const color = CATEGORIA_COLOR[prod.categoria] || '#64748b';
     const temPromocao = prod.precoPromocional > 0 && prod.precoPromocional < prod.preco;
-    const qtdNoCarrinho = carrinho.find(i => i.produtoId === prod.id)?.quantidade || 0;
     return (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-        <div className="w-full overflow-hidden flex items-center justify-center"
-          style={{ aspectRatio: '1/1', background: prod.imagemUrl ? '#f8f8f8' : `${color}10` }}>
+        className="rounded-xl overflow-hidden flex flex-col" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+        {/* Imagem */}
+        <div className="w-full overflow-hidden flex items-center justify-center relative"
+          style={{ aspectRatio: '1/1', background: prod.imagemUrl ? '#f0f0f0' : `${color}12` }}>
           {prod.imagemUrl ? (
-            <img src={prod.imagemUrl} alt={prod.nome}
-              className="w-full h-full"
-              style={{ objectFit: 'contain', objectPosition: 'center' }} />
+            <img src={prod.imagemUrl} alt={prod.nome} className="w-full h-full" style={{ objectFit: 'contain' }} />
           ) : (
-            <ShoppingBag size={36} style={{ color }} />
+            <ShoppingBag size={28} style={{ color }} />
+          )}
+          {prod.destaque && <span className="absolute top-1.5 left-1.5 text-xs">⭐</span>}
+          {temPromocao && (
+            <span className="absolute top-1.5 right-1.5 text-xs px-1.5 py-0.5 rounded-full font-bold"
+              style={{ background: '#ef444490', color: '#fff' }}>OFF</span>
           )}
         </div>
-        <div className="p-4">
-          <div className="flex items-start justify-between mb-1">
-            <h3 className="font-bold text-white text-sm flex-1 leading-tight">{prod.nome}</h3>
-            {prod.destaque && <span className="text-xs ml-1 flex-shrink-0">⭐</span>}
-          </div>
-          <span className="text-xs px-2 py-0.5 rounded-full mb-2 inline-block" style={{ background: `${color}15`, color }}>{prod.categoria}</span>
-          {prod.descricao && <p className="text-xs text-slate-500 mb-3 line-clamp-2">{prod.descricao}</p>}
-          <div className="flex items-center justify-between">
-            <div>
-              {temPromocao ? (
-                <>
-                  <div className="text-xs text-slate-500 line-through">R$ {parseFloat(prod.preco).toFixed(2)}</div>
-                  <div className="text-base font-bold text-green-400">R$ {parseFloat(prod.precoPromocional).toFixed(2)}</div>
-                </>
-              ) : (
-                <div className="text-base font-bold" style={{ color: '#34d399' }}>R$ {parseFloat(prod.preco || 0).toFixed(2)}</div>
-              )}
-            </div>
-            {prod.linkLoja ? (
-              <a href={prod.linkLoja} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
-                style={{ background: `${color}20`, color, border: `1px solid ${color}30` }}>
-                <ShoppingCart size={12} />Comprar na loja parceira
-              </a>
+        {/* Info */}
+        <div className="p-2 flex flex-col flex-1">
+          <p className="text-xs font-semibold text-white leading-tight line-clamp-2 mb-1">{prod.nome}</p>
+          <span className="text-xs px-1.5 py-0.5 rounded-full inline-block mb-1 self-start" style={{ background: `${color}15`, color, fontSize: 10 }}>{prod.categoria}</span>
+          <div className="mt-auto">
+            {temPromocao ? (
+              <>
+                <div className="text-slate-500 line-through" style={{ fontSize: 10 }}>R$ {parseFloat(prod.preco).toFixed(2)}</div>
+                <div className="text-sm font-bold text-green-400">R$ {parseFloat(prod.precoPromocional).toFixed(2)}</div>
+              </>
             ) : (
-              <span className="text-xs text-slate-600 italic">Sem link cadastrado</span>
+              <div className="text-sm font-bold" style={{ color: '#34d399' }}>R$ {parseFloat(prod.preco || 0).toFixed(2)}</div>
             )}
           </div>
+          {prod.linkLoja ? (
+            <a href={prod.linkLoja} target="_blank" rel="noopener noreferrer"
+              className="mt-2 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+              style={{ background: `${color}20`, color, border: `1px solid ${color}30` }}>
+              <ShoppingCart size={11} />Comprar
+            </a>
+          ) : (
+            <div className="mt-2 py-1.5 rounded-lg text-center text-slate-600 italic" style={{ fontSize: 10, background: 'rgba(255,255,255,0.03)' }}>
+              Sem link
+            </div>
+          )}
         </div>
       </motion.div>
     );
@@ -188,7 +188,7 @@ export default function LojaView() {
           {destaques.length > 0 && (
             <div>
               <h3 className="font-semibold text-white mb-3 flex items-center gap-2">⭐ Destaques</h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {destaques.map(prod => <ProductCard key={prod.id} prod={prod} />)}
               </div>
             </div>
@@ -196,7 +196,7 @@ export default function LojaView() {
           {outros.length > 0 && (
             <div>
               {destaques.length > 0 && <h3 className="font-semibold text-white mb-3">Todos os Produtos</h3>}
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {outros.map(prod => <ProductCard key={prod.id} prod={prod} />)}
               </div>
             </div>
