@@ -38,13 +38,15 @@ export function savePixProfessor(professorId, dados) {
 
 export default function PixProfessorConfig({ professorId }) {
   const pixDefault = { chave: '', nome: '', cidade: '', banco: '', tipochave: 'cpf' };
-  const [pixForm, setPixForm] = useState(() => loadPixProfessor(professorId) || pixDefault);
+  const [pixDadosSalvos, setPixDadosSalvos] = useState(() => loadPixProfessor(professorId) || pixDefault);
+  const [editando, setEditando] = useState(!pixDadosSalvos?.chave);
+  const [pixForm, setPixForm] = useState(pixDadosSalvos);
   const [pixSaved, setPixSaved] = useState(false);
   const [pixValorPreview, setPixValorPreview] = useState('');
   const [pixCopied, setPixCopied] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  const pixDados = loadPixProfessor(professorId);
+  const pixDados = pixDadosSalvos;
   const pixPayload = pixForm.chave && pixForm.nome && pixForm.cidade
     ? gerarPayloadPix(pixForm.chave, pixForm.nome, pixForm.cidade, pixValorPreview || null)
     : null;
@@ -52,85 +54,125 @@ export default function PixProfessorConfig({ professorId }) {
 
   const salvar = () => {
     savePixProfessor(professorId, pixForm);
+    setPixDadosSalvos(pixForm);
+    setEditando(false);
     setPixSaved(true);
     setTimeout(() => setPixSaved(false), 2000);
   };
 
   return (
     <div className="space-y-4">
-      {/* Formulário de dados PIX */}
+      {/* Dados PIX */}
       <div className="p-5 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-        <div className="flex items-center gap-2 mb-4">
-          <QrCode size={18} color="#34d399" />
-          <div>
-            <h3 className="font-semibold text-white">Meus Dados PIX</h3>
-            <p className="text-xs text-slate-500">Cadastre sua chave PIX para cobrar alunos via QR Code</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <QrCode size={18} color="#34d399" />
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Tipo de Chave</label>
-              <select value={pixForm.tipochave} onChange={e => setPixForm(f => ({ ...f, tipochave: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <option value="cpf">CPF</option>
-                <option value="cnpj">CNPJ</option>
-                <option value="email">E-mail</option>
-                <option value="telefone">Telefone</option>
-                <option value="aleatoria">Chave Aleatória</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">Chave PIX</label>
-              <input value={pixForm.chave} onChange={e => setPixForm(f => ({ ...f, chave: e.target.value }))}
-                placeholder={pixForm.tipochave === 'cpf' ? '000.000.000-00' : pixForm.tipochave === 'email' ? 'email@ex.com' : 'Chave PIX'}
-                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              <h3 className="font-semibold text-white">Meus Dados PIX</h3>
+              <p className="text-xs text-slate-500">Cadastre sua chave PIX para cobrar alunos via QR Code</p>
             </div>
           </div>
-
-          <div>
-            <label className="text-xs text-slate-400 block mb-1">Nome do Beneficiário</label>
-            <input value={pixForm.nome} onChange={e => setPixForm(f => ({ ...f, nome: e.target.value }))}
-              placeholder="Seu nome completo"
-              className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-              style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">Cidade</label>
-              <input value={pixForm.cidade} onChange={e => setPixForm(f => ({ ...f, cidade: e.target.value }))}
-                placeholder="São Paulo"
-                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-            </div>
-            <div>
-              <label className="text-xs text-slate-400 block mb-1">Banco</label>
-              <input value={pixForm.banco} onChange={e => setPixForm(f => ({ ...f, banco: e.target.value }))}
-                placeholder="Nubank, Itaú..."
-                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
-                style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <button onClick={salvar}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
-              style={{ background: pixSaved ? '#34d39920' : '#34d39920', color: pixSaved ? '#34d399' : '#34d399', border: `1px solid ${pixSaved ? '#34d39940' : '#34d39930'}` }}>
-              <Save size={14} />{pixSaved ? '✓ Salvo!' : 'Salvar Dados PIX'}
+          {!editando && pixDadosSalvos?.chave && (
+            <button onClick={() => { setPixForm(pixDadosSalvos); setEditando(true); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+              style={{ background: '#fbbf2415', color: '#fbbf24', border: '1px solid #fbbf2425' }}>
+              <Save size={12} />Alterar PIX
             </button>
-            {pixQrUrl && (
-              <button onClick={() => setShowModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                style={{ background: '#a78bfa20', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
-                <Eye size={14} />Ver QR Code
-              </button>
-            )}
-          </div>
+          )}
         </div>
+
+        {/* Modo visualização */}
+        {!editando && pixDadosSalvos?.chave ? (
+          <div className="space-y-2">
+            {[
+              { label: 'Chave PIX', value: `${pixDadosSalvos.tipochave?.toUpperCase()}: ${pixDadosSalvos.chave}` },
+              { label: 'Beneficiário', value: pixDadosSalvos.nome },
+              { label: 'Cidade', value: pixDadosSalvos.cidade },
+              ...(pixDadosSalvos.banco ? [{ label: 'Banco', value: pixDadosSalvos.banco }] : []),
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: '#34d39908', border: '1px solid #34d39920' }}>
+                <span className="text-xs text-slate-400 w-24 flex-shrink-0">{item.label}</span>
+                <span className="text-sm font-semibold text-white">{item.value}</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-2 mt-2 px-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="text-xs text-emerald-400">PIX configurado e salvo</span>
+            </div>
+          </div>
+        ) : (
+          /* Modo edição */
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Tipo de Chave</label>
+                <select value={pixForm.tipochave} onChange={e => setPixForm(f => ({ ...f, tipochave: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <option value="cpf">CPF</option>
+                  <option value="cnpj">CNPJ</option>
+                  <option value="email">E-mail</option>
+                  <option value="telefone">Telefone</option>
+                  <option value="aleatoria">Chave Aleatória</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Chave PIX</label>
+                <input value={pixForm.chave} onChange={e => setPixForm(f => ({ ...f, chave: e.target.value }))}
+                  placeholder={pixForm.tipochave === 'cpf' ? '000.000.000-00' : pixForm.tipochave === 'email' ? 'email@ex.com' : 'Chave PIX'}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Nome do Beneficiário</label>
+              <input value={pixForm.nome} onChange={e => setPixForm(f => ({ ...f, nome: e.target.value }))}
+                placeholder="Seu nome completo"
+                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Cidade</label>
+                <input value={pixForm.cidade} onChange={e => setPixForm(f => ({ ...f, cidade: e.target.value }))}
+                  placeholder="São Paulo"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Banco</label>
+                <input value={pixForm.banco} onChange={e => setPixForm(f => ({ ...f, banco: e.target.value }))}
+                  placeholder="Nubank, Itaú..."
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={salvar}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+                <Save size={14} />{pixSaved ? '✓ Salvo!' : 'Salvar Dados PIX'}
+              </button>
+              {editando && pixDadosSalvos?.chave && (
+                <button onClick={() => setEditando(false)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background: 'rgba(255,255,255,0.05)', color: '#64748b', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  Cancelar
+                </button>
+              )}
+              {pixQrUrl && (
+                <button onClick={() => setShowModal(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background: '#a78bfa20', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
+                  <Eye size={14} />Ver QR Code
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Preview QR Code */}
