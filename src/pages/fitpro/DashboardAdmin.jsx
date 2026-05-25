@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserCheck, Stethoscope, Activity, BarChart2, Settings, ChevronRight, AlertCircle, Clock, Dumbbell, Calendar } from 'lucide-react';
+import { Users, UserCheck, Stethoscope, Activity, BarChart2, Settings, ChevronRight, AlertCircle, Clock, Dumbbell, Calendar, Link } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
+import VincularAlunoProfessorModal from '../../components/fitpro/VincularAlunoProfessorModal';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -9,6 +10,7 @@ const BORDER = 'rgba(255,255,255,0.07)';
 export default function DashboardAdmin({ onNav }) {
   const { alunos, professores, avaliacoes, planosTreino, periodizacoes, especialistas } = useApp();
   const { user } = useAuth();
+  const [showVincular, setShowVincular] = useState(false);
 
   const parceiros = especialistas.filter(e => e.parceiro).length;
 
@@ -103,8 +105,9 @@ export default function DashboardAdmin({ onNav }) {
               { label: 'Especialistas', value: especialistas.length, color: '#60a5fa', icon: Stethoscope, view: 'especialistas' },
               { label: 'Relatórios', value: '', color: '#fb923c', icon: BarChart2, view: 'relatorios' },
               { label: 'Usuários', value: '', color: '#e879f9', icon: Settings, view: 'usuarios' },
+              { label: 'Vincular Aluno', value: '', color: '#34d399', icon: Link, view: '__vincular__' },
             ].map((item, i) => (
-              <button key={i} onClick={() => onNav(item.view)}
+              <button key={i} onClick={() => item.view === '__vincular__' ? setShowVincular(true) : onNav(item.view)}
                 className="w-full flex items-center gap-3 p-2.5 rounded-xl cursor-pointer hover:bg-white/5 transition-all text-left">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${item.color}15` }}>
                   <item.icon size={14} style={{ color: item.color }} />
@@ -185,6 +188,8 @@ export default function DashboardAdmin({ onNav }) {
           </div>
         )}
       </div>
+
+      {showVincular && <VincularAlunoProfessorModal onClose={() => setShowVincular(false)} />}
     </div>
   );
 }

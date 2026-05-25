@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock, AlertCircle, QrCode, MessageCircle, ClipboardList } from 'lucide-react';
+import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock, AlertCircle, QrCode, MessageCircle, ClipboardList, UserCheck } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { calcularIdade } from '../../lib/fitpro-calculations';
 import ModalEditarPerfil from '../../components/fitpro/ModalEditarPerfil';
+import SolicitarVinculoModal from '../../components/fitpro/SolicitarVinculoModal';
 import { ModalPixAluno } from '../../components/fitpro/PixProfessorConfig';
 import PARQResponderModal from '../../components/fitpro/PARQResponderModal';
 import { base44 } from '@/api/base44Client';
@@ -16,6 +17,7 @@ export default function DashboardAluno({ onNav }) {
   const { alunos, professores, avaliacoes, planosTreino, periodizacoes, especialistas, transacoes } = useApp();
   const { user } = useAuth();
   const [showEditarPerfil, setShowEditarPerfil] = useState(false);
+  const [showSolicitarVinculo, setShowSolicitarVinculo] = useState(false);
   const [showPixModal, setShowPixModal] = useState(false);
   const [pixTransacao, setPixTransacao] = useState(null);
   const [professorIdAluno, setProfessorIdAluno] = useState('');
@@ -93,6 +95,11 @@ export default function DashboardAluno({ onNav }) {
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
               style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
               <Settings size={13} />Editar Perfil
+            </button>
+            <button onClick={() => setShowSolicitarVinculo(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+              style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399', border: '1px solid rgba(52,211,153,0.3)' }}>
+              <UserCheck size={13} />Solicitar Professor
             </button>
             {professor?.telefone && (
               <button onClick={() => {
@@ -324,6 +331,9 @@ export default function DashboardAluno({ onNav }) {
       )}
       {showEditarPerfil && (
         <ModalEditarPerfil user={user} tipoUsuario="aluno" onClose={() => setShowEditarPerfil(false)} />
+      )}
+      {showSolicitarVinculo && (
+        <SolicitarVinculoModal onClose={() => setShowSolicitarVinculo(false)} />
       )}
       {showPARQ && (
         <PARQResponderModal onClose={() => { setShowPARQ(false); setTemPARQPendente(false); }} />
