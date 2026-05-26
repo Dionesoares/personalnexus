@@ -45,7 +45,7 @@ export default function AlunosView({ roleOverride }) {
     const matchProf = !filtroProf || a.professorId === filtroProf;
     const matchObj = !filtroObj || a.objetivo === filtroObj;
     return matchSearch && matchProf && matchObj;
-  });
+  }).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
   const objetivos = [...new Set(alunosFiltrados.map(a => a.objetivo).filter(Boolean))];
 

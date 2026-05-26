@@ -60,7 +60,7 @@ export default function ProfessoresView() {
   const filtered = professores.filter(p =>
     p.nome.toLowerCase().includes(search.toLowerCase()) ||
     (p.email || '').toLowerCase().includes(search.toLowerCase())
-  );
+  ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
   const handleSave = () => {
     if (!form.nome.trim()) return alert('Nome é obrigatório');
