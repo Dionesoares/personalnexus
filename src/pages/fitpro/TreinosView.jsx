@@ -352,7 +352,7 @@ export default function TreinosView({ onNav }) {
       {user?.role !== 'aluno' && alunosFiltrados.length > 0 && (
         <select value={alunoFilter} onChange={e => setAlunoFilter(e.target.value)} className="px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
           <option value="">Todos os alunos</option>
-          {alunosFiltrados.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+          {[...alunosFiltrados].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
         </select>
       )}
 
