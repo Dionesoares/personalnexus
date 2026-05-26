@@ -65,7 +65,12 @@ export default function DashboardAluno({ onNav }) {
     venc.setHours(0, 0, 0, 0);
     return venc < hoje;
   });
-  const pendenciaPendente = !pendenciaVencida && minhasMensalidades.find(t => t.status === 'pendente');
+  const pendenciaPendente = !pendenciaVencida && minhasMensalidades.find(t => {
+    if (t.status !== 'pendente') return false;
+    const venc = t.vencimento ? new Date(t.vencimento) : new Date(t.data);
+    venc.setHours(0, 0, 0, 0);
+    return venc <= hoje; // só mostra se vencimento é hoje ou já passou
+  });
   const meusTreinos = planosTreino.filter(t => t.alunoId === resolvedAlunoId);
   const minhasPeriodizacoes = periodizacoes.filter(p => p.alunoId === resolvedAlunoId);
   const ultimaAvaliacao = minhasAvaliacoes[0];
