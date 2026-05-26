@@ -146,7 +146,16 @@ export default function BibliotecaView() {
 
   // Pastas (apenas para admin)
   const [pastas, setPastas] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('fitpro_pastas_biblioteca') || '[]'); } catch { return []; }
+    try {
+      const saved = JSON.parse(localStorage.getItem('fitpro_pastas_biblioteca') || '[]');
+      // Garante que a pasta CrossFit sempre existe
+      if (!saved.find(p => p.id === 'CrossFit')) {
+        const updated = [{ id: 'CrossFit', nome: 'CrossFit', createdAt: new Date().toISOString() }, ...saved];
+        localStorage.setItem('fitpro_pastas_biblioteca', JSON.stringify(updated));
+        return updated;
+      }
+      return saved;
+    } catch { return [{ id: 'CrossFit', nome: 'CrossFit', createdAt: new Date().toISOString() }]; }
   });
   const [expandedPastas, setExpandedPastas] = useState({});
   const [editingPastaId, setEditingPastaId] = useState(null);
