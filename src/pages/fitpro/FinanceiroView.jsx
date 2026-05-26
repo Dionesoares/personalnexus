@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Plus, X, TrendingUp, TrendingDown, Clock, AlertCircle, CheckCircle2, Users, ChevronDown, ChevronUp, Zap, Ban, Trash2, QrCode, Edit2 } from 'lucide-react';
+import { DollarSign, Plus, X, TrendingUp, TrendingDown, Clock, AlertCircle, CheckCircle2, Users, ChevronDown, ChevronUp, Zap, Ban, Trash2, QrCode, Edit2, RefreshCw, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
@@ -25,6 +25,46 @@ function emptyTransacao(alunoId = '') {
     observacoes: '',
     categoria: 'receita',
   };
+}
+
+const RECORRENCIA_OPCOES = [
+  { value: 'mensal', label: 'Mensal', dias: 30 },
+  { value: 'quinzenal', label: 'Quinzenal', dias: 15 },
+  { value: 'semanal', label: 'Semanal', dias: 7 },
+];
+
+function gerarCobrancasRecorrentes(base, recorrencia, quantidade) {
+  const opcao = RECORRENCIA_OPCOES.find(o => o.value === recorrencia);
+  if (!opcao || !base.vencimento) return [];
+
+  const cobranças = [];
+  for (let i = 1; i <= quantidade; i++) {
+    const vencBase = new Date(base.vencimento + 'T12:00:00');
+    const novoVenc = new Date(vencBase);
+
+    if (recorrencia === 'mensal') {
+      novoVenc.setMonth(novoVenc.getMonth() + i);
+    } else {
+      novoVenc.setDate(novoVenc.getDate() + opcao.dias * i);
+    }
+
+    const dataVenc = novoVenc.toISOString().split('T')[0];
+    const dataCobranca = new Date(novoVenc);
+    dataCobranca.setDate(dataCobranca.getDate() - 5);
+    const dataEmissao = dataCobranca.toISOString().split('T')[0];
+
+    const mesLabel = novoVenc.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    cobranças.push({
+      ...base,
+      data: dataEmissao,
+      vencimento: dataVenc,
+      descricao: recorrencia === 'mensal'
+        ? base.descricao.replace(/\s*[-–]\s*\w+\/\d+$/, '') + ` — ${mesLabel}`
+        : `${base.descricao} (${i + 1}/${quantidade + 1})`,
+      status: 'pendente',
+    });
+  }
+  return cobranças;
 }
 
 // Dado um aluno, retorna o status financeiro baseado nas transações de mensalidade
@@ -84,6 +124,9 @@ export default function FinanceiroView() {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyTransacao());
   const [saved, setSaved] = useState(false);
+  const [recorrenciaAtiva, setRecorrenciaAtiva] = useState(false);
+  const [recorrenciaTipo, setRecorrenciaTipo] = useState('mensal');
+  const [recorrenciaQtd, setRecorrenciaQtd] = useState(3);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroMes, setFiltroMes] = useState('');
   const [abaAtiva, setAbaAtiva] = useState('transacoes'); // 'transacoes' | 'alunos' | 'pix'
@@ -137,7 +180,7 @@ export default function FinanceiroView() {
     sem_cobranca: alunosComStatus.filter(a => a.statusFinanceiro === 'sem_cobranca').length,
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.valor) return alert('Preencha o valor');
     if (!form.descricao.trim()) return alert('Preencha a descrição');
     const payload = { ...form, valor: parseFloat(form.valor) || 0, professorId };
@@ -145,9 +188,18 @@ export default function FinanceiroView() {
       updateTransacao(editId, payload);
     } else {
       addTransacao(payload);
+      // Gerar cobranças recorrentes
+      if (recorrenciaAtiva && !editId) {
+        if (!form.vencimento) return alert('Defina a data de vencimento para usar cobrança recorrente');
+        const extras = gerarCobrancasRecorrentes(payload, recorrenciaTipo, recorrenciaQtd);
+        for (const c of extras) await addTransacao(c);
+      }
     }
     setSaved(true);
-    setTimeout(() => { setSaved(false); setShowForm(false); setEditId(null); setForm(emptyTransacao()); }, 1200);
+    setTimeout(() => {
+      setSaved(false); setShowForm(false); setEditId(null);
+      setForm(emptyTransacao()); setRecorrenciaAtiva(false);
+    }, 1200);
   };
 
   const abrirEdicao = (t) => {
@@ -163,6 +215,7 @@ export default function FinanceiroView() {
       categoria: t.categoria || 'receita',
     });
     setEditId(t.id);
+    setRecorrenciaAtiva(false);
     setShowForm(true);
   };
 
@@ -553,6 +606,100 @@ export default function FinanceiroView() {
                   rows={2} className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none resize-none"
                   style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
+
+              {/* Cobrança Recorrente — só em nova cobrança */}
+              {!editId && (
+                <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${recorrenciaAtiva ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.07)'}` }}>
+                  <button
+                    type="button"
+                    onClick={() => setRecorrenciaAtiva(v => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 transition-all"
+                    style={{ background: recorrenciaAtiva ? 'rgba(167,139,250,0.12)' : 'rgba(255,255,255,0.03)' }}>
+                    <div className="flex items-center gap-2">
+                      <RefreshCw size={14} color="#a78bfa" />
+                      <span className="text-sm font-semibold text-white">Cobrança Recorrente</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#a78bfa20', color: '#a78bfa' }}>
+                        Automático
+                      </span>
+                    </div>
+                    <div className="w-9 h-5 rounded-full relative transition-all flex-shrink-0"
+                      style={{ background: recorrenciaAtiva ? '#a78bfa' : 'rgba(255,255,255,0.1)' }}>
+                      <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
+                        style={{ left: recorrenciaAtiva ? '17px' : '2px' }} />
+                    </div>
+                  </button>
+
+                  {recorrenciaAtiva && (
+                    <div className="px-4 pb-4 space-y-3" style={{ background: 'rgba(167,139,250,0.05)' }}>
+                      <p className="text-xs text-slate-400 pt-2 flex items-center gap-1">
+                        <Calendar size={11} color="#a78bfa" />
+                        Gera cobranças futuras automaticamente com base no vencimento
+                      </p>
+
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1.5">Periodicidade</label>
+                        <div className="flex gap-2">
+                          {RECORRENCIA_OPCOES.map(op => (
+                            <button key={op.value} type="button"
+                              onClick={() => setRecorrenciaTipo(op.value)}
+                              className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all"
+                              style={{
+                                background: recorrenciaTipo === op.value ? 'rgba(167,139,250,0.25)' : 'rgba(255,255,255,0.04)',
+                                color: recorrenciaTipo === op.value ? '#a78bfa' : '#64748b',
+                                border: recorrenciaTipo === op.value ? '1px solid rgba(167,139,250,0.4)' : '1px solid rgba(255,255,255,0.06)',
+                              }}>
+                              {op.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-slate-400 block mb-1.5">
+                          Gerar mais <span className="text-white font-semibold">{recorrenciaQtd}</span> cobranças após esta
+                        </label>
+                        <input
+                          type="range" min={1} max={12} value={recorrenciaQtd}
+                          onChange={e => setRecorrenciaQtd(Number(e.target.value))}
+                          className="w-full accent-purple-400" />
+                        <div className="flex justify-between text-xs text-slate-600 mt-1">
+                          <span>1</span><span>6</span><span>12</span>
+                        </div>
+                      </div>
+
+                      {form.vencimento ? (
+                        <div className="p-3 rounded-xl text-xs space-y-1" style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)' }}>
+                          <div className="text-slate-300 font-semibold mb-1.5">📅 Prévia das cobranças geradas:</div>
+                          {Array.from({ length: Math.min(recorrenciaQtd, 4) }, (_, i) => {
+                            const vencBase = new Date(form.vencimento + 'T12:00:00');
+                            const novoVenc = new Date(vencBase);
+                            if (recorrenciaTipo === 'mensal') novoVenc.setMonth(novoVenc.getMonth() + i + 1);
+                            else {
+                              const dias = RECORRENCIA_OPCOES.find(o => o.value === recorrenciaTipo)?.dias || 30;
+                              novoVenc.setDate(novoVenc.getDate() + dias * (i + 1));
+                            }
+                            return (
+                              <div key={i} className="flex justify-between">
+                                <span style={{ color: '#a78bfa' }}>
+                                  {novoVenc.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
+                                </span>
+                                <span className="text-slate-300">
+                                  R$ {parseFloat(form.valor || 0).toFixed(2)} • pendente
+                                </span>
+                              </div>
+                            );
+                          })}
+                          {recorrenciaQtd > 4 && <div className="text-slate-500">+ {recorrenciaQtd - 4} mais...</div>}
+                        </div>
+                      ) : (
+                        <div className="p-2 rounded-xl text-xs text-center" style={{ background: '#fbbf2410', color: '#fbbf24', border: '1px solid #fbbf2420' }}>
+                          ⚠️ Defina o vencimento acima para ver a prévia
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white"
               style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #34d399, #059669)' }}>
