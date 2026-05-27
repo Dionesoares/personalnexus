@@ -37,6 +37,7 @@ export default function TreinosView({ onNav }) {
   const [saved, setSaved] = useState(false);
   const [gifModal, setGifModal] = useState(null); // { nome, gifUrl, series, repeticoes, descanso, observacoes, dicas, cor }
   const [bibSearch, setBibSearch] = useState({}); // { [sessaoId]: string }
+  const [bibGrupo, setBibGrupo] = useState({}); // { [sessaoId]: string }
   const [exConcluidosMap, setExConcluidosMap] = useState({}); // { [exId]: boolean }
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -593,19 +594,32 @@ export default function TreinosView({ onNav }) {
                             : all.filter(b => !b.professorId || b.professorId === 'system' || b.professorId === 'admin' || b.professorId === user?.id);
                           if (bibDisponivel.length === 0) return null;
                           const busca = (bibSearch[sessao.id] || '').toLowerCase();
-                          const filtrados = busca.length > 0
-                            ? bibDisponivel.filter(b => b.nome?.toLowerCase().includes(busca)).slice(0, 20)
+                          const grupoFiltro = bibGrupo[sessao.id] || '';
+                          const filtrados = (busca.length > 0 || grupoFiltro)
+                            ? bibDisponivel.filter(b =>
+                                (!busca || b.nome?.toLowerCase().includes(busca)) &&
+                                (!grupoFiltro || b.grupoMuscular === grupoFiltro)
+                              ).slice(0, 20)
                             : [];
                           return (
-                            <div className="flex-1 relative">
-                              <input
-                                value={bibSearch[sessao.id] || ''}
-                                onChange={e => setBibSearch(s => ({ ...s, [sessao.id]: e.target.value }))}
-                                placeholder="🔍 Buscar exercício..."
-                                className="w-full px-2 py-1 rounded-lg text-xs text-white outline-none"
-                                style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
-                              />
-                              {filtrados.length > 0 && (
+                           <div className="flex-1 flex gap-1 relative">
+                             <select
+                               value={bibGrupo[sessao.id] || ''}
+                               onChange={e => setBibGrupo(s => ({ ...s, [sessao.id]: e.target.value }))}
+                               className="px-2 py-1 rounded-lg text-xs text-white outline-none flex-shrink-0"
+                               style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)', maxWidth: 110 }}>
+                               <option value="">Todos grupos</option>
+                               {['Peito','Costas','Quadríceps','Posterior de Coxa','Glúteos','Ombros','Bíceps','Tríceps','Core','Panturrilha','Antebraço','Cardio','Funcional','CrossFit'].map(g => <option key={g} value={g}>{g}</option>)}
+                             </select>
+                             <div className="flex-1 relative">
+                             <input
+                               value={bibSearch[sessao.id] || ''}
+                               onChange={e => setBibSearch(s => ({ ...s, [sessao.id]: e.target.value }))}
+                               placeholder="🔍 Buscar exercício..."
+                               className="w-full px-2 py-1 rounded-lg text-xs text-white outline-none"
+                               style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}
+                             />
+                             {filtrados.length > 0 && (
                                <div className="absolute left-0 right-0 top-full mt-1 rounded-xl overflow-hidden z-20 max-h-64 overflow-y-auto"
                                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
                                  {filtrados.map(b => (
@@ -624,10 +638,11 @@ export default function TreinosView({ onNav }) {
                                    </button>
                                  ))}
                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
+                               )}
+                               </div>
+                               </div>
+                               );
+                               })()}
                       </div>
                     </div>
                     </DragDropContext>
