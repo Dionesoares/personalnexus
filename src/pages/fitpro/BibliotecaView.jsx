@@ -1,6 +1,13 @@
 import React, { useState, useRef, useCallback } from 'react';
 
 // Helper para grupos com estado de expansão independente
+const GRUPO_EMOJI = {
+  'Funcional': '🤸', 'CrossFit': '🏋️', 'Cardio': '🏃', 'Core': '🔥',
+  'Peito': '💪', 'Costas': '🦾', 'Ombros': '🎯', 'Bíceps': '💪', 'Tríceps': '💪',
+  'Quadríceps': '🦵', 'Posterior de Coxa': '🦵', 'Glúteos': '🍑', 'Panturrilha': '🦶',
+  'Antebraço': '🤜',
+};
+
 function GrupoSection({ grupo, exsDoGrupo, cor, canEdit, onSelect, onEdit, onDelete }) {
   const [expanded, setExpanded] = useState(true);
   return (
@@ -10,7 +17,7 @@ function GrupoSection({ grupo, exsDoGrupo, cor, canEdit, onSelect, onEdit, onDel
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-all"
         style={{ background: `${cor}08` }}>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${cor}20` }}>
-          <span className="text-sm">💪</span>
+          <span className="text-sm">{GRUPO_EMOJI[grupo] || '💪'}</span>
         </div>
         <span className="font-bold text-white flex-1 text-left">{grupo}</span>
         <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${cor}15`, color: cor }}>{exsDoGrupo.length}</span>
@@ -37,7 +44,7 @@ import { generateId } from '../../lib/fitpro-storage';
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
-const GRUPOS = ['Peito', 'Costas', 'Quadríceps', 'Posterior de Coxa', 'Glúteos', 'Ombros', 'Bíceps', 'Tríceps', 'Core', 'Panturrilha', 'Antebraço', 'Cardio', 'Funcional'];
+const GRUPOS = ['Peito', 'Costas', 'Quadríceps', 'Posterior de Coxa', 'Glúteos', 'Ombros', 'Bíceps', 'Tríceps', 'Core', 'Panturrilha', 'Antebraço', 'Cardio', 'Funcional', 'CrossFit'];
 const TIPOS = ['Força', 'Hipertrofia', 'Resistência', 'Cardio', 'Funcional', 'Flexibilidade'];
 const NIVEIS = ['Iniciante', 'Intermediário', 'Avançado'];
 const EQUIPAMENTOS = ['Sem equipamento', 'Barra', 'Halteres', 'Cabo', 'Máquina', 'Elástico', 'TRX', 'Kettlebell'];
@@ -45,7 +52,7 @@ const EQUIPAMENTOS = ['Sem equipamento', 'Barra', 'Halteres', 'Cabo', 'Máquina'
 const GROUP_COLORS = {
   'Peito': '#f472b6', 'Costas': '#60a5fa', 'Quadríceps': '#34d399', 'Posterior de Coxa': '#fbbf24',
   'Glúteos': '#a78bfa', 'Ombros': '#fb923c', 'Bíceps': '#34d399', 'Tríceps': '#60a5fa',
-  'Core': '#f472b6', 'Panturrilha': '#fbbf24', 'Antebraço': '#a78bfa', 'Cardio': '#ef4444', 'Funcional': '#00d4ff',
+  'Core': '#f472b6', 'Panturrilha': '#fbbf24', 'Antebraço': '#a78bfa', 'Cardio': '#ef4444', 'Funcional': '#00d4ff', 'CrossFit': '#f97316',
 };
 
 function emptyEx() {
@@ -70,7 +77,7 @@ function ExerciseListItem({ ex, canEdit, onSelect, onEdit, onDelete }) {
         style={{ background: ex.gifUrl ? '#0a0e1a' : `${color}15` }}>
         {ex.gifUrl
           ? <img src={ex.gifUrl} alt={ex.nome} className="w-full h-full object-cover" />
-          : <span className="text-lg">{ex.grupoMuscular === 'Cardio' ? '🏃' : '💪'}</span>
+          : <span className="text-lg">{GRUPO_EMOJI[ex.grupoMuscular] || '💪'}</span>
         }
       </div>
 
@@ -148,14 +155,13 @@ export default function BibliotecaView() {
   const [pastas, setPastas] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('fitpro_pastas_biblioteca') || '[]');
-      // Garante que a pasta CrossFit sempre existe
-      if (!saved.find(p => p.id === 'CrossFit')) {
-        const updated = [{ id: 'CrossFit', nome: 'CrossFit', createdAt: new Date().toISOString() }, ...saved];
-        localStorage.setItem('fitpro_pastas_biblioteca', JSON.stringify(updated));
-        return updated;
+      // Remove pasta CrossFit antiga (agora é um grupo muscular)
+      const filtered = saved.filter(p => p.id !== 'CrossFit' && p.nome !== 'CrossFit');
+      if (filtered.length !== saved.length) {
+        localStorage.setItem('fitpro_pastas_biblioteca', JSON.stringify(filtered));
       }
-      return saved;
-    } catch { return [{ id: 'CrossFit', nome: 'CrossFit', createdAt: new Date().toISOString() }]; }
+      return filtered;
+    } catch { return []; }
   });
   const [expandedPastas, setExpandedPastas] = useState({});
   const [editingPastaId, setEditingPastaId] = useState(null);
