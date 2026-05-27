@@ -609,7 +609,7 @@ export default function TreinosView({ onNav }) {
                                className="px-2 py-1 rounded-lg text-xs text-white outline-none flex-shrink-0"
                                style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)', maxWidth: 110 }}>
                                <option value="">Todos grupos</option>
-                               {['Peito','Costas','Quadríceps','Posterior de Coxa','Glúteos','Ombros','Bíceps','Tríceps','Core','Panturrilha','Antebraço','Cardio','Funcional','CrossFit'].map(g => <option key={g} value={g}>{g}</option>)}
+                               {['Peito','Costas','Quadríceps','Posterior de Coxa','Glúteos','Ombros','Bíceps','Tríceps','Core','Panturrilha','Antebraço','Cardio','Calistenia','Funcional','CrossFit'].map(g => <option key={g} value={g}>{g}</option>)}
                              </select>
                              <div className="flex-1 relative">
                              <input

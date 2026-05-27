@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 
 // Helper para grupos com estado de expansão independente
 const GRUPO_EMOJI = {
-  'Funcional': '🤸', 'CrossFit': '🏋️', 'Cardio': '🏃', 'Core': '🔥',
+  'Funcional': '🤸', 'CrossFit': '🏋️', 'Cardio': '🏃', 'Core': '🔥', 'Calistenia': '🧗',
   'Peito': '💪', 'Costas': '🦾', 'Ombros': '🎯', 'Bíceps': '💪', 'Tríceps': '💪',
   'Quadríceps': '🦵', 'Posterior de Coxa': '🦵', 'Glúteos': '🍑', 'Panturrilha': '🦶',
   'Antebraço': '🤜',
@@ -44,7 +44,7 @@ import { generateId } from '../../lib/fitpro-storage';
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
-const GRUPOS = ['Peito', 'Costas', 'Quadríceps', 'Posterior de Coxa', 'Glúteos', 'Ombros', 'Bíceps', 'Tríceps', 'Core', 'Panturrilha', 'Antebraço', 'Cardio', 'Funcional', 'CrossFit'];
+const GRUPOS = ['Peito', 'Costas', 'Quadríceps', 'Posterior de Coxa', 'Glúteos', 'Ombros', 'Bíceps', 'Tríceps', 'Core', 'Panturrilha', 'Antebraço', 'Cardio', 'Calistenia', 'Funcional', 'CrossFit'];
 const TIPOS = ['Força', 'Hipertrofia', 'Resistência', 'Cardio', 'Funcional', 'Flexibilidade'];
 const NIVEIS = ['Iniciante', 'Intermediário', 'Avançado'];
 const EQUIPAMENTOS = ['Sem equipamento', 'Barra', 'Halteres', 'Cabo', 'Máquina', 'Elástico', 'TRX', 'Kettlebell'];
@@ -52,7 +52,7 @@ const EQUIPAMENTOS = ['Sem equipamento', 'Barra', 'Halteres', 'Cabo', 'Máquina'
 const GROUP_COLORS = {
   'Peito': '#f472b6', 'Costas': '#60a5fa', 'Quadríceps': '#34d399', 'Posterior de Coxa': '#fbbf24',
   'Glúteos': '#a78bfa', 'Ombros': '#fb923c', 'Bíceps': '#34d399', 'Tríceps': '#60a5fa',
-  'Core': '#f472b6', 'Panturrilha': '#fbbf24', 'Antebraço': '#a78bfa', 'Cardio': '#ef4444', 'Funcional': '#00d4ff', 'CrossFit': '#f97316',
+  'Core': '#f472b6', 'Panturrilha': '#fbbf24', 'Antebraço': '#a78bfa', 'Cardio': '#ef4444', 'Calistenia': '#22d3ee', 'Funcional': '#00d4ff', 'CrossFit': '#f97316',
 };
 
 function emptyEx() {
