@@ -8,7 +8,7 @@ const GRUPO_EMOJI = {
   'Antebraço': '🤜',
 };
 
-function GrupoSection({ grupo, exsDoGrupo, cor, canEdit, onSelect, onEdit, onDelete }) {
+function GrupoSection({ grupo, exsDoGrupo, cor, canEdit, onSelect, onEdit, onDelete, groupColors }) {
   const [expanded, setExpanded] = useState(true);
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: '#0d1525', border: `1px solid ${cor}25` }}>
@@ -29,14 +29,14 @@ function GrupoSection({ grupo, exsDoGrupo, cor, canEdit, onSelect, onEdit, onDel
         <div className="p-2 space-y-1">
           {exsDoGrupo.map(ex => (
             <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
-              onSelect={onSelect} onEdit={onEdit} onDelete={onDelete} />
+              onSelect={onSelect} onEdit={onEdit} onDelete={onDelete} groupColors={groupColors} />
           ))}
         </div>
       )}
     </div>
   );
 }
-import { BookOpen, Plus, X, Trash2, Edit2, Search, ImagePlus, Loader2, Folder, FolderOpen, ChevronDown, ChevronRight, FolderPlus } from 'lucide-react';
+import { BookOpen, Plus, X, Trash2, Edit2, Search, ImagePlus, Loader2, Folder, FolderOpen, ChevronDown, ChevronRight, FolderPlus, Tags, Layers } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { generateId } from '../../lib/fitpro-storage';
@@ -44,16 +44,18 @@ import { generateId } from '../../lib/fitpro-storage';
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
-const GRUPOS = ['Peito', 'Costas', 'Quadríceps', 'Posterior de Coxa', 'Glúteos', 'Ombros', 'Bíceps', 'Tríceps', 'Core', 'Panturrilha', 'Antebraço', 'Cardio', 'Calistenia', 'Funcional', 'CrossFit'];
+const GRUPOS_PADRAO = ['Peito', 'Costas', 'Quadríceps', 'Posterior de Coxa', 'Glúteos', 'Ombros', 'Bíceps', 'Tríceps', 'Core', 'Panturrilha', 'Antebraço', 'Cardio', 'Calistenia', 'Funcional', 'CrossFit'];
+const GRUPOS_STORAGE_KEY = 'fitpro_grupos_musculares_extras';
 const TIPOS = ['Força', 'Hipertrofia', 'Resistência', 'Cardio', 'Funcional', 'Flexibilidade'];
 const NIVEIS = ['Iniciante', 'Intermediário', 'Avançado'];
 const EQUIPAMENTOS = ['Sem equipamento', 'Barra', 'Halteres', 'Cabo', 'Máquina', 'Elástico', 'TRX', 'Kettlebell'];
 
-const GROUP_COLORS = {
+const GROUP_COLORS_BASE = {
   'Peito': '#f472b6', 'Costas': '#60a5fa', 'Quadríceps': '#34d399', 'Posterior de Coxa': '#fbbf24',
   'Glúteos': '#a78bfa', 'Ombros': '#fb923c', 'Bíceps': '#34d399', 'Tríceps': '#60a5fa',
   'Core': '#f472b6', 'Panturrilha': '#fbbf24', 'Antebraço': '#a78bfa', 'Cardio': '#ef4444', 'Calistenia': '#22d3ee', 'Funcional': '#00d4ff', 'CrossFit': '#f97316',
 };
+const EXTRA_COLORS = ['#e879f9', '#2dd4bf', '#f59e0b', '#10b981', '#6366f1', '#ec4899', '#14b8a6', '#84cc16'];
 
 function emptyEx() {
   return {
@@ -64,8 +66,8 @@ function emptyEx() {
 }
 
 // Componente de item de exercício em formato lista
-function ExerciseListItem({ ex, canEdit, onSelect, onEdit, onDelete }) {
-  const color = GROUP_COLORS[ex.grupoMuscular] || '#64748b';
+function ExerciseListItem({ ex, canEdit, onSelect, onEdit, onDelete, groupColors }) {
+  const color = (groupColors || GROUP_COLORS_BASE)[ex.grupoMuscular] || '#64748b';
   return (
     <div
       className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/5 transition-all"
@@ -116,6 +118,57 @@ export default function BibliotecaView() {
   const { user } = useAuth();
   const isProfessor = user?.role === 'professor';
   const isAdmin = user?.role === 'admin';
+
+  // Grupos extras criados pelo admin
+  const [gruposExtras, setGruposExtras] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(GRUPOS_STORAGE_KEY) || '[]'); } catch { return []; }
+  });
+  const GRUPOS = [...GRUPOS_PADRAO, ...gruposExtras.map(g => g.nome)];
+  const GROUP_COLORS = { ...GROUP_COLORS_BASE, ...Object.fromEntries(gruposExtras.map((g, i) => [g.nome, g.cor || EXTRA_COLORS[i % EXTRA_COLORS.length]])) };
+
+  const saveGruposExtras = (list) => {
+    setGruposExtras(list);
+    localStorage.setItem(GRUPOS_STORAGE_KEY, JSON.stringify(list));
+  };
+
+  // Modal mover exercícios sem grupo
+  const [showMoverModal, setShowMoverModal] = useState(false);
+  const [grupoDestino, setGrupoDestino] = useState('');
+  const [exsSelecionados, setExsSelecionados] = useState([]);
+  const [movendo, setMovendo] = useState(false);
+
+  // Modal novo grupo
+  const [showNovoGrupoModal, setShowNovoGrupoModal] = useState(false);
+  const [novoGrupoNome, setNovoGrupoNome] = useState('');
+  const [novoGrupoCor, setNovoGrupoCor] = useState(EXTRA_COLORS[0]);
+
+  const handleCriarGrupo = () => {
+    const nome = novoGrupoNome.trim();
+    if (!nome) return alert('Informe o nome do grupo');
+    if (GRUPOS.includes(nome)) return alert('Grupo já existe');
+    saveGruposExtras([...gruposExtras, { nome, cor: novoGrupoCor }]);
+    setNovoGrupoNome('');
+    setNovoGrupoCor(EXTRA_COLORS[0]);
+    setShowNovoGrupoModal(false);
+  };
+
+  const handleExcluirGrupoExtra = (nome) => {
+    if (!confirm(`Excluir grupo "${nome}"? Os exercícios desse grupo não serão apagados.`)) return;
+    saveGruposExtras(gruposExtras.filter(g => g.nome !== nome));
+  };
+
+  const handleMoverExercicios = async () => {
+    if (!grupoDestino) return alert('Selecione um grupo destino');
+    if (exsSelecionados.length === 0) return alert('Selecione ao menos um exercício');
+    setMovendo(true);
+    for (const ex of exsSelecionados) {
+      await updateExercicioBiblioteca(ex.id, { ...ex, grupoMuscular: grupoDestino });
+    }
+    setMovendo(false);
+    setShowMoverModal(false);
+    setExsSelecionados([]);
+    setGrupoDestino('');
+  };
 
   // Todos os exercícios
   const todosExercicios = exerciciosBiblioteca || [];
@@ -309,9 +362,24 @@ export default function BibliotecaView() {
           <h2 className="text-xl font-bold text-white flex items-center gap-2"><BookOpen size={20} color="#f472b6" />Biblioteca de Exercícios</h2>
           <p className="text-xs text-slate-500">{filtered.length} exercício(s)</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
           {isAdmin && (
             <>
+              <button onClick={() => setShowNovoGrupoModal(true)}
+                className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: '#22d3ee15', color: '#22d3ee', border: '1px solid #22d3ee30' }}>
+                <Layers size={14} />Grupo
+              </button>
+              <button onClick={() => {
+                const semGrupo = exerciciosAtivos.filter(e => !GRUPOS.includes(e.grupoMuscular));
+                if (semGrupo.length === 0) return alert('Não há exercícios fora dos grupos cadastrados.');
+                setExsSelecionados(semGrupo);
+                setShowMoverModal(true);
+              }}
+                className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: '#a78bfa15', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
+                <Tags size={14} />Mover
+              </button>
               <button onClick={addPasta}
                 className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold"
                 style={{ background: '#fbbf2415', color: '#fbbf24', border: '1px solid #fbbf2430' }}>
@@ -363,7 +431,14 @@ export default function BibliotecaView() {
           className="px-3 py-2.5 rounded-xl text-sm text-white outline-none"
           style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
           <option value="">Todos grupos</option>
-          {GRUPOS.map(g => <option key={g} value={g}>{g}</option>)}
+          <optgroup label="Padrão">
+            {GRUPOS_PADRAO.map(g => <option key={g} value={g}>{g}</option>)}
+          </optgroup>
+          {gruposExtras.length > 0 && (
+            <optgroup label="Personalizados">
+              {gruposExtras.map(g => <option key={g.nome} value={g.nome}>{g.nome}</option>)}
+            </optgroup>
+          )}
         </select>
         <select value={filtroNivel} onChange={e => setFiltroNivel(e.target.value)}
           className="px-3 py-2.5 rounded-xl text-sm text-white outline-none"
@@ -433,7 +508,8 @@ export default function BibliotecaView() {
                             <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
                               onSelect={setSelectedEx}
                               onEdit={openEdit}
-                              onDelete={deleteExercicioBiblioteca} />
+                              onDelete={deleteExercicioBiblioteca}
+                              groupColors={GROUP_COLORS} />
                           ))}
                       </div>
                     )}
@@ -465,7 +541,8 @@ export default function BibliotecaView() {
             <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
               onSelect={setSelectedEx}
               onEdit={openEdit}
-              onDelete={deleteExercicioBiblioteca} />
+              onDelete={deleteExercicioBiblioteca}
+              groupColors={GROUP_COLORS} />
           ))}
         </div>
       ) : (
@@ -481,19 +558,134 @@ export default function BibliotecaView() {
               onSelect={setSelectedEx}
               onEdit={openEdit}
               onDelete={deleteExercicioBiblioteca}
+              groupColors={GROUP_COLORS}
             />
           ))}
           {/* Exercícios sem grupo muscular reconhecido */}
-          {filtered.filter(e => !GRUPOS.includes(e.grupoMuscular)).length > 0 && (
-            <div className="rounded-2xl overflow-hidden space-y-1 p-2" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-              {filtered.filter(e => !GRUPOS.includes(e.grupoMuscular)).map(ex => (
-                <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
-                  onSelect={setSelectedEx}
-                  onEdit={openEdit}
-                  onDelete={deleteExercicioBiblioteca} />
+          {(() => {
+            const semGrupo = filtered.filter(e => !GRUPOS.includes(e.grupoMuscular));
+            if (semGrupo.length === 0) return null;
+            return (
+              <div className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid rgba(251,113,133,0.25)` }}>
+                <div className="flex items-center gap-3 px-4 py-3" style={{ background: 'rgba(251,113,133,0.06)' }}>
+                  <span className="text-sm">❓</span>
+                  <span className="font-bold text-white flex-1">Sem grupo definido</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(251,113,133,0.15)', color: '#fb7185' }}>{semGrupo.length}</span>
+                  {isAdmin && (
+                    <button
+                      onClick={() => { setExsSelecionados(semGrupo); setShowMoverModal(true); }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                      style={{ background: '#a78bfa20', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
+                      <Tags size={12} />Mover para grupo
+                    </button>
+                  )}
+                </div>
+                <div className="p-2 space-y-1">
+                  {semGrupo.map(ex => (
+                    <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
+                      onSelect={setSelectedEx}
+                      onEdit={openEdit}
+                      onDelete={deleteExercicioBiblioteca}
+                      groupColors={GROUP_COLORS} />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* MODAL MOVER EXERCÍCIOS PARA GRUPO */}
+      {showMoverModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
+          <div className="w-full max-w-md rounded-2xl p-6" style={{ background: '#0d1525', border: `1px solid rgba(167,139,250,0.3)` }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-white flex items-center gap-2"><Tags size={16} color="#a78bfa" />Mover para Grupo</h3>
+              <button onClick={() => { setShowMoverModal(false); setExsSelecionados([]); }}><X size={18} color="#6b7280" /></button>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">{exsSelecionados.length} exercício(s) selecionado(s). Escolha o grupo de destino:</p>
+            <div className="mb-4">
+              <label className="text-xs text-slate-400 block mb-1">Grupo de Destino</label>
+              <select value={grupoDestino} onChange={e => setGrupoDestino(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <option value="">Selecionar grupo...</option>
+                <optgroup label="Grupos Padrão">
+                  {GRUPOS_PADRAO.map(g => <option key={g} value={g}>{g}</option>)}
+                </optgroup>
+                {gruposExtras.length > 0 && (
+                  <optgroup label="Grupos Personalizados">
+                    {gruposExtras.map(g => <option key={g.nome} value={g.nome}>{g.nome}</option>)}
+                  </optgroup>
+                )}
+              </select>
+            </div>
+            <div className="max-h-48 overflow-y-auto space-y-1 mb-4 p-2 rounded-xl" style={{ background: '#0a0e1a' }}>
+              {exsSelecionados.map(ex => (
+                <div key={ex.id} className="flex items-center justify-between px-3 py-2 rounded-lg text-xs text-slate-300"
+                  style={{ background: 'rgba(255,255,255,0.04)' }}>
+                  <span>{ex.nome}</span>
+                  <span className="text-slate-500">{ex.grupoMuscular || 'Sem grupo'}</span>
+                </div>
               ))}
             </div>
-          )}
+            <button onClick={handleMoverExercicios} disabled={movendo}
+              className="w-full py-3 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2"
+              style={{ background: movendo ? '#1e2a3a' : 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}>
+              {movendo ? <><Loader2 size={14} className="animate-spin" />Movendo...</> : `Mover ${exsSelecionados.length} exercício(s)`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL NOVO GRUPO MUSCULAR */}
+      {showNovoGrupoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: '#0d1525', border: `1px solid rgba(34,211,238,0.3)` }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-white flex items-center gap-2"><Layers size={16} color="#22d3ee" />Novo Grupo Muscular</h3>
+              <button onClick={() => setShowNovoGrupoModal(false)}><X size={18} color="#6b7280" /></button>
+            </div>
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Nome do Grupo</label>
+                <input value={novoGrupoNome} onChange={e => setNovoGrupoNome(e.target.value)}
+                  placeholder="Ex: Mobilidade, Pilates..."
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 block mb-2">Cor do Grupo</label>
+                <div className="flex gap-2 flex-wrap">
+                  {EXTRA_COLORS.map(c => (
+                    <button key={c} onClick={() => setNovoGrupoCor(c)}
+                      className="w-8 h-8 rounded-lg transition-all"
+                      style={{ background: c, border: novoGrupoCor === c ? `2px solid white` : '2px solid transparent', transform: novoGrupoCor === c ? 'scale(1.15)' : 'scale(1)' }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Grupos extras existentes */}
+            {gruposExtras.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs text-slate-500 mb-2">Grupos personalizados criados:</p>
+                <div className="flex flex-wrap gap-2">
+                  {gruposExtras.map(g => (
+                    <div key={g.nome} className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs"
+                      style={{ background: `${g.cor}20`, color: g.cor, border: `1px solid ${g.cor}30` }}>
+                      {g.nome}
+                      <button onClick={() => handleExcluirGrupoExtra(g.nome)} className="ml-1 hover:opacity-70"><X size={10} /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button onClick={handleCriarGrupo}
+              className="w-full py-3 rounded-xl font-semibold text-sm text-white"
+              style={{ background: 'linear-gradient(135deg, #22d3ee, #0891b2)' }}>
+              Criar Grupo
+            </button>
+          </div>
         </div>
       )}
 
@@ -526,7 +718,14 @@ export default function BibliotecaView() {
                   <label className="text-xs text-slate-400 block mb-1">Grupo Muscular</label>
                   <select value={form.grupoMuscular} onChange={e => setForm(f => ({ ...f, grupoMuscular: e.target.value }))}
                     className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    {GRUPOS.map(g => <option key={g} value={g}>{g}</option>)}
+                    <optgroup label="Grupos Padrão">
+                      {GRUPOS_PADRAO.map(g => <option key={g} value={g}>{g}</option>)}
+                    </optgroup>
+                    {gruposExtras.length > 0 && (
+                      <optgroup label="Grupos Personalizados">
+                        {gruposExtras.map(g => <option key={g.nome} value={g.nome}>{g.nome}</option>)}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
                 <div>
