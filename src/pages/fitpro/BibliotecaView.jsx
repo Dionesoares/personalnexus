@@ -137,6 +137,9 @@ export default function BibliotecaView() {
   const [exsSelecionados, setExsSelecionados] = useState([]);
   const [movendo, setMovendo] = useState(false);
 
+  // Seleção individual na seção "Sem grupo definido"
+  const [semGrupoSelecionados, setSemGrupoSelecionados] = useState(new Set());
+
   // Modal novo grupo
   const [showNovoGrupoModal, setShowNovoGrupoModal] = useState(false);
   const [novoGrupoNome, setNovoGrupoNome] = useState('');
@@ -168,6 +171,7 @@ export default function BibliotecaView() {
     setShowMoverModal(false);
     setExsSelecionados([]);
     setGrupoDestino('');
+    setSemGrupoSelecionados(new Set());
   };
 
   // Todos os exercícios
@@ -565,29 +569,78 @@ export default function BibliotecaView() {
           {(() => {
             const semGrupo = filtered.filter(e => !GRUPOS.includes(e.grupoMuscular));
             if (semGrupo.length === 0) return null;
+            const todosSelecionados = semGrupo.length > 0 && semGrupo.every(e => semGrupoSelecionados.has(e.id));
+            const algumSelecionado = semGrupo.some(e => semGrupoSelecionados.has(e.id));
+            const toggleTodos = () => {
+              if (todosSelecionados) {
+                setSemGrupoSelecionados(new Set());
+              } else {
+                setSemGrupoSelecionados(new Set(semGrupo.map(e => e.id)));
+              }
+            };
+            const toggleEx = (id) => {
+              setSemGrupoSelecionados(prev => {
+                const next = new Set(prev);
+                next.has(id) ? next.delete(id) : next.add(id);
+                return next;
+              });
+            };
             return (
               <div className="rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid rgba(251,113,133,0.25)` }}>
+                {/* Header */}
                 <div className="flex items-center gap-3 px-4 py-3" style={{ background: 'rgba(251,113,133,0.06)' }}>
+                  {isAdmin && (
+                    <button onClick={toggleTodos}
+                      className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-all"
+                      style={{ background: todosSelecionados ? '#a78bfa' : 'rgba(255,255,255,0.08)', border: `1px solid ${todosSelecionados ? '#a78bfa' : 'rgba(255,255,255,0.2)'}` }}
+                      title={todosSelecionados ? 'Desmarcar todos' : 'Selecionar todos'}>
+                      {todosSelecionados && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+                    </button>
+                  )}
                   <span className="text-sm">❓</span>
                   <span className="font-bold text-white flex-1">Sem grupo definido</span>
                   <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(251,113,133,0.15)', color: '#fb7185' }}>{semGrupo.length}</span>
-                  {isAdmin && (
+                  {isAdmin && algumSelecionado && (
+                    <button
+                      onClick={() => { setExsSelecionados(semGrupo.filter(e => semGrupoSelecionados.has(e.id))); setShowMoverModal(true); }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                      style={{ background: '#a78bfa20', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
+                      <Tags size={12} />Mover {semGrupoSelecionados.size} selecionado(s)
+                    </button>
+                  )}
+                  {isAdmin && !algumSelecionado && (
                     <button
                       onClick={() => { setExsSelecionados(semGrupo); setShowMoverModal(true); }}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-                      style={{ background: '#a78bfa20', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
-                      <Tags size={12} />Mover para grupo
+                      style={{ background: '#ffffff08', color: '#64748b', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <Tags size={12} />Mover todos
                     </button>
                   )}
                 </div>
+                {/* Lista com checkboxes */}
                 <div className="p-2 space-y-1">
-                  {semGrupo.map(ex => (
-                    <ExerciseListItem key={ex.id} ex={ex} canEdit={canEdit}
-                      onSelect={setSelectedEx}
-                      onEdit={openEdit}
-                      onDelete={deleteExercicioBiblioteca}
-                      groupColors={GROUP_COLORS} />
-                  ))}
+                  {semGrupo.map(ex => {
+                    const selecionado = semGrupoSelecionados.has(ex.id);
+                    return (
+                      <div key={ex.id} className="flex items-center gap-2 rounded-xl transition-all"
+                        style={{ background: selecionado ? 'rgba(167,139,250,0.08)' : 'transparent', border: selecionado ? '1px solid rgba(167,139,250,0.2)' : '1px solid transparent' }}>
+                        {isAdmin && (
+                          <button onClick={() => toggleEx(ex.id)}
+                            className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ml-2 transition-all"
+                            style={{ background: selecionado ? '#a78bfa' : 'rgba(255,255,255,0.08)', border: `1px solid ${selecionado ? '#a78bfa' : 'rgba(255,255,255,0.2)'}` }}>
+                            {selecionado && <svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+                          </button>
+                        )}
+                        <div className="flex-1">
+                          <ExerciseListItem ex={ex} canEdit={canEdit}
+                            onSelect={setSelectedEx}
+                            onEdit={openEdit}
+                            onDelete={deleteExercicioBiblioteca}
+                            groupColors={GROUP_COLORS} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
