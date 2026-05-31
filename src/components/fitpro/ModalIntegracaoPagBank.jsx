@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { X, CreditCard, CheckCircle2, AlertCircle, Copy, Eye, EyeOff, ExternalLink, Shield, RefreshCw } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Copy, Eye, EyeOff, ExternalLink, Shield, RefreshCw, Info } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 const PAGBANK_KEY = 'fitpro_pagbank_config';
+const WEBHOOK_URL = 'https://api.base44.com/api/apps/682a6a7af17a7a718e0765ce/functions/pagbankWebhook';
 
 function loadConfig() {
   try { return JSON.parse(localStorage.getItem(PAGBANK_KEY)) || {}; } catch { return {}; }
@@ -12,18 +13,9 @@ function saveConfig(cfg) {
 }
 
 const ABA_ITEMS = [
-  { id: 'credenciais', label: 'Credenciais' },
-  { id: 'webhooks', label: 'Webhooks' },
-  { id: 'pagamentos', label: 'Pagamentos' },
-];
-
-const RECURSOS = [
-  { icon: '💳', label: 'Cartão de Crédito', desc: 'Débito e crédito à vista ou parcelado' },
-  { icon: '🔳', label: 'PIX', desc: 'Pagamento instantâneo via QR Code ou copia e cola' },
-  { icon: '📄', label: 'Boleto Bancário', desc: 'Boleto com vencimento configurável' },
-  { icon: '🔄', label: 'Recorrência', desc: 'Cobranças automáticas mensais para planos' },
-  { icon: '🔔', label: 'Webhooks', desc: 'Notificações em tempo real de pagamentos' },
-  { icon: '↩️', label: 'Estorno / Reembolso', desc: 'Cancelamento e devolução de valores' },
+  { id: 'credenciais', label: '🔑 Credenciais' },
+  { id: 'webhook', label: '🔔 Webhook' },
+  { id: 'pagamentos', label: '💳 Pagamentos' },
 ];
 
 export default function ModalIntegracaoPagBank({ onClose }) {
@@ -32,8 +24,7 @@ export default function ModalIntegracaoPagBank({ onClose }) {
   const [form, setForm] = useState({
     email: config.email || '',
     token: config.token || '',
-    ambiente: config.ambiente || 'sandbox',
-    webhookUrl: config.webhookUrl || '',
+    ambiente: config.ambiente || 'producao',
     notificarPagamento: config.notificarPagamento ?? true,
     notificarCancelamento: config.notificarCancelamento ?? true,
     metodos: config.metodos || ['pix', 'cartao', 'boleto'],
@@ -41,16 +32,15 @@ export default function ModalIntegracaoPagBank({ onClose }) {
   });
   const [showToken, setShowToken] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [tokenCopiado, setTokenCopiado] = useState(false);
 
   const isConectado = !!(config.email && config.token);
 
   const handleSave = async () => {
-    // Salva no localStorage (para uso local imediato)
     saveConfig(form);
     setConfig(form);
 
-    // Salva na entidade (para uso pelo backend)
     const existentes = await base44.entities.ConfiguracaoPagBank.list();
     if (existentes.length > 0) {
       await base44.entities.ConfiguracaoPagBank.update(existentes[0].id, form);
@@ -59,16 +49,16 @@ export default function ModalIntegracaoPagBank({ onClose }) {
     }
 
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => setSaved(false), 2500);
   };
 
   const desconectar = async () => {
-    if (!confirm('Desconectar integração com PagBank?')) return;
+    if (!confirm('Desconectar a integração com PagBank?')) return;
     localStorage.removeItem(PAGBANK_KEY);
     const existentes = await base44.entities.ConfiguracaoPagBank.list();
     for (const e of existentes) await base44.entities.ConfiguracaoPagBank.delete(e.id);
     setConfig({});
-    setForm({ email: '', token: '', ambiente: 'sandbox', webhookUrl: '', notificarPagamento: true, notificarCancelamento: true, metodos: ['pix', 'cartao', 'boleto'], parcelasMax: '12' });
+    setForm({ email: '', token: '', ambiente: 'producao', notificarPagamento: true, notificarCancelamento: true, metodos: ['pix', 'cartao', 'boleto'], parcelasMax: '12' });
   };
 
   const toggleMetodo = (m) => {
@@ -78,22 +68,26 @@ export default function ModalIntegracaoPagBank({ onClose }) {
     }));
   };
 
-
+  const copiarWebhook = () => {
+    navigator.clipboard.writeText(WEBHOOK_URL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.88)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="w-full max-w-lg rounded-2xl overflow-hidden flex flex-col"
-        style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '95vh', height: 'auto' }}>
+        style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '92vh' }}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
           style={{ background: '#080d1a', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
               style={{ background: 'linear-gradient(135deg, #00b94a20, #0066cc20)', border: '1px solid rgba(0,185,74,0.3)' }}>
-              <span className="text-xl">🏦</span>
+              🏦
             </div>
             <div>
               <h3 className="font-bold text-white flex items-center gap-2">
@@ -106,32 +100,13 @@ export default function ModalIntegracaoPagBank({ onClose }) {
                   </span>
                 )}
               </h3>
-              <p className="text-xs text-slate-500">PagSeguro · PagBank · API REST</p>
+              <p className="text-xs text-slate-500">PagSeguro · API REST Oficial</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5">
             <X size={16} color="#6b7280" />
           </button>
         </div>
-
-        {/* Recursos em destaque — versão compacta em linha */}
-        {!isConectado && (
-          <div className="px-6 py-3 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {RECURSOS.map(r => (
-                <span key={r.label} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs"
-                  style={{ background: 'rgba(0,185,74,0.08)', color: '#00b94a', border: '1px solid rgba(0,185,74,0.2)' }}>
-                  {r.icon} {r.label}
-                </span>
-              ))}
-            </div>
-            <a href="https://app.pipefy.com/public/form/k8aKYyJE" target="_blank" rel="noreferrer"
-              className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: '#00b94a10', color: '#00b94a', border: '1px solid #00b94a25' }}>
-              <ExternalLink size={11} />Solicitar acesso à plataforma PagBank
-            </a>
-          </div>
-        )}
 
         {/* Abas */}
         <div className="flex gap-1 px-5 pt-4 flex-shrink-0">
@@ -149,57 +124,96 @@ export default function ModalIntegracaoPagBank({ onClose }) {
         </div>
 
         {/* Conteúdo */}
-        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
 
           {/* ABA: CREDENCIAIS */}
           {aba === 'credenciais' && (
             <>
-              <div className="p-3 rounded-xl flex items-start gap-2"
-                style={{ background: '#fbbf2408', border: '1px solid #fbbf2425' }}>
-                <AlertCircle size={14} color="#fbbf24" className="flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-slate-400">
-                  Obtenha seu Token de integração em{' '}
-                  <a href="https://minhaconta.pagseguro.uol.com.br/minha-conta/preferencias/integracoes"
-                    target="_blank" rel="noreferrer" className="underline" style={{ color: '#00b94a' }}>
-                    Minha Conta → Preferências → Integrações
-                  </a>
-                  {' '}no painel PagSeguro.
-                </p>
+              {/* Guia passo a passo */}
+              <div className="p-4 rounded-xl space-y-3"
+                style={{ background: '#0a1628', border: '1px solid rgba(96,165,250,0.2)' }}>
+                <p className="text-xs font-bold text-blue-400 flex items-center gap-1.5"><Info size={13} />Como obter suas credenciais reais:</p>
+                <ol className="space-y-2 text-xs text-slate-400 list-none">
+                  <li className="flex gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">1</span>
+                    Acesse <a href="https://minhaconta.pagseguro.uol.com.br" target="_blank" rel="noreferrer"
+                      className="underline text-blue-400 hover:text-blue-300">minhaconta.pagseguro.uol.com.br</a>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">2</span>
+                    Vá em <strong className="text-slate-300">Minha Conta → Preferências → Integrações</strong>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">3</span>
+                    Copie o <strong className="text-slate-300">Token de Integração</strong> da seção <em>Produção</em>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">4</span>
+                    Cole o token abaixo junto com o e-mail da conta e salve
+                  </li>
+                </ol>
+                <a href="https://minhaconta.pagseguro.uol.com.br/minha-conta/preferencias/integracoes"
+                  target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1.5 text-xs font-semibold transition-all hover:opacity-80"
+                  style={{ color: '#00b94a' }}>
+                  <ExternalLink size={12} />Acessar painel PagSeguro →
+                </a>
               </div>
 
+              {/* Ambiente */}
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Ambiente</label>
+                <label className="text-xs text-slate-400 block mb-2">Ambiente</label>
                 <div className="flex gap-2">
-                  {['sandbox', 'producao'].map(env => (
-                    <button key={env} onClick={() => setForm(f => ({ ...f, ambiente: env }))}
-                      className="flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all capitalize"
+                  {[
+                    { id: 'producao', label: '🚀 Produção', desc: 'Cobranças reais', color: '#00b94a' },
+                    { id: 'sandbox', label: '🧪 Sandbox', desc: 'Apenas testes', color: '#60a5fa' },
+                  ].map(env => (
+                    <button key={env.id} onClick={() => setForm(f => ({ ...f, ambiente: env.id }))}
+                      className="flex-1 py-3 rounded-xl text-xs font-semibold transition-all"
                       style={{
-                        background: form.ambiente === env ? (env === 'producao' ? '#00b94a15' : '#60a5fa15') : 'rgba(255,255,255,0.03)',
-                        color: form.ambiente === env ? (env === 'producao' ? '#00b94a' : '#60a5fa') : '#64748b',
-                        border: `1px solid ${form.ambiente === env ? (env === 'producao' ? '#00b94a30' : '#60a5fa30') : 'rgba(255,255,255,0.07)'}`,
+                        background: form.ambiente === env.id ? `${env.color}15` : 'rgba(255,255,255,0.03)',
+                        color: form.ambiente === env.id ? env.color : '#64748b',
+                        border: `1px solid ${form.ambiente === env.id ? `${env.color}40` : 'rgba(255,255,255,0.07)'}`,
                       }}>
-                      {env === 'sandbox' ? '🧪 Sandbox (Testes)' : '🚀 Produção'}
+                      <div>{env.label}</div>
+                      <div className="text-[10px] opacity-70 mt-0.5">{env.desc}</div>
                     </button>
                   ))}
                 </div>
+                {form.ambiente === 'sandbox' && (
+                  <div className="mt-2 px-3 py-2 rounded-lg text-xs text-amber-400 flex items-center gap-1.5"
+                    style={{ background: '#fbbf2410', border: '1px solid #fbbf2425' }}>
+                    <AlertCircle size={12} />Sandbox só aceita cartões de teste PagSeguro, não processa cobranças reais.
+                  </div>
+                )}
               </div>
 
+              {/* E-mail */}
               <div>
-                <label className="text-xs text-slate-400 block mb-1">E-mail da conta PagBank</label>
-                <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="email@pagseguro.com"
+                <label className="text-xs text-slate-400 block mb-1">
+                  E-mail da conta PagBank <span className="text-red-400">*</span>
+                </label>
+                <input
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="seuemail@pagseguro.com"
+                  type="email"
                   className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                   style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
 
+              {/* Token */}
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Token de Integração</label>
+                <label className="text-xs text-slate-400 block mb-1">
+                  Token de Integração <span className="text-red-400">*</span>
+                  <span className="ml-2 text-slate-600">(Produção — 32 caracteres)</span>
+                </label>
                 <div className="relative">
                   <input
                     type={showToken ? 'text' : 'password'}
                     value={form.token}
-                    onChange={e => setForm(f => ({ ...f, token: e.target.value }))}
-                    placeholder="Cole aqui seu token PagBank"
+                    onChange={e => setForm(f => ({ ...f, token: e.target.value.trim() }))}
+                    placeholder="Cole o token de produção aqui..."
                     className="w-full px-3 pr-20 py-2.5 rounded-xl text-sm text-white outline-none font-mono"
                     style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
@@ -215,14 +229,25 @@ export default function ModalIntegracaoPagBank({ onClose }) {
                     )}
                   </div>
                 </div>
+                {form.token && form.token.length !== 32 && (
+                  <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                    <AlertCircle size={11} />Token inválido — deve ter 32 caracteres (atual: {form.token.length})
+                  </p>
+                )}
+                {form.token && form.token.length === 32 && (
+                  <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
+                    <CheckCircle2 size={11} />Token com formato válido ✓
+                  </p>
+                )}
               </div>
 
+              {/* Status conectado */}
               {isConectado && (
                 <div className="flex items-center gap-2 p-3 rounded-xl"
                   style={{ background: '#34d39908', border: '1px solid #34d39920' }}>
                   <CheckCircle2 size={14} color="#34d399" />
                   <div>
-                    <p className="text-xs font-semibold text-emerald-400">Integração configurada</p>
+                    <p className="text-xs font-semibold text-emerald-400">Integração ativa</p>
                     <p className="text-xs text-slate-500">{config.email} · {config.ambiente === 'producao' ? '🚀 Produção' : '🧪 Sandbox'}</p>
                   </div>
                 </div>
@@ -230,60 +255,73 @@ export default function ModalIntegracaoPagBank({ onClose }) {
             </>
           )}
 
-          {/* ABA: WEBHOOKS */}
-          {aba === 'webhooks' && (
+          {/* ABA: WEBHOOK */}
+          {aba === 'webhook' && (
             <>
-              <div className="p-3 rounded-xl"
-                style={{ background: '#60a5fa08', border: '1px solid #60a5fa20' }}>
-                <p className="text-xs text-slate-400">
-                  Configure a URL do webhook no painel PagBank para receber notificações automáticas de pagamentos aprovados, cancelados e estornados.
-                </p>
+              <div className="p-4 rounded-xl space-y-3"
+                style={{ background: '#0a1628', border: '1px solid rgba(96,165,250,0.2)' }}>
+                <p className="text-xs font-bold text-blue-400 flex items-center gap-1.5"><Info size={13} />Como configurar o Webhook no PagSeguro:</p>
+                <ol className="space-y-2 text-xs text-slate-400">
+                  <li className="flex gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">1</span>
+                    Acesse <strong className="text-slate-300">Minha Conta → Preferências → Notificações</strong>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">2</span>
+                    Em <strong className="text-slate-300">URL de Notificação</strong>, cole a URL abaixo
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">3</span>
+                    Clique em <strong className="text-slate-300">Salvar</strong> — o PagSeguro fará um GET para validar (retorna 200 OK automaticamente)
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">4</span>
+                    Selecione os eventos: <strong className="text-slate-300">Transação</strong> e/ou <strong className="text-slate-300">Cobrança</strong>
+                  </li>
+                </ol>
               </div>
 
               <div>
-                <label className="text-xs text-slate-400 block mb-1">URL do Webhook (Endpoint)</label>
+                <label className="text-xs text-slate-400 block mb-1">URL do Webhook (copie e cole no PagSeguro)</label>
                 <div className="relative">
                   <input
                     readOnly
-                    value="https://api.base44.com/api/apps/682a6a7af17a7a718e0765ce/functions/pagbankWebhook"
-                    className="w-full px-3 pr-10 py-2.5 rounded-xl text-xs text-emerald-400 outline-none font-mono cursor-text select-all"
-                    style={{ background: '#0a1a12', border: '1px solid rgba(52,211,153,0.25)' }}
+                    value={WEBHOOK_URL}
+                    className="w-full px-3 pr-12 py-3 rounded-xl text-xs outline-none font-mono cursor-text select-all"
+                    style={{ background: '#0a1a12', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399' }}
                     onClick={e => e.target.select()}
                   />
                   <button
-                    onClick={() => navigator.clipboard.writeText('https://api.base44.com/api/apps/682a6a7af17a7a718e0765ce/functions/pagbankWebhook')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-white/10 text-slate-400">
-                    <Copy size={13} />
+                    onClick={copiarWebhook}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    style={{ background: copied ? '#34d39920' : '#1e2a3a', color: copied ? '#34d399' : '#94a3b8' }}>
+                    <Copy size={12} />{copied ? 'Copiado!' : 'Copiar'}
                   </button>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">📌 Registre esta URL em: <strong>PagBank → Sua Conta → Notificações</strong></p>
               </div>
 
-              <div>
-                <label className="text-xs text-slate-400 block mb-2">Notificar quando:</label>
-                <div className="space-y-2">
-                  {[
-                    { key: 'notificarPagamento', label: '✅ Pagamento aprovado', desc: 'Marcar cobrança como paga automaticamente' },
-                    { key: 'notificarCancelamento', label: '❌ Cancelamento / Estorno', desc: 'Atualizar status da cobrança ao cancelar' },
-                  ].map(({ key, label, desc }) => (
-                    <button key={key} onClick={() => setForm(f => ({ ...f, [key]: !f[key] }))}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all"
-                      style={{
-                        background: form[key] ? '#34d39910' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${form[key] ? '#34d39930' : 'rgba(255,255,255,0.07)'}`,
-                      }}>
-                      <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
-                        style={{ background: form[key] ? '#34d399' : 'rgba(255,255,255,0.08)' }}>
-                        {form[key] && <CheckCircle2 size={12} color="#fff" />}
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-white">{label}</div>
-                        <div className="text-xs text-slate-500">{desc}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+              <div className="p-3 rounded-xl space-y-2"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <p className="text-xs font-semibold text-slate-400">O webhook atualiza automaticamente:</p>
+                {[
+                  { emoji: '✅', label: 'Pagamento aprovado', desc: 'Status → Pago' },
+                  { emoji: '❌', label: 'Pagamento cancelado/estornado', desc: 'Status → Cancelado' },
+                  { emoji: '🔄', label: 'Em análise', desc: 'Status → Pendente' },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center gap-2 text-xs">
+                    <span>{item.emoji}</span>
+                    <span className="text-slate-300 flex-1">{item.label}</span>
+                    <span className="text-slate-500">{item.desc}</span>
+                  </div>
+                ))}
               </div>
+
+              <a href="https://minhaconta.pagseguro.uol.com.br/minha-conta/preferencias/notificacoes"
+                target="_blank" rel="noreferrer"
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-xs font-semibold transition-all"
+                style={{ background: '#00b94a10', color: '#00b94a', border: '1px solid #00b94a25' }}>
+                <ExternalLink size={12} />Abrir Notificações no PagSeguro →
+              </a>
             </>
           )}
 
@@ -301,14 +339,14 @@ export default function ModalIntegracaoPagBank({ onClose }) {
                     const ativo = form.metodos.includes(id);
                     return (
                       <button key={id} onClick={() => toggleMetodo(id)}
-                        className="flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all"
+                        className="flex flex-col items-center gap-1.5 py-4 rounded-xl transition-all"
                         style={{
                           background: ativo ? '#00b94a12' : 'rgba(255,255,255,0.03)',
                           border: `1px solid ${ativo ? '#00b94a35' : 'rgba(255,255,255,0.07)'}`,
                         }}>
                         <span className="text-2xl">{emoji}</span>
                         <span className="text-xs font-semibold" style={{ color: ativo ? '#00b94a' : '#64748b' }}>{label}</span>
-                        {ativo && <CheckCircle2 size={11} color="#00b94a" />}
+                        {ativo && <CheckCircle2 size={12} color="#00b94a" />}
                       </button>
                     );
                   })}
@@ -317,7 +355,9 @@ export default function ModalIntegracaoPagBank({ onClose }) {
 
               <div>
                 <label className="text-xs text-slate-400 block mb-1">Parcelas máximas no cartão</label>
-                <select value={form.parcelasMax} onChange={e => setForm(f => ({ ...f, parcelasMax: e.target.value }))}
+                <select
+                  value={form.parcelasMax}
+                  onChange={e => setForm(f => ({ ...f, parcelasMax: e.target.value }))}
                   className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
                   style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                   {['1','2','3','4','6','9','12'].map(n => (
@@ -326,28 +366,29 @@ export default function ModalIntegracaoPagBank({ onClose }) {
                 </select>
               </div>
 
-              <div className="p-3 rounded-xl space-y-2" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <p className="text-xs font-semibold text-slate-400">Taxas PagBank (referência)</p>
+              <div className="p-3 rounded-xl space-y-2"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <p className="text-xs font-semibold text-slate-400">Taxas PagBank (referência — consulte seu contrato)</p>
                 {[
                   { label: 'PIX', taxa: '0,99%' },
                   { label: 'Débito', taxa: '1,99%' },
                   { label: 'Crédito à vista', taxa: '2,99%' },
                   { label: 'Crédito 12x', taxa: '5,49%' },
-                  { label: 'Boleto', taxa: 'R$ 1,49/unidade' },
+                  { label: 'Boleto', taxa: 'R$ 1,49/un.' },
                 ].map(({ label, taxa }) => (
                   <div key={label} className="flex items-center justify-between text-xs">
                     <span className="text-slate-400">{label}</span>
                     <span className="font-semibold text-white">{taxa}</span>
                   </div>
                 ))}
-                <p className="text-xs text-slate-600 pt-1">* Taxas aproximadas. Consulte seu contrato PagBank para valores exatos.</p>
               </div>
             </>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-5 pt-3 flex gap-2 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="px-6 pb-5 pt-3 flex gap-2 flex-shrink-0"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           {isConectado && (
             <button onClick={desconectar}
               className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all"
@@ -355,10 +396,12 @@ export default function ModalIntegracaoPagBank({ onClose }) {
               <RefreshCw size={12} />Desconectar
             </button>
           )}
-          <button onClick={handleSave}
-            className="flex-1 py-2.5 rounded-xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2"
+          <button
+            onClick={handleSave}
+            disabled={!form.email || !form.token}
+            className="flex-1 py-2.5 rounded-xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2 disabled:opacity-40"
             style={{ background: saved ? 'linear-gradient(135deg, #34d399, #059669)' : 'linear-gradient(135deg, #00b94a, #008f38)' }}>
-            {saved ? <><CheckCircle2 size={15} />Salvo!</> : <><Shield size={15} />Salvar Configuração</>}
+            {saved ? <><CheckCircle2 size={15} />Configuração Salva!</> : <><Shield size={15} />Salvar e Conectar</>}
           </button>
         </div>
       </div>
