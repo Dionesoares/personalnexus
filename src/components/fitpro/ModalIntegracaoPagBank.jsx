@@ -70,7 +70,7 @@ export default function ModalIntegracaoPagBank({ onClose }) {
       style={{ background: 'rgba(0,0,0,0.88)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="w-full max-w-lg rounded-2xl overflow-hidden flex flex-col"
-        style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh' }}>
+        style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '95vh', height: 'auto' }}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
@@ -99,26 +99,21 @@ export default function ModalIntegracaoPagBank({ onClose }) {
           </button>
         </div>
 
-        {/* Recursos em destaque */}
+        {/* Recursos em destaque — versão compacta em linha */}
         {!isConectado && (
-          <div className="px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <p className="text-xs text-slate-400 mb-3">Recursos disponíveis após integração:</p>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="px-6 py-3 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {RECURSOS.map(r => (
-                <div key={r.label} className="flex items-start gap-2 p-2.5 rounded-xl"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span className="text-base flex-shrink-0">{r.icon}</span>
-                  <div>
-                    <div className="text-xs font-semibold text-white">{r.label}</div>
-                    <div className="text-xs text-slate-500 leading-tight">{r.desc}</div>
-                  </div>
-                </div>
+                <span key={r.label} className="flex items-center gap-1 px-2 py-1 rounded-full text-xs"
+                  style={{ background: 'rgba(0,185,74,0.08)', color: '#00b94a', border: '1px solid rgba(0,185,74,0.2)' }}>
+                  {r.icon} {r.label}
+                </span>
               ))}
             </div>
             <a href="https://app.pipefy.com/public/form/k8aKYyJE" target="_blank" rel="noreferrer"
-              className="mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: '#00b94a15', color: '#00b94a', border: '1px solid #00b94a30' }}>
-              <ExternalLink size={12} />Solicitar acesso à plataforma PagBank
+              className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-xl text-xs font-semibold transition-all"
+              style={{ background: '#00b94a10', color: '#00b94a', border: '1px solid #00b94a25' }}>
+              <ExternalLink size={11} />Solicitar acesso à plataforma PagBank
             </a>
           </div>
         )}
