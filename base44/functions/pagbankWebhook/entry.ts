@@ -20,7 +20,12 @@ const STATUS_MAP = {
 };
 
 Deno.serve(async (req) => {
-  // Aceita apenas POST
+  // PagSeguro valida o endpoint com GET antes de cadastrar
+  if (req.method === 'GET') {
+    return new Response('OK', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+  }
+
+  // Aceita apenas POST além do GET
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
