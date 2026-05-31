@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Plus, X, TrendingUp, TrendingDown, Clock, AlertCircle, CheckCircle2, Users, ChevronDown, ChevronUp, Zap, Ban, Trash2, QrCode, Edit2, RefreshCw, Calendar } from 'lucide-react';
+import { DollarSign, Plus, X, TrendingUp, TrendingDown, Clock, AlertCircle, CheckCircle2, Users, ChevronDown, ChevronUp, Zap, Ban, Trash2, QrCode, Edit2, RefreshCw, Calendar, CreditCard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import PixProfessorConfig from '../../components/fitpro/PixProfessorConfig';
+import ModalCheckoutPagBank from '../../components/fitpro/ModalCheckoutPagBank';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -131,6 +132,7 @@ export default function FinanceiroView() {
   const [filtroMes, setFiltroMes] = useState('');
   const [abaAtiva, setAbaAtiva] = useState('transacoes'); // 'transacoes' | 'alunos' | 'pix'
   const [filtroAlunosStatus, setFiltroAlunosStatus] = useState('todos');
+  const [checkoutTransacao, setCheckoutTransacao] = useState(null);
 
   // Excluir cobranças do admin para o professor (t.professorId sem t.alunoId = cobrança de plano do admin)
   const todasTransacoes = (transacoes || [])
@@ -367,14 +369,22 @@ export default function FinanceiroView() {
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {(t.status === 'pendente' || t.status === 'vencido') && (
-                        <button
-                          onClick={() => confirmarRecebido(t.id)}
-                          disabled={confirmando === t.id}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-                          style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
-                          <CheckCircle2 size={11} />
-                          {confirmando === t.id ? '...' : 'Recebido'}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setCheckoutTransacao(t)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
+                            style={{ background: '#00b94a15', color: '#00b94a', border: '1px solid #00b94a30' }}>
+                            <CreditCard size={11} />Cartão
+                          </button>
+                          <button
+                            onClick={() => confirmarRecebido(t.id)}
+                            disabled={confirmando === t.id}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+                            style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+                            <CheckCircle2 size={11} />
+                            {confirmando === t.id ? '...' : 'Recebido'}
+                          </button>
+                        </>
                       )}
                       <button
                         onClick={() => abrirEdicao(t)}
@@ -501,6 +511,19 @@ export default function FinanceiroView() {
       {/* ABA PIX */}
       {abaAtiva === 'pix' && professorId && (
         <PixProfessorConfig professorId={professorId} />
+      )}
+
+      {/* Modal Checkout PagBank */}
+      {checkoutTransacao && (
+        <ModalCheckoutPagBank
+          transacao={checkoutTransacao}
+          aluno={alunos.find(a => a.id === checkoutTransacao.alunoId)}
+          onClose={() => setCheckoutTransacao(null)}
+          onSucesso={() => {
+            updateTransacao(checkoutTransacao.id, { status: 'pago' });
+            setCheckoutTransacao(null);
+          }}
+        />
       )}
 
       {/* Form modal */}

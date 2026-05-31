@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, CreditCard, CheckCircle2, AlertCircle, Copy, Eye, EyeOff, ExternalLink, Shield, RefreshCw } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
 const PAGBANK_KEY = 'fitpro_pagbank_config';
 
@@ -44,11 +45,30 @@ export default function ModalIntegracaoPagBank({ onClose }) {
 
   const isConectado = !!(config.email && config.token);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Salva no localStorage (para uso local imediato)
     saveConfig(form);
     setConfig(form);
+
+    // Salva na entidade (para uso pelo backend)
+    const existentes = await base44.entities.ConfiguracaoPagBank.list();
+    if (existentes.length > 0) {
+      await base44.entities.ConfiguracaoPagBank.update(existentes[0].id, form);
+    } else {
+      await base44.entities.ConfiguracaoPagBank.create(form);
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const desconectar = async () => {
+    if (!confirm('Desconectar integração com PagBank?')) return;
+    localStorage.removeItem(PAGBANK_KEY);
+    const existentes = await base44.entities.ConfiguracaoPagBank.list();
+    for (const e of existentes) await base44.entities.ConfiguracaoPagBank.delete(e.id);
+    setConfig({});
+    setForm({ email: '', token: '', ambiente: 'sandbox', webhookUrl: '', notificarPagamento: true, notificarCancelamento: true, metodos: ['pix', 'cartao', 'boleto'], parcelasMax: '12' });
   };
 
   const toggleMetodo = (m) => {
@@ -58,12 +78,7 @@ export default function ModalIntegracaoPagBank({ onClose }) {
     }));
   };
 
-  const desconectar = () => {
-    if (!confirm('Desconectar integração com PagBank?')) return;
-    localStorage.removeItem(PAGBANK_KEY);
-    setConfig({});
-    setForm({ email: '', token: '', ambiente: 'sandbox', webhookUrl: '', notificarPagamento: true, notificarCancelamento: true, metodos: ['pix', 'cartao', 'boleto'], parcelasMax: '12' });
-  };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"

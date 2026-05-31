@@ -1,0 +1,244 @@
+import React, { useState } from 'react';
+import { X, CreditCard, CheckCircle2, AlertCircle, Loader2, Lock } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+
+function formatCartao(v) {
+  return v.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim().substring(0, 19);
+}
+function formatValidade(v) {
+  return v.replace(/\D/g, '').replace(/^(\d{2})(\d)/, '$1/$2').substring(0, 5);
+}
+
+export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSucesso }) {
+  const [cartao, setCartao] = useState({
+    numero: '',
+    nomeTitular: '',
+    validade: '',
+    cvv: '',
+    parcelas: '1',
+  });
+  const [comprador, setComprador] = useState({
+    nome: aluno?.nome || '',
+    email: aluno?.email || '',
+    cpf: '',
+    telefone: aluno?.telefone || '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [resultado, setResultado] = useState(null); // null | {ok, mensagem, novoStatus}
+  const [erro, setErro] = useState('');
+
+  const valor = parseFloat(transacao?.valor || 0);
+
+  const handlePagar = async () => {
+    if (!cartao.numero || !cartao.nomeTitular || !cartao.validade || !cartao.cvv) {
+      setErro('Preencha todos os dados do cartão.');
+      return;
+    }
+    if (!comprador.cpf || comprador.cpf.replace(/\D/g, '').length < 11) {
+      setErro('Informe o CPF do titular.');
+      return;
+    }
+
+    setErro('');
+    setLoading(true);
+
+    const [mes, ano] = cartao.validade.split('/');
+    const payload = {
+      transacaoId: transacao.id,
+      cartao: {
+        numero: cartao.numero.replace(/\s/g, ''),
+        nomeTitular: cartao.nomeTitular,
+        mesValidade: mes,
+        anoValidade: ano?.length === 2 ? `20${ano}` : ano,
+        cvv: cartao.cvv,
+        parcelas: cartao.parcelas,
+      },
+      comprador,
+    };
+
+    const res = await base44.functions.invoke('pagbankCheckout', payload);
+    setLoading(false);
+
+    const data = res.data;
+    if (data?.ok) {
+      setResultado(data);
+      if (data.novoStatus === 'pago') onSucesso?.();
+    } else {
+      setErro(data?.error || 'Erro ao processar pagamento. Tente novamente.');
+    }
+  };
+
+  const maxParcelas = (() => {
+    try {
+      const cfg = JSON.parse(localStorage.getItem('fitpro_pagbank_config')) || {};
+      return parseInt(cfg.parcelasMax) || 12;
+    } catch { return 12; }
+  })();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.88)' }}
+      onClick={e => { if (e.target === e.currentTarget && !loading) onClose(); }}>
+      <div className="w-full max-w-md rounded-2xl overflow-hidden flex flex-col"
+        style={{ background: '#0d1525', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '95vh' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 flex-shrink-0"
+          style={{ background: '#080d1a', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: '#00b94a20', border: '1px solid #00b94a30' }}>
+              <CreditCard size={16} color="#00b94a" />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-sm">Pagar com Cartão</h3>
+              <p className="text-xs text-slate-500">Processado via PagBank · Seguro</p>
+            </div>
+          </div>
+          {!loading && <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5"><X size={16} color="#6b7280" /></button>}
+        </div>
+
+        {/* Resultado final */}
+        {resultado ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            {resultado.novoStatus === 'pago' ? (
+              <>
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+                  style={{ background: '#34d39920', border: '2px solid #34d399' }}>
+                  <CheckCircle2 size={32} color="#34d399" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Pagamento Aprovado!</h3>
+                <p className="text-slate-400 text-sm mb-2">{resultado.mensagem}</p>
+                <p className="text-2xl font-black" style={{ color: '#34d399' }}>
+                  R$ {valor.toFixed(2)}
+                </p>
+                <p className="text-xs text-slate-500 mt-2">ID: {resultado.chargeId}</p>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+                  style={{ background: '#ef444420', border: '2px solid #ef4444' }}>
+                  <AlertCircle size={32} color="#ef4444" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Pagamento Recusado</h3>
+                <p className="text-slate-400 text-sm">{resultado.mensagem}</p>
+              </>
+            )}
+            <button onClick={onClose}
+              className="mt-6 px-6 py-2.5 rounded-xl font-semibold text-sm text-white"
+              style={{ background: resultado.novoStatus === 'pago' ? 'linear-gradient(135deg, #34d399, #059669)' : 'linear-gradient(135deg, #475569, #334155)' }}>
+              Fechar
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-y-auto flex-1 p-5 space-y-4">
+            {/* Resumo */}
+            <div className="p-3 rounded-xl flex items-center justify-between"
+              style={{ background: '#00b94a10', border: '1px solid #00b94a25' }}>
+              <div>
+                <p className="text-xs text-slate-400">{transacao?.descricao}</p>
+                <p className="text-xs text-slate-500">{aluno?.nome}</p>
+              </div>
+              <p className="text-lg font-black" style={{ color: '#00b94a' }}>R$ {valor.toFixed(2)}</p>
+            </div>
+
+            {/* Dados do comprador */}
+            <div>
+              <p className="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wide">Dados do Comprador</p>
+              <div className="space-y-2">
+                <input value={comprador.nome} onChange={e => setComprador(c => ({ ...c, nome: e.target.value }))}
+                  placeholder="Nome completo"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={comprador.cpf} onChange={e => setComprador(c => ({ ...c, cpf: e.target.value }))}
+                    placeholder="CPF (somente números)"
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                  <input value={comprador.email} onChange={e => setComprador(c => ({ ...c, email: e.target.value }))}
+                    placeholder="E-mail"
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Dados do cartão */}
+            <div>
+              <p className="text-xs text-slate-400 font-semibold mb-2 uppercase tracking-wide">Dados do Cartão</p>
+              <div className="space-y-2">
+                <input
+                  value={cartao.numero}
+                  onChange={e => setCartao(c => ({ ...c, numero: formatCartao(e.target.value) }))}
+                  placeholder="0000 0000 0000 0000"
+                  maxLength={19}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none font-mono tracking-widest"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <input
+                  value={cartao.nomeTitular}
+                  onChange={e => setCartao(c => ({ ...c, nomeTitular: e.target.value.toUpperCase() }))}
+                  placeholder="NOME COMO NO CARTÃO"
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none uppercase"
+                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    value={cartao.validade}
+                    onChange={e => setCartao(c => ({ ...c, validade: formatValidade(e.target.value) }))}
+                    placeholder="MM/AA"
+                    maxLength={5}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                  <input
+                    value={cartao.cvv}
+                    onChange={e => setCartao(c => ({ ...c, cvv: e.target.value.replace(/\D/g, '').substring(0, 4) }))}
+                    placeholder="CVV"
+                    maxLength={4}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
+                </div>
+
+                {/* Parcelas */}
+                {maxParcelas > 1 && (
+                  <select value={cartao.parcelas} onChange={e => setCartao(c => ({ ...c, parcelas: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                    style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    {Array.from({ length: maxParcelas }, (_, i) => i + 1).map(n => {
+                      const vlr = (valor / n).toFixed(2);
+                      return <option key={n} value={String(n)}>{n === 1 ? `À vista — R$ ${valor.toFixed(2)}` : `${n}x de R$ ${vlr}`}</option>;
+                    })}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            {/* Erro */}
+            {erro && (
+              <div className="flex items-center gap-2 p-3 rounded-xl"
+                style={{ background: '#ef444415', border: '1px solid #ef444430' }}>
+                <AlertCircle size={14} color="#ef4444" />
+                <p className="text-xs text-red-400">{erro}</p>
+              </div>
+            )}
+
+            {/* Segurança */}
+            <div className="flex items-center gap-2 justify-center text-xs text-slate-600">
+              <Lock size={11} />
+              <span>Pagamento seguro — criptografado via PagBank</span>
+            </div>
+          </div>
+        )}
+
+        {/* Botão pagar */}
+        {!resultado && (
+          <div className="px-5 pb-5 flex-shrink-0">
+            <button onClick={handlePagar} disabled={loading}
+              className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg, #00b94a, #008f38)' }}>
+              {loading ? <><Loader2 size={16} className="animate-spin" />Processando...</> : <><CreditCard size={16} />Pagar R$ {valor.toFixed(2)}</>}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
