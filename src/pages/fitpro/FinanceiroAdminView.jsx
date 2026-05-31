@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save, Copy, Eye, Edit2 } from 'lucide-react';
+import ModalIntegracaoPagBank from '../../components/fitpro/ModalIntegracaoPagBank';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -144,7 +145,8 @@ export default function FinanceiroAdminView() {
 
   const meses = [...new Set(transacoesProfessores.map(t => t.data?.slice(0, 7)))].filter(Boolean).sort().reverse();
 
-  const [abaAtiva, setAbaAtiva] = useState('professores'); // 'professores' | 'transacoes' | 'pix'
+  const [abaAtiva, setAbaAtiva] = useState('professores'); // 'professores' | 'transacoes' | 'pix' | 'pagbank'
+  const [showPagBank, setShowPagBank] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroMes, setFiltroMes] = useState('');
   const [filtroProfStatus, setFiltroProfStatus] = useState('todos');
@@ -335,12 +337,13 @@ export default function FinanceiroAdminView() {
           { id: 'professores', label: `👨‍🏫 Professores${countsPorStatus.vencido > 0 ? ` (${countsPorStatus.vencido} vencido${countsPorStatus.vencido > 1 ? 's' : ''})` : countsPorStatus.pendente > 0 ? ` (${countsPorStatus.pendente} vence hoje)` : ''}` },
           { id: 'transacoes', label: '💳 Transações' },
           { id: 'pix', label: '🔳 Configurar PIX' },
+          { id: 'pagbank', label: '🏦 PagBank' },
         ].map(a => (
           <button key={a.id} onClick={() => setAbaAtiva(a.id)}
             className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
             style={{
-              background: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef444415' : a.id === 'professores' && countsPorStatus.pendente > 0 ? '#fbbf2415' : '#00d4ff15') : 'transparent',
-              color: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef4444' : a.id === 'professores' && countsPorStatus.pendente > 0 ? '#fbbf24' : '#00d4ff') : '#64748b',
+              background: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef444415' : a.id === 'professores' && countsPorStatus.pendente > 0 ? '#fbbf2415' : a.id === 'pagbank' ? '#00b94a15' : '#00d4ff15') : 'transparent',
+              color: abaAtiva === a.id ? (a.id === 'professores' && countsPorStatus.vencido > 0 ? '#ef4444' : a.id === 'professores' && countsPorStatus.pendente > 0 ? '#fbbf24' : a.id === 'pagbank' ? '#00b94a' : '#00d4ff') : '#64748b',
             }}>
             {a.label}
           </button>
@@ -689,6 +692,69 @@ export default function FinanceiroAdminView() {
           )}
         </div>
       )}
+
+      {/* ABA PAGBANK */}
+      {abaAtiva === 'pagbank' && (
+        <div className="space-y-4">
+          {(() => {
+            let cfg = {};
+            try { cfg = JSON.parse(localStorage.getItem('fitpro_pagbank_config')) || {}; } catch {}
+            const conectado = !!(cfg.email && cfg.token);
+            return (
+              <div className="p-5 rounded-2xl" style={{ background: '#0d1525', border: conectado ? '1px solid rgba(0,185,74,0.3)' : '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                      style={{ background: 'linear-gradient(135deg, #00b94a15, #0066cc15)', border: '1px solid rgba(0,185,74,0.2)' }}>
+                      🏦
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white">PagBank / PagSeguro</h3>
+                      <p className="text-xs text-slate-500">Gateway de pagamento integrado</p>
+                    </div>
+                  </div>
+                  {conectado
+                    ? <span className="text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1.5" style={{ background: '#34d39915', color: '#34d399', border: '1px solid #34d39930' }}>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />Conectado
+                      </span>
+                    : <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: '#64748b', border: '1px solid rgba(255,255,255,0.08)' }}>Não configurado</span>
+                  }
+                </div>
+
+                {conectado && (
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {[
+                      { label: 'Ambiente', value: cfg.ambiente === 'producao' ? '🚀 Produção' : '🧪 Sandbox' },
+                      { label: 'Métodos', value: `${(cfg.metodos || []).length} ativos` },
+                      { label: 'Parcelas', value: `Até ${cfg.parcelasMax || 12}x` },
+                    ].map(k => (
+                      <div key={k.label} className="p-2.5 rounded-xl text-center" style={{ background: '#00b94a08', border: '1px solid #00b94a20' }}>
+                        <div className="text-sm font-bold text-white">{k.value}</div>
+                        <div className="text-xs text-slate-500">{k.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2 mb-4 text-xs">
+                  {['💳 Cartão', '🔳 PIX', '📄 Boleto', '🔄 Recorrência', '🔔 Webhooks', '↩️ Estorno'].map(r => (
+                    <span key={r} className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(0,185,74,0.08)', color: '#00b94a', border: '1px solid rgba(0,185,74,0.2)' }}>{r}</span>
+                  ))}
+                </div>
+
+                <button onClick={() => setShowPagBank(true)}
+                  className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all"
+                  style={{ background: conectado ? 'linear-gradient(135deg, #1e2a3a, #253545)' : 'linear-gradient(135deg, #00b94a, #008f38)', color: conectado ? '#94a3b8' : '#fff' }}>
+                  {conectado ? '⚙️ Editar Configuração' : '🔗 Configurar Integração'}
+                </button>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Modal PagBank */}
+      {showPagBank && <ModalIntegracaoPagBank onClose={() => setShowPagBank(false)} />}
 
       {/* Modal QR Code PIX expandido */}
       {showPixModal && pixQrUrl && (
