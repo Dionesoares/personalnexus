@@ -79,15 +79,15 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
 
       {/* Banner principal */}
       <div className="relative mx-4 mb-4 rounded-2xl overflow-hidden"
-        style={{ height: 160, background: `linear-gradient(135deg, ${corBg}18, #080d1a)`, border: `1px solid ${cor}25` }}>
+        style={{ background: `linear-gradient(135deg, ${corBg}18, #080d1a)`, border: `1px solid ${cor}25` }}>
 
         {/* Conteúdo do slide */}
-        <div className="absolute inset-0 flex items-center gap-4 px-5">
+        <div className="flex items-stretch">
           {/* Imagem / Emoji */}
-          <div className="flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden flex items-center justify-center"
-            style={{ background: `${cor}15`, border: `1px solid ${cor}30` }}>
+          <div className="flex-shrink-0 w-28 min-h-[140px] overflow-hidden flex items-center justify-center"
+            style={{ background: `${cor}15`, borderRight: `1px solid ${cor}20` }}>
             {item.imagemUrl ? (
-              <img src={item.imagemUrl} alt={item.nome} className="w-full h-full object-cover" />
+              <img src={item.imagemUrl} alt={item.nome} className="w-full h-full object-cover" style={{ minHeight: 140 }} />
             ) : (
               <span className="text-5xl">
                 {isParceiro
@@ -98,30 +98,25 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
           </div>
 
           {/* Info */}
-          <div className="flex-1 min-w-0">
-            {/* Badge tipo */}
+          <div className="flex-1 min-w-0 p-4">
             <span className="inline-block text-xs px-2 py-0.5 rounded-full mb-1 font-semibold"
               style={{ background: `${cor}20`, color: cor, border: `1px solid ${cor}30` }}>
               {isParceiro ? (item.especialidade || 'Parceiro') : (item.categoria || 'Produto')}
             </span>
 
-            <h4 className="text-base font-black text-white truncate leading-tight">{item.nome}</h4>
+            <h4 className="text-base font-black text-white leading-tight">{item.nome}</h4>
 
             {isParceiro ? (
               <>
+                {item.descricao && <p className="text-xs text-slate-400 mt-1 line-clamp-2">{item.descricao}</p>}
                 {item.valorConsulta > 0 && (
                   <div className="mt-1 flex items-center gap-2">
-                    <span className="text-sm font-bold" style={{ color: '#34d399' }}>
-                      R$ {parseFloat(item.valorConsulta).toFixed(2)}
-                    </span>
+                    <span className="text-sm font-bold" style={{ color: '#34d399' }}>R$ {parseFloat(item.valorConsulta).toFixed(2)}</span>
                     <span className="text-xs text-slate-500">/ consulta</span>
                   </div>
                 )}
-                {item.disponibilidade && (
-                  <p className="text-xs text-slate-500 mt-0.5">📅 {item.disponibilidade}</p>
-                )}
-                <button
-                  onClick={() => onNavServicos?.()}
+                {item.disponibilidade && <p className="text-xs text-slate-500 mt-0.5">📅 {item.disponibilidade}</p>}
+                <button onClick={() => onNavServicos?.()}
                   className="mt-2 px-4 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
                   style={{ background: `linear-gradient(135deg, #60a5fa, #3b82f6)`, color: '#fff' }}>
                   Contratar
@@ -129,29 +124,22 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
               </>
             ) : (
               <>
+                {item.descricao && <p className="text-xs text-slate-400 mt-1 line-clamp-2">{item.descricao}</p>}
                 <div className="mt-1 flex items-center gap-2 flex-wrap">
                   {item.precoPromocional > 0 && item.precoPromocional < item.preco ? (
                     <>
                       <span className="text-xs text-slate-500 line-through">R$ {parseFloat(item.preco).toFixed(2)}</span>
-                      <span className="text-sm font-black" style={{ color: '#34d399' }}>
-                        R$ {parseFloat(item.precoPromocional).toFixed(2)}
-                      </span>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full font-bold"
-                        style={{ background: '#34d39920', color: '#34d399' }}>
-                        PROMO
-                      </span>
+                      <span className="text-sm font-black" style={{ color: '#34d399' }}>R$ {parseFloat(item.precoPromocional).toFixed(2)}</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#34d39920', color: '#34d399' }}>PROMO</span>
                     </>
                   ) : (
-                    <span className="text-sm font-black" style={{ color: '#fb923c' }}>
-                      R$ {parseFloat(item.preco || 0).toFixed(2)}
-                    </span>
+                    <span className="text-sm font-black" style={{ color: '#fb923c' }}>R$ {parseFloat(item.preco || 0).toFixed(2)}</span>
                   )}
                   {item.estoque != null && item.estoque <= 5 && item.estoque > 0 && (
                     <span className="text-xs text-amber-400">⚠️ Últimas {item.estoque}</span>
                   )}
                 </div>
-                <button
-                  onClick={() => item.linkLoja ? window.open(item.linkLoja, '_blank') : onNavLoja?.()}
+                <button onClick={() => item.linkLoja ? window.open(item.linkLoja, '_blank') : onNavLoja?.()}
                   className="mt-2 px-4 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
                   style={{ background: `linear-gradient(135deg, #fb923c, #f97316)`, color: '#fff' }}>
                   Comprar
@@ -160,10 +148,6 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
             )}
           </div>
         </div>
-
-        {/* Gradiente decorativo */}
-        <div className="absolute top-0 right-0 w-24 h-full pointer-events-none"
-          style={{ background: `linear-gradient(to left, ${corBg}08, transparent)` }} />
 
         {/* Navegação prev/next */}
         {total > 1 && (
