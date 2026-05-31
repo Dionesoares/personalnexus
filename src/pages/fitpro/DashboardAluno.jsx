@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Dumbbell, Calendar, Stethoscope, TrendingUp, Heart, ChevronRight, Settings, CalendarDays, Clock, AlertCircle, QrCode, MessageCircle, ClipboardList, UserCheck } from 'lucide-react';
+import CarrosselParceiros from '../../components/fitpro/CarrosselParceiros';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { getCredentials } from '../../lib/fitpro-storage';
 import { calcularIdade } from '../../lib/fitpro-calculations';
@@ -14,7 +15,7 @@ const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
 
 export default function DashboardAluno({ onNav }) {
-  const { alunos, professores, avaliacoes, planosTreino, periodizacoes, especialistas, transacoes } = useApp();
+  const { alunos, professores, avaliacoes, planosTreino, periodizacoes, especialistas, produtos, transacoes } = useApp();
   const { user } = useAuth();
   const [showEditarPerfil, setShowEditarPerfil] = useState(false);
   const [showSolicitarVinculo, setShowSolicitarVinculo] = useState(false);
@@ -291,25 +292,18 @@ export default function DashboardAluno({ onNav }) {
               ))}
             </div>
           </div>
-        ) : (
-          /* Parceiros quando não há evolução suficiente */
-          parceiros.length > 0 && (
-            <div className="rounded-2xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-white flex items-center gap-2"><Heart size={16} color="#60a5fa" />Serviços Parceiros</h3>
-                <button onClick={() => onNav('servicos')} className="text-xs text-slate-500">Ver todos →</button>
-              </div>
-              {parceiros.slice(0, 2).map(esp => (
-                <div key={esp.id} className="flex items-center gap-3 p-3 rounded-xl mb-2" style={{ background: '#60a5fa08', border: '1px solid #60a5fa20' }}>
-                  <span className="text-xl">{esp.especialidade === 'Nutricionista' ? '🥗' : '🏥'}</span>
-                  <div className="flex-1"><div className="text-sm font-semibold text-white">{esp.nome}</div><div className="text-xs text-slate-500">{esp.especialidade}</div></div>
-                  <div className="text-sm font-bold" style={{ color: '#34d399' }}>R${esp.valorConsulta}</div>
-                </div>
-              ))}
-            </div>
-          )
-        )}
+        ) : null}
       </div>
+
+      {/* Carrossel Parceiros & Loja */}
+      {(parceiros.length > 0 || produtos.length > 0) && (
+        <CarrosselParceiros
+          parceiros={parceiros}
+          produtos={produtos}
+          onNavServicos={() => onNav('servicos')}
+          onNavLoja={() => onNav('loja')}
+        />
+      )}
 
       {/* Meus Treinos */}
       {meusTreinos.length > 0 && (

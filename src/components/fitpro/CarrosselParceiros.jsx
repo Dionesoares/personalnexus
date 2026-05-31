@@ -1,0 +1,197 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, ExternalLink, ShoppingBag, Stethoscope } from 'lucide-react';
+
+const ESPECIALIDADE_EMOJI = {
+  'Nutricionista': '🥗',
+  'Fisioterapeuta': '🩺',
+  'Médico': '👨‍⚕️',
+  'Psicólogo': '🧠',
+  'Cardiologista': '❤️',
+  'Ortopedista': '🦴',
+  'Endocrinologista': '🔬',
+};
+
+const CATEGORIA_EMOJI = {
+  'Suplemento': '💊',
+  'Roupas': '👕',
+  'Equipamento': '🏋️',
+  'Acessório': '🎽',
+  'Alimentação': '🥑',
+};
+
+export default function CarrosselParceiros({ parceiros = [], produtos = [], onNavServicos, onNavLoja }) {
+  const [idx, setIdx] = useState(0);
+  const [autoplay, setAutoplay] = useState(true);
+  const timerRef = useRef(null);
+
+  // Monta os slides: parceiros + produtos (apenas ativos)
+  const slides = [
+    ...parceiros.map(p => ({ tipo: 'parceiro', data: p })),
+    ...produtos.filter(p => p.ativo !== false).slice(0, 6).map(p => ({ tipo: 'produto', data: p })),
+  ];
+
+  const total = slides.length;
+
+  useEffect(() => {
+    if (!autoplay || total === 0) return;
+    timerRef.current = setInterval(() => {
+      setIdx(i => (i + 1) % total);
+    }, 4000);
+    return () => clearInterval(timerRef.current);
+  }, [autoplay, total]);
+
+  const go = (dir) => {
+    setAutoplay(false);
+    setIdx(i => (i + dir + total) % total);
+    clearInterval(timerRef.current);
+    timerRef.current = setTimeout(() => setAutoplay(true), 8000);
+  };
+
+  if (total === 0) return null;
+
+  const slide = slides[idx];
+  const isParceiro = slide.tipo === 'parceiro';
+  const item = slide.data;
+
+  // Cores por tipo
+  const cor = isParceiro ? '#60a5fa' : '#fb923c';
+  const corBg = isParceiro ? '#60a5fa' : '#fb923c';
+
+  return (
+    <div className="rounded-2xl overflow-hidden relative select-none"
+      style={{ background: '#0d1525', border: `1px solid rgba(255,255,255,0.07)` }}>
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+        <h3 className="font-semibold text-white flex items-center gap-2">
+          {isParceiro
+            ? <><Stethoscope size={15} color="#60a5fa" />Serviços & Parceiros</>
+            : <><ShoppingBag size={15} color="#fb923c" />Loja</>}
+        </h3>
+        <div className="flex gap-2">
+          <button onClick={() => isParceiro ? onNavServicos?.() : onNavLoja?.()}
+            className="text-xs flex items-center gap-1 transition-all hover:opacity-80"
+            style={{ color: cor }}>
+            Ver todos <ExternalLink size={10} />
+          </button>
+        </div>
+      </div>
+
+      {/* Banner principal */}
+      <div className="relative mx-4 mb-4 rounded-2xl overflow-hidden"
+        style={{ height: 160, background: `linear-gradient(135deg, ${corBg}18, #080d1a)`, border: `1px solid ${cor}25` }}>
+
+        {/* Conteúdo do slide */}
+        <div className="absolute inset-0 flex items-center gap-4 px-5">
+          {/* Imagem / Emoji */}
+          <div className="flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden flex items-center justify-center"
+            style={{ background: `${cor}15`, border: `1px solid ${cor}30` }}>
+            {item.imagemUrl ? (
+              <img src={item.imagemUrl} alt={item.nome} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-5xl">
+                {isParceiro
+                  ? (ESPECIALIDADE_EMOJI[item.especialidade] || '🏥')
+                  : (CATEGORIA_EMOJI[item.categoria] || '🛒')}
+              </span>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            {/* Badge tipo */}
+            <span className="inline-block text-xs px-2 py-0.5 rounded-full mb-1 font-semibold"
+              style={{ background: `${cor}20`, color: cor, border: `1px solid ${cor}30` }}>
+              {isParceiro ? (item.especialidade || 'Parceiro') : (item.categoria || 'Produto')}
+            </span>
+
+            <h4 className="text-base font-black text-white truncate leading-tight">{item.nome}</h4>
+
+            {isParceiro ? (
+              <>
+                {item.descricao && (
+                  <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{item.descricao}</p>
+                )}
+                {item.valorConsulta > 0 && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-sm font-bold" style={{ color: '#34d399' }}>
+                      R$ {parseFloat(item.valorConsulta).toFixed(2)}
+                    </span>
+                    <span className="text-xs text-slate-500">/ consulta</span>
+                  </div>
+                )}
+                {item.disponibilidade && (
+                  <p className="text-xs text-slate-500 mt-0.5">📅 {item.disponibilidade}</p>
+                )}
+              </>
+            ) : (
+              <>
+                {item.descricao && (
+                  <p className="text-xs text-slate-400 mt-1 line-clamp-1">{item.descricao}</p>
+                )}
+                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                  {item.precoPromocional > 0 && item.precoPromocional < item.preco ? (
+                    <>
+                      <span className="text-xs text-slate-500 line-through">R$ {parseFloat(item.preco).toFixed(2)}</span>
+                      <span className="text-sm font-black" style={{ color: '#34d399' }}>
+                        R$ {parseFloat(item.precoPromocional).toFixed(2)}
+                      </span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full font-bold"
+                        style={{ background: '#34d39920', color: '#34d399' }}>
+                        PROMO
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm font-black" style={{ color: '#fb923c' }}>
+                      R$ {parseFloat(item.preco || 0).toFixed(2)}
+                    </span>
+                  )}
+                  {item.estoque != null && item.estoque <= 5 && item.estoque > 0 && (
+                    <span className="text-xs text-amber-400">⚠️ Últimas {item.estoque} unidades</span>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Gradiente decorativo */}
+        <div className="absolute top-0 right-0 w-24 h-full pointer-events-none"
+          style={{ background: `linear-gradient(to left, ${corBg}08, transparent)` }} />
+
+        {/* Navegação prev/next */}
+        {total > 1 && (
+          <>
+            <button onClick={() => go(-1)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110"
+              style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <ChevronLeft size={14} color="#fff" />
+            </button>
+            <button onClick={() => go(1)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110"
+              style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <ChevronRight size={14} color="#fff" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Dots */}
+      {total > 1 && (
+        <div className="flex justify-center gap-1.5 pb-3">
+          {slides.map((s, i) => (
+            <button key={i} onClick={() => { setIdx(i); setAutoplay(false); }}
+              className="rounded-full transition-all"
+              style={{
+                width: i === idx ? 20 : 6,
+                height: 6,
+                background: i === idx
+                  ? (s.tipo === 'parceiro' ? '#60a5fa' : '#fb923c')
+                  : 'rgba(255,255,255,0.15)',
+              }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
