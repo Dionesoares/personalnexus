@@ -24,6 +24,10 @@
       "type": "boolean",
       "default": false
     },
+    "alunoLeu": {
+      "type": "boolean",
+      "default": false
+    },
     "data": {
       "type": "string"
     },
