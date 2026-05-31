@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, Pause, Square, GripVertical, Edit2, Copy, Download, Folder, FolderOpen, Timer, CheckCircle2, Circle } from 'lucide-react';
+import { Dumbbell, Plus, X, Trash2, ChevronDown, ChevronUp, ChevronRight, Sparkles, Play, Pause, Square, GripVertical, Edit2, Copy, Download, Folder, FolderOpen, Timer, CheckCircle2, Circle, Trophy } from 'lucide-react';
 import { gerarPDFTreino } from '../../lib/fitpro-pdf';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { useApp, useAuth } from '../../context/FitProContext';
@@ -8,6 +8,7 @@ import { getCredentials, generateId } from '../../lib/fitpro-storage';
 import { TREINO_TEMPLATES, aplicarTemplate, gerarPlanosAnuais } from '../../lib/treinoTemplates';
 import PastaTreinoModal from './PastaTreinoModal';
 import TreinoCard from './TreinoCard';
+import { base44 } from '@/api/base44Client';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -42,6 +43,8 @@ export default function TreinosView({ onNav }) {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const timerRef = useRef(null);
+  const [finalizando, setFinalizando] = useState(false);
+  const [treinoFinalizado, setTreinoFinalizado] = useState(false);
 
   React.useEffect(() => {
     if (timerRunning) {
@@ -163,6 +166,27 @@ export default function TreinosView({ onNav }) {
     }));
   };
 
+  const handleFinalizarTreino = async (treino, aluno) => {
+    setFinalizando(true);
+    const duracao = timerSeconds > 0 ? ` Duração: ${formatTimer(timerSeconds)}.` : '';
+    const totalExs = treino.sessoes?.reduce((a, s) => a + s.exercicios.length, 0) || 0;
+    const concluidos = Object.values(exConcluidosMap).filter(Boolean).length;
+    const mensagem = `✅ *${aluno?.nome || 'Aluno'}* finalizou o treino "${treino.nome}"!${duracao} Exercícios concluídos: ${concluidos}/${totalExs}.`;
+    await base44.entities.FeedbackTreino.create({
+      treinoId: treino.id,
+      treinoNome: treino.nome,
+      alunoId: treino.alunoId,
+      alunoNome: aluno?.nome || '',
+      professorId: treino.professorId || aluno?.professorId || '',
+      mensagem,
+      lido: false,
+      data: new Date().toISOString(),
+    });
+    setFinalizando(false);
+    setTreinoFinalizado(true);
+    setTimerRunning(false);
+  };
+
   if (selectedTreino) {
     const treino = planosTreino.find(t => t.id === selectedTreino.id) || selectedTreino;
     const aluno = alunos.find(a => a.id === treino.alunoId);
@@ -172,7 +196,7 @@ export default function TreinosView({ onNav }) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => { setSelectedTreino(null); setTimerRunning(false); setTimerSeconds(0); setExConcluidosMap({}); }} className="p-2 rounded-xl hover:bg-white/5"><ChevronRight size={18} color="#9ca3af" className="rotate-180" /></button>
+          <button onClick={() => { setSelectedTreino(null); setTimerRunning(false); setTimerSeconds(0); setExConcluidosMap({}); setTreinoFinalizado(false); }} className="p-2 rounded-xl hover:bg-white/5"><ChevronRight size={18} color="#9ca3af" className="rotate-180" /></button>
           <div className="flex-1"><h2 className="text-lg font-bold text-white">{treino.nome}</h2><p className="text-xs text-slate-500">{aluno?.nome} • {treino.nivel} • {treino.duracaoSemanas} semanas</p></div>
           <button onClick={() => gerarPDFTreino(treino, aluno)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
@@ -333,6 +357,27 @@ export default function TreinosView({ onNav }) {
             </div>
           );
         })}
+
+        {/* Botão Finalizar Treino — só para aluno */}
+        {user?.role === 'aluno' && (
+          treinoFinalizado ? (
+            <div className="flex flex-col items-center gap-3 p-6 rounded-2xl text-center"
+              style={{ background: '#34d39912', border: '1px solid #34d39940' }}>
+              <Trophy size={32} color="#34d399" />
+              <div className="text-lg font-black text-white">Treino Finalizado! 🎉</div>
+              <p className="text-sm text-slate-400">Seu professor foi notificado. Parabéns pelo esforço!</p>
+            </div>
+          ) : (
+            <button
+              onClick={() => handleFinalizarTreino(treino, aluno)}
+              disabled={finalizando}
+              className="w-full py-4 rounded-2xl font-black text-base text-white flex items-center justify-center gap-3 transition-all"
+              style={{ background: finalizando ? '#1e2a3a' : 'linear-gradient(135deg, #34d399, #059669)', opacity: finalizando ? 0.7 : 1 }}>
+              <Trophy size={20} />
+              {finalizando ? 'Enviando notificação...' : '🏆 Finalizar Treino'}
+            </button>
+          )
+        )}
       </div>
     );
   }
