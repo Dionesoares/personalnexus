@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, ArrowLeft, User, Mail, Lock, Eye, EyeOff, Phone, UserCheck, Users, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { addCredential, emailExists } from '../../lib/fitpro-storage';
+import ModalPlanosBoasVindas from '../../components/fitpro/ModalPlanosBoasVindas';
 
 const estados = [
   { uf: 'AC', nome: 'Acre' },
@@ -44,6 +45,7 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [showPlanos, setShowPlanos] = useState(false);
   const [erro, setErro] = useState('');
 
   const [nome, setNome] = useState('');
@@ -84,16 +86,30 @@ export default function CadastroPage({ onBack, tipoInicial, professorIdInicial =
     if (tipo === 'aluno') {
       const alunoId = await addAluno({ nome, email, telefone, dataNascimento: dataNasc, sexo, peso: parseFloat(peso) || 0, altura: parseFloat(altura) || 0, objetivo, observacoes: '', endereco, professorId: professorId || '' });
       await addCredential({ email, password, role: 'aluno', nome, linkedId: alunoId, ativo: true, autoRegistrado: true });
+      setDone(true);
+      await new Promise(r => setTimeout(r, 1500));
+      await login(email, password);
     } else {
       const profId = await addProfessor({ nome, email, telefone, cref, especialidade, endereco });
       await addCredential({ email, password, role: 'professor', nome, linkedId: profId, ativo: true, autoRegistrado: true });
+      setShowPlanos(true);
     }
 
-    setDone(true);
-    await new Promise(r => setTimeout(r, 1500));
-    await login(email, password);
     setLoading(false);
   };
+
+  if (showPlanos) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0e1a' }}>
+      <ModalPlanosBoasVindas
+        nomeProf={nome}
+        onClose={async () => {
+          setShowPlanos(false);
+          setDone(true);
+          await login(email, password);
+        }}
+      />
+    </div>
+  );
 
   if (done) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0e1a' }}>
