@@ -275,34 +275,34 @@ export default function DashboardAluno({ onNav }) {
           )}
         </div>
 
-        {/* Minha Evolução */}
-        {minhasAvaliacoes.length > 1 ? (
-          <div className="rounded-2xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-            <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><TrendingUp size={16} color="#34d399" />Minha Evolução</h3>
-            <div className="space-y-3">
-              {minhasAvaliacoes.slice(0, 3).map((av, i) => (
-                <div key={av.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5">
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: '#a78bfa20', color: '#a78bfa' }}>#{minhasAvaliacoes.length - i}</div>
-                  <div className="text-xs text-slate-400">{new Date(av.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</div>
-                  <div className="flex gap-2 ml-auto">
-                    {av.percentualGordura != null && <span className="text-xs font-bold" style={{ color: '#fb923c' }}>{av.percentualGordura?.toFixed(1)}%</span>}
-                    {av.massaMagra != null && <span className="text-xs font-bold" style={{ color: '#34d399' }}>{av.massaMagra?.toFixed(1)}kg</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        {/* Serviços & Parceiros — ao lado da Última Avaliação */}
+        {(parceiros.length > 0 || produtos.length > 0) && (
+          <CarrosselParceiros
+            parceiros={parceiros}
+            produtos={produtos}
+            onNavServicos={() => onNav('servicos')}
+            onNavLoja={() => onNav('loja')}
+          />
+        )}
       </div>
 
-      {/* Carrossel Parceiros & Loja */}
-      {(parceiros.length > 0 || produtos.length > 0) && (
-        <CarrosselParceiros
-          parceiros={parceiros}
-          produtos={produtos}
-          onNavServicos={() => onNav('servicos')}
-          onNavLoja={() => onNav('loja')}
-        />
+      {/* Minha Evolução */}
+      {minhasAvaliacoes.length > 1 && (
+        <div className="rounded-2xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><TrendingUp size={16} color="#34d399" />Minha Evolução</h3>
+          <div className="space-y-3">
+            {minhasAvaliacoes.slice(0, 3).map((av, i) => (
+              <div key={av.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: '#a78bfa20', color: '#a78bfa' }}>#{minhasAvaliacoes.length - i}</div>
+                <div className="text-xs text-slate-400">{new Date(av.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</div>
+                <div className="flex gap-2 ml-auto">
+                  {av.percentualGordura != null && <span className="text-xs font-bold" style={{ color: '#fb923c' }}>{av.percentualGordura?.toFixed(1)}%</span>}
+                  {av.massaMagra != null && <span className="text-xs font-bold" style={{ color: '#34d399' }}>{av.massaMagra?.toFixed(1)}kg</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Meus Treinos */}
