@@ -227,11 +227,21 @@ export default function ModalIntegracaoPagBank({ onClose }) {
 
               <div>
                 <label className="text-xs text-slate-400 block mb-1">URL do Webhook (Endpoint)</label>
-                <input value={form.webhookUrl} onChange={e => setForm(f => ({ ...f, webhookUrl: e.target.value }))}
-                  placeholder="https://seusite.com/api/pagbank/webhook"
-                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none font-mono"
-                  style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
-                <p className="text-xs text-slate-600 mt-1">Registre esta URL em: PagBank → Sua Conta → Notificações</p>
+                <div className="relative">
+                  <input
+                    readOnly
+                    value="https://api.base44.com/api/apps/682a6a7af17a7a718e0765ce/functions/pagbankWebhook"
+                    className="w-full px-3 pr-10 py-2.5 rounded-xl text-xs text-emerald-400 outline-none font-mono cursor-text select-all"
+                    style={{ background: '#0a1a12', border: '1px solid rgba(52,211,153,0.25)' }}
+                    onClick={e => e.target.select()}
+                  />
+                  <button
+                    onClick={() => navigator.clipboard.writeText('https://api.base44.com/api/apps/682a6a7af17a7a718e0765ce/functions/pagbankWebhook')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-white/10 text-slate-400">
+                    <Copy size={13} />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">📌 Registre esta URL em: <strong>PagBank → Sua Conta → Notificações</strong></p>
               </div>
 
               <div>
