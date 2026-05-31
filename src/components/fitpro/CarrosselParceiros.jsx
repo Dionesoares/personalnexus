@@ -109,11 +109,8 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
 
             {isParceiro ? (
               <>
-                {item.descricao && (
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{item.descricao}</p>
-                )}
                 {item.valorConsulta > 0 && (
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-1 flex items-center gap-2">
                     <span className="text-sm font-bold" style={{ color: '#34d399' }}>
                       R$ {parseFloat(item.valorConsulta).toFixed(2)}
                     </span>
@@ -123,13 +120,16 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
                 {item.disponibilidade && (
                   <p className="text-xs text-slate-500 mt-0.5">📅 {item.disponibilidade}</p>
                 )}
+                <button
+                  onClick={() => onNavServicos?.()}
+                  className="mt-2 px-4 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
+                  style={{ background: `linear-gradient(135deg, #60a5fa, #3b82f6)`, color: '#fff' }}>
+                  Contratar
+                </button>
               </>
             ) : (
               <>
-                {item.descricao && (
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-1">{item.descricao}</p>
-                )}
-                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
                   {item.precoPromocional > 0 && item.precoPromocional < item.preco ? (
                     <>
                       <span className="text-xs text-slate-500 line-through">R$ {parseFloat(item.preco).toFixed(2)}</span>
@@ -147,9 +147,15 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
                     </span>
                   )}
                   {item.estoque != null && item.estoque <= 5 && item.estoque > 0 && (
-                    <span className="text-xs text-amber-400">⚠️ Últimas {item.estoque} unidades</span>
+                    <span className="text-xs text-amber-400">⚠️ Últimas {item.estoque}</span>
                   )}
                 </div>
+                <button
+                  onClick={() => item.linkLoja ? window.open(item.linkLoja, '_blank') : onNavLoja?.()}
+                  className="mt-2 px-4 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
+                  style={{ background: `linear-gradient(135deg, #fb923c, #f97316)`, color: '#fff' }}>
+                  Comprar
+                </button>
               </>
             )}
           </div>
