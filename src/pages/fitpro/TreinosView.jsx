@@ -35,6 +35,7 @@ export default function TreinosView({ onNav }) {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyTreino);
   const [collapsedSessoes, setCollapsedSessoes] = useState({});
+  const [collapsedFormSessoes, setCollapsedFormSessoes] = useState({});
   const [saved, setSaved] = useState(false);
   const [gifModal, setGifModal] = useState(null); // { nome, gifUrl, series, repeticoes, descanso, observacoes, dicas, cor }
   const [bibSearch, setBibSearch] = useState({}); // { [sessaoId]: string }
@@ -598,15 +599,25 @@ export default function TreinosView({ onNav }) {
                       <div {...providedDrag.dragHandleProps} className="cursor-grab active:cursor-grabbing flex-shrink-0" title="Arrastar sessão">
                         <GripVertical size={16} color={cor} />
                       </div>
-                      <span className="font-bold text-sm" style={{ color: cor }}>Sessão {String.fromCharCode(65 + si)}</span>
+                      <span className="font-bold text-sm flex-shrink-0" style={{ color: cor }}>Sessão {String.fromCharCode(65 + si)}</span>
                       <input value={sessao.nome} onChange={e => setForm(f => ({ ...f, sessoes: f.sessoes.map(s => s.id === sessao.id ? { ...s, nome: e.target.value } : s) }))}
-                        className="flex-1 px-2 py-1 rounded-lg text-sm text-white outline-none" style={{ background: 'rgba(0,0,0,0.2)' }} />
+                        className="flex-1 min-w-0 px-2 py-1 rounded-lg text-sm text-white outline-none" style={{ background: 'rgba(0,0,0,0.2)' }} />
                       <select value={sessao.dia} onChange={e => setForm(f => ({ ...f, sessoes: f.sessoes.map(s => s.id === sessao.id ? { ...s, dia: e.target.value } : s) }))}
-                        className="px-2 py-1 rounded-lg text-xs text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        className="px-2 py-1 rounded-lg text-xs text-white outline-none flex-shrink-0" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                         {['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado','Domingo'].map(d => <option key={d} value={d}>{d}</option>)}
                       </select>
-                      <button onClick={() => removeSessao(sessao.id)} className="text-red-400 hover:text-red-300"><X size={14} /></button>
+                      {/* Botão recolher/expandir */}
+                      <button
+                        onClick={() => setCollapsedFormSessoes(c => ({ ...c, [sessao.id]: !c[sessao.id] }))}
+                        className="flex-shrink-0 p-1 rounded-lg hover:bg-white/10 transition-all"
+                        title={collapsedFormSessoes[sessao.id] ? 'Expandir sessão' : 'Recolher sessão'}>
+                        {collapsedFormSessoes[sessao.id]
+                          ? <ChevronDown size={14} color="#94a3b8" />
+                          : <ChevronUp size={14} color="#94a3b8" />}
+                      </button>
+                      <button onClick={() => removeSessao(sessao.id)} className="flex-shrink-0 text-red-400 hover:text-red-300"><X size={14} /></button>
                     </div>
+                    {!collapsedFormSessoes[sessao.id] && (
                     <DragDropContext onDragEnd={(result) => onDragEnd(sessao.id, result)}>
                     <div className="p-3 space-y-2">
                       <Droppable droppableId={sessao.id}>
@@ -714,6 +725,7 @@ export default function TreinosView({ onNav }) {
                       </div>
                     </div>
                     </DragDropContext>
+                    )}
                     </div>
                     )}
                     </Draggable>
