@@ -133,6 +133,17 @@ export default function TreinosView({ onNav }) {
     setForm(f => ({ ...f, sessoes: [...f.sessoes, { id: generateId(), nome: `Treino ${String.fromCharCode(65 + idx)}`, dia: 'Segunda-feira', exercicios: [] }] }));
   };
 
+  const onDragEndSessoes = (result) => {
+    if (!result.destination) return;
+    if (result.source.index === result.destination.index) return;
+    setForm(f => {
+      const sessoes = Array.from(f.sessoes);
+      const [moved] = sessoes.splice(result.source.index, 1);
+      sessoes.splice(result.destination.index, 0, moved);
+      return { ...f, sessoes };
+    });
+  };
+
   const removeSessao = (sessaoId) => setForm(f => ({ ...f, sessoes: f.sessoes.filter(s => s.id !== sessaoId) }));
 
   const addExercicio = (sessaoId) => setForm(f => ({ ...f, sessoes: f.sessoes.map(s => s.id === sessaoId ? { ...s, exercicios: [...s.exercicios, emptyEx()] } : s) }));
@@ -570,11 +581,23 @@ export default function TreinosView({ onNav }) {
                   <Plus size={12} />Adicionar Sessão
                 </button>
               </div>
+              <DragDropContext onDragEnd={onDragEndSessoes}>
+              <Droppable droppableId="sessoes-list">
+                {(providedSessoes) => (
+                  <div ref={providedSessoes.innerRef} {...providedSessoes.droppableProps}>
               {form.sessoes.map((sessao, si) => {
                 const cor = COR_SESSAO[si % COR_SESSAO.length];
                 return (
-                  <div key={sessao.id} className="mb-4 rounded-xl overflow-visible" style={{ border: `1px solid ${cor}30` }}>
+                  <Draggable key={sessao.id} draggableId={`sessao-${sessao.id}`} index={si}>
+                    {(providedDrag, snapshotDrag) => (
+                  <div ref={providedDrag.innerRef} {...providedDrag.draggableProps}
+                    className="mb-4 rounded-xl overflow-visible"
+                    style={{ border: `1px solid ${cor}30`, boxShadow: snapshotDrag.isDragging ? '0 8px 32px rgba(0,0,0,0.6)' : undefined, ...providedDrag.draggableProps.style }}>
                     <div className="flex items-center gap-2 p-3" style={{ background: `${cor}10` }}>
+                      {/* Handle arrastar sessão */}
+                      <div {...providedDrag.dragHandleProps} className="cursor-grab active:cursor-grabbing flex-shrink-0" title="Arrastar sessão">
+                        <GripVertical size={16} color={cor} />
+                      </div>
                       <span className="font-bold text-sm" style={{ color: cor }}>Sessão {String.fromCharCode(65 + si)}</span>
                       <input value={sessao.nome} onChange={e => setForm(f => ({ ...f, sessoes: f.sessoes.map(s => s.id === sessao.id ? { ...s, nome: e.target.value } : s) }))}
                         className="flex-1 px-2 py-1 rounded-lg text-sm text-white outline-none" style={{ background: 'rgba(0,0,0,0.2)' }} />
@@ -691,9 +714,16 @@ export default function TreinosView({ onNav }) {
                       </div>
                     </div>
                     </DragDropContext>
-                  </div>
+                    </div>
+                    )}
+                    </Draggable>
                 );
               })}
+              {providedSessoes.placeholder}
+                  </div>
+                )}
+              </Droppable>
+              </DragDropContext>
               {form.sessoes.length === 0 && <p className="text-xs text-slate-500 text-center py-4">Clique em "Adicionar Sessão" para começar</p>}
             </div>
 
