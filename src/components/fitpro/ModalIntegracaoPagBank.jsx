@@ -206,7 +206,7 @@ export default function ModalIntegracaoPagBank({ onClose }) {
               <div>
                 <label className="text-xs text-slate-400 block mb-1">
                   Token de Integração <span className="text-red-400">*</span>
-                  <span className="ml-2 text-slate-600">(Produção — 32 caracteres)</span>
+                  <span className="ml-2 text-slate-600">(Produção — 100 caracteres)</span>
                 </label>
                 <div className="relative">
                   <input
@@ -229,12 +229,12 @@ export default function ModalIntegracaoPagBank({ onClose }) {
                     )}
                   </div>
                 </div>
-                {form.token && form.token.length !== 32 && (
+                {form.token && form.token.length !== 100 && (
                   <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
-                    <AlertCircle size={11} />Token inválido — deve ter 32 caracteres (atual: {form.token.length})
+                    <AlertCircle size={11} />Token inválido — deve ter 100 caracteres (atual: {form.token.length})
                   </p>
                 )}
-                {form.token && form.token.length === 32 && (
+                {form.token && form.token.length === 100 && (
                   <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
                     <CheckCircle2 size={11} />Token com formato válido ✓
                   </p>
@@ -398,7 +398,7 @@ export default function ModalIntegracaoPagBank({ onClose }) {
           )}
           <button
             onClick={handleSave}
-            disabled={!form.email || !form.token}
+            disabled={!form.email || form.token.length !== 100}
             className="flex-1 py-2.5 rounded-xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2 disabled:opacity-40"
             style={{ background: saved ? 'linear-gradient(135deg, #34d399, #059669)' : 'linear-gradient(135deg, #00b94a, #008f38)' }}>
             {saved ? <><CheckCircle2 size={15} />Configuração Salva!</> : <><Shield size={15} />Salvar e Conectar</>}
