@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QrCode, Save, Copy, Eye, X } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -28,37 +29,72 @@ function gerarQrUrl(payload) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(payload)}`;
 }
 
+// Mantém compatibilidade com código legado que usa loadPixProfessor
 export function loadPixProfessor(professorId) {
   try { return JSON.parse(localStorage.getItem(`fitpro_pix_prof_${professorId}`)) || {}; } catch { return {}; }
 }
 
-export function savePixProfessor(professorId, dados) {
-  localStorage.setItem(`fitpro_pix_prof_${professorId}`, JSON.stringify(dados));
-}
-
 export default function PixProfessorConfig({ professorId }) {
   const pixDefault = { chave: '', nome: '', cidade: '', banco: '', tipochave: 'cpf' };
-  const [pixDadosSalvos, setPixDadosSalvos] = useState(() => loadPixProfessor(professorId) || pixDefault);
-  const [editando, setEditando] = useState(!pixDadosSalvos?.chave);
-  const [pixForm, setPixForm] = useState(pixDadosSalvos);
+  const [pixDadosSalvos, setPixDadosSalvos] = useState(pixDefault);
+  const [editando, setEditando] = useState(false);
+  const [pixForm, setPixForm] = useState(pixDefault);
   const [pixSaved, setPixSaved] = useState(false);
   const [pixValorPreview, setPixValorPreview] = useState('');
   const [pixCopied, setPixCopied] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const pixDados = pixDadosSalvos;
+  // Carrega dados do banco ao montar
+  useEffect(() => {
+    if (!professorId) return;
+    base44.entities.Professor.filter({ id: professorId }).then(results => {
+      const prof = results[0];
+      if (prof?.pixDados?.chave) {
+        setPixDadosSalvos(prof.pixDados);
+        setPixForm(prof.pixDados);
+        setEditando(false);
+        // Sincroniza localStorage como cache local
+        localStorage.setItem(`fitpro_pix_prof_${professorId}`, JSON.stringify(prof.pixDados));
+      } else {
+        // Fallback: tenta localStorage (migração de dados antigos)
+        const local = loadPixProfessor(professorId);
+        if (local?.chave) {
+          setPixDadosSalvos(local);
+          setPixForm(local);
+          setEditando(false);
+          // Persiste no banco imediatamente para migrar
+          base44.entities.Professor.update(prof?.id || professorId, { pixDados: local });
+        } else {
+          setEditando(true);
+        }
+      }
+    }).finally(() => setLoading(false));
+  }, [professorId]);
+
   const pixPayload = pixForm.chave && pixForm.nome && pixForm.cidade
     ? gerarPayloadPix(pixForm.chave, pixForm.nome, pixForm.cidade, pixValorPreview || null)
     : null;
   const pixQrUrl = pixPayload ? gerarQrUrl(pixPayload) : null;
 
-  const salvar = () => {
-    savePixProfessor(professorId, pixForm);
+  const salvar = async () => {
+    // Salva no banco de dados
+    await base44.entities.Professor.update(professorId, { pixDados: pixForm });
+    // Mantém localStorage como cache
+    localStorage.setItem(`fitpro_pix_prof_${professorId}`, JSON.stringify(pixForm));
     setPixDadosSalvos(pixForm);
     setEditando(false);
     setPixSaved(true);
     setTimeout(() => setPixSaved(false), 2000);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-6 h-6 border-2 border-slate-600 border-t-emerald-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -97,7 +133,7 @@ export default function PixProfessorConfig({ professorId }) {
             ))}
             <div className="flex items-center gap-2 mt-2 px-1">
               <div className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="text-xs text-emerald-400">PIX configurado e salvo</span>
+              <span className="text-xs text-emerald-400">PIX configurado e salvo no banco de dados</span>
             </div>
           </div>
         ) : (
@@ -234,7 +270,7 @@ export default function PixProfessorConfig({ professorId }) {
             </div>
             <button onClick={() => { navigator.clipboard.writeText(pixPayload); setPixCopied(true); setTimeout(() => setPixCopied(false), 2000); }}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
-              style={{ background: pixCopied ? '#34d39920' : '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+              style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
               <Copy size={14} />{pixCopied ? '✓ Código Copiado!' : 'Copiar código PIX'}
             </button>
           </div>
@@ -244,11 +280,28 @@ export default function PixProfessorConfig({ professorId }) {
   );
 }
 
-// Componente modal de pagamento PIX para o aluno
+// Componente modal de pagamento PIX para o aluno — carrega do banco de dados
 export function ModalPixAluno({ transacao, onClose, professorId }) {
   const [copied, setCopied] = useState(false);
-  const pixDados = loadPixProfessor(professorId);
+  const [pixDados, setPixDados] = useState(null);
+  const [loading, setLoading] = useState(true);
   const valor = parseFloat(transacao?.valor || 0);
+
+  useEffect(() => {
+    if (!professorId) { setLoading(false); return; }
+    base44.entities.Professor.filter({ id: professorId }).then(results => {
+      const prof = results[0];
+      if (prof?.pixDados?.chave) {
+        setPixDados(prof.pixDados);
+      } else {
+        // Fallback localStorage
+        try {
+          const local = JSON.parse(localStorage.getItem(`fitpro_pix_prof_${professorId}`));
+          if (local?.chave) setPixDados(local);
+        } catch {}
+      }
+    }).finally(() => setLoading(false));
+  }, [professorId]);
 
   const pixOk = pixDados?.chave && pixDados?.nome && pixDados?.cidade;
 
@@ -287,7 +340,6 @@ export function ModalPixAluno({ transacao, onClose, professorId }) {
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5"><X size={16} color="#6b7280" /></button>
         </div>
 
-        {/* Resumo da cobrança */}
         <div className="mb-4 p-3 rounded-xl text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="text-xs text-slate-400">{transacao?.descricao}</div>
           {transacao?.vencimento && (
@@ -296,7 +348,11 @@ export function ModalPixAluno({ transacao, onClose, professorId }) {
           <div className="text-2xl font-black text-white mt-1">R$ {valor.toFixed(2)}</div>
         </div>
 
-        {qrUrl ? (
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="w-6 h-6 border-2 border-slate-600 border-t-emerald-400 rounded-full animate-spin" />
+          </div>
+        ) : qrUrl ? (
           <>
             <div className="flex justify-center mb-4">
               <div className="p-4 rounded-2xl" style={{ background: 'white' }}>

@@ -35,6 +35,10 @@
     "ativo": {
       "type": "boolean",
       "default": true
+    },
+    "pixDados": {
+      "type": "object",
+      "description": "Dados PIX do professor: chave, nome, cidade, banco, tipochave"
     }
   },
   "required": [
