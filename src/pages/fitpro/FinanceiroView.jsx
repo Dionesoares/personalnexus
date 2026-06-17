@@ -268,14 +268,14 @@ export default function FinanceiroView() {
         ].map((k, i) => {
           const Icon = k.icon;
           return (
-            <div key={i} className="p-4 rounded-2xl" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
+            <div key={i} className="p-3 rounded-2xl overflow-hidden" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-slate-400">{k.label}</span>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${k.color}20` }}>
-                  <Icon size={14} style={{ color: k.color }} />
+                <span className="text-xs text-slate-400 truncate mr-1">{k.label}</span>
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${k.color}20` }}>
+                  <Icon size={12} style={{ color: k.color }} />
                 </div>
               </div>
-              <div className="text-lg font-bold" style={{ color: k.color }}>
+              <div className="text-sm font-bold leading-tight break-all" style={{ color: k.color }}>
                 R$ {k.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </div>
@@ -355,61 +355,21 @@ export default function FinanceiroView() {
                 const aluno = alunos.find(a => a.id === t.alunoId);
                 return (
                   <motion.div key={t.id || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    className="flex items-center gap-3 p-4 rounded-xl"
+                    className="p-3 rounded-xl"
                     style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${statusColor}20` }}>
-                      <StatusIcon size={16} style={{ color: statusColor }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-white truncate">{t.descricao}</div>
-                      <div className="text-xs text-slate-500">
-                        {t.tipo}{aluno ? ` • ${aluno.nome}` : ''} • {new Date(t.data).toLocaleDateString('pt-BR')}
-                        {t.vencimento && ` • venc. ${new Date(t.vencimento).toLocaleDateString('pt-BR')}`}
+                    {/* Linha 1: ícone + info + valor */}
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: `${statusColor}20` }}>
+                        <StatusIcon size={14} style={{ color: statusColor }} />
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {(t.status === 'pendente' || t.status === 'vencido') && (
-                        <>
-                          <button
-                            onClick={() => setCheckoutTransacao(t)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
-                            style={{ background: '#00b94a15', color: '#00b94a', border: '1px solid #00b94a30' }}>
-                            <CreditCard size={11} />Cartão
-                          </button>
-                          <button
-                            onClick={() => confirmarRecebido(t.id)}
-                            disabled={confirmando === t.id}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-                            style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
-                            <CheckCircle2 size={11} />
-                            {confirmando === t.id ? '...' : 'Recebido'}
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() => abrirEdicao(t)}
-                        title="Editar cobrança"
-                        className="p-1.5 rounded-xl text-xs transition-all hover:opacity-90"
-                        style={{ background: '#fbbf2415', color: '#fbbf24', border: '1px solid #fbbf2425' }}>
-                        <Edit2 size={13} />
-                      </button>
-                      {t.status !== 'cancelado' && (
-                        <button
-                          onClick={() => updateTransacao(t.id, { status: 'cancelado' })}
-                          title="Cancelar cobrança"
-                          className="p-1.5 rounded-xl text-xs transition-all hover:opacity-90"
-                          style={{ background: '#64748b15', color: '#94a3b8', border: '1px solid #64748b25' }}>
-                          <Ban size={13} />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => { if (confirm('Excluir esta transação?')) deleteTransacao(t.id); }}
-                        title="Excluir cobrança"
-                        className="p-1.5 rounded-xl text-xs transition-all hover:opacity-90"
-                        style={{ background: '#ef444415', color: '#ef4444', border: '1px solid #ef444425' }}>
-                        <Trash2 size={13} />
-                      </button>
-                      <div className="text-right">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-white truncate">{t.descricao}</div>
+                        <div className="text-xs text-slate-500 truncate">
+                          {t.tipo}{aluno ? ` • ${aluno.nome}` : ''} • {new Date(t.data).toLocaleDateString('pt-BR')}
+                          {t.vencimento && ` • venc. ${new Date(t.vencimento).toLocaleDateString('pt-BR')}`}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
                         <div className="text-sm font-bold" style={{ color: t.categoria === 'despesa' ? '#ef4444' : '#34d399' }}>
                           {t.categoria === 'despesa' ? '-' : '+'}R$ {parseFloat(t.valor || 0).toFixed(2)}
                         </div>
@@ -417,6 +377,50 @@ export default function FinanceiroView() {
                           {STATUS_LABEL[t.status] || t.status}
                         </span>
                       </div>
+                    </div>
+                    {/* Linha 2: botões de ação */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {(t.status === 'pendente' || t.status === 'vencido') && (
+                        <>
+                          <button
+                            onClick={() => setCheckoutTransacao(t)}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+                            style={{ background: '#00b94a15', color: '#00b94a', border: '1px solid #00b94a30' }}>
+                            <CreditCard size={10} />Cartão
+                          </button>
+                          <button
+                            onClick={() => confirmarRecebido(t.id)}
+                            disabled={confirmando === t.id}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+                            style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+                            <CheckCircle2 size={10} />
+                            {confirmando === t.id ? '...' : 'Recebido'}
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => abrirEdicao(t)}
+                        title="Editar cobrança"
+                        className="p-1.5 rounded-lg text-xs transition-all hover:opacity-90"
+                        style={{ background: '#fbbf2415', color: '#fbbf24', border: '1px solid #fbbf2425' }}>
+                        <Edit2 size={12} />
+                      </button>
+                      {t.status !== 'cancelado' && (
+                        <button
+                          onClick={() => updateTransacao(t.id, { status: 'cancelado' })}
+                          title="Cancelar cobrança"
+                          className="p-1.5 rounded-lg text-xs transition-all hover:opacity-90"
+                          style={{ background: '#64748b15', color: '#94a3b8', border: '1px solid #64748b25' }}>
+                          <Ban size={12} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { if (confirm('Excluir esta transação?')) deleteTransacao(t.id); }}
+                        title="Excluir cobrança"
+                        className="p-1.5 rounded-lg text-xs transition-all hover:opacity-90"
+                        style={{ background: '#ef444415', color: '#ef4444', border: '1px solid #ef444425' }}>
+                        <Trash2 size={12} />
+                      </button>
                     </div>
                   </motion.div>
                 );
