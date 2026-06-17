@@ -81,15 +81,15 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
       <div className="relative mx-4 mb-4 rounded-2xl overflow-hidden"
         style={{ background: `linear-gradient(135deg, ${corBg}18, #080d1a)`, border: `1px solid ${cor}25` }}>
 
-        {/* Conteúdo do slide */}
-        <div className="flex items-start gap-3 p-4">
-          {/* Imagem / Emoji — tamanho fixo menor */}
-          <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center"
-            style={{ background: `${cor}15`, border: `1px solid ${cor}20` }}>
+        {/* Conteúdo do slide — layout vertical estilo e-commerce */}
+        <div className="flex flex-col">
+          {/* Imagem quadrada padrão e-commerce */}
+          <div className="w-full overflow-hidden flex items-center justify-center"
+            style={{ background: `${cor}10`, borderBottom: `1px solid ${cor}20`, height: 180 }}>
             {item.imagemUrl ? (
-              <img src={item.imagemUrl} alt={item.nome} className="w-full h-full object-cover" />
+              <img src={item.imagemUrl} alt={item.nome} className="w-full h-full object-contain p-2" />
             ) : (
-              <span className="text-3xl">
+              <span className="text-6xl">
                 {isParceiro
                   ? (ESPECIALIDADE_EMOJI[item.especialidade] || '🏥')
                   : (CATEGORIA_EMOJI[item.categoria] || '🛒')}
@@ -97,54 +97,58 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
             )}
           </div>
 
-          {/* Info — ocupa o resto e não estoura */}
-          <div className="flex-1 min-w-0">
-            <span className="inline-block text-xs px-2 py-0.5 rounded-full mb-1 font-semibold"
+          {/* Info */}
+          <div className="p-4">
+            <span className="inline-block text-xs px-2 py-0.5 rounded-full mb-2 font-semibold"
               style={{ background: `${cor}20`, color: cor, border: `1px solid ${cor}30` }}>
               {isParceiro ? (item.especialidade || 'Parceiro') : (item.categoria || 'Produto')}
             </span>
 
-            <h4 className="text-sm font-black text-white leading-snug break-words">{item.nome}</h4>
+            <h4 className="text-sm font-black text-white leading-snug mb-1">{item.nome}</h4>
 
             {isParceiro ? (
-              <>
-                {item.descricao && <p className="text-xs text-slate-400 mt-1 line-clamp-2 break-words">{item.descricao}</p>}
-                {item.valorConsulta > 0 && (
-                  <div className="mt-1 flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold" style={{ color: '#34d399' }}>R$ {parseFloat(item.valorConsulta).toFixed(2)}</span>
-                    <span className="text-xs text-slate-500">/ consulta</span>
-                  </div>
-                )}
-                {item.disponibilidade && <p className="text-xs text-slate-500 mt-0.5 break-words">📅 {item.disponibilidade}</p>}
+              <div className="flex items-end justify-between gap-2 flex-wrap">
+                <div>
+                  {item.descricao && <p className="text-xs text-slate-400 line-clamp-2">{item.descricao}</p>}
+                  {item.valorConsulta > 0 && (
+                    <div className="mt-1 flex items-center gap-1 flex-wrap">
+                      <span className="text-base font-bold" style={{ color: '#34d399' }}>R$ {parseFloat(item.valorConsulta).toFixed(2)}</span>
+                      <span className="text-xs text-slate-500">/ consulta</span>
+                    </div>
+                  )}
+                  {item.disponibilidade && <p className="text-xs text-slate-500 mt-0.5">📅 {item.disponibilidade}</p>}
+                </div>
                 <button onClick={() => onNavServicos?.()}
-                  className="mt-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
+                  className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-90 flex-shrink-0"
                   style={{ background: `linear-gradient(135deg, #60a5fa, #3b82f6)`, color: '#fff' }}>
                   Contratar
                 </button>
-              </>
+              </div>
             ) : (
-              <>
-                {item.descricao && <p className="text-xs text-slate-400 mt-1 line-clamp-2 break-words">{item.descricao}</p>}
-                <div className="mt-1 flex items-center gap-2 flex-wrap">
-                  {item.precoPromocional > 0 && item.precoPromocional < item.preco ? (
-                    <>
-                      <span className="text-xs text-slate-500 line-through">R$ {parseFloat(item.preco).toFixed(2)}</span>
-                      <span className="text-sm font-black" style={{ color: '#34d399' }}>R$ {parseFloat(item.precoPromocional).toFixed(2)}</span>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#34d39920', color: '#34d399' }}>PROMO</span>
-                    </>
-                  ) : (
-                    <span className="text-sm font-black" style={{ color: '#fb923c' }}>R$ {parseFloat(item.preco || 0).toFixed(2)}</span>
-                  )}
-                  {item.estoque != null && item.estoque <= 5 && item.estoque > 0 && (
-                    <span className="text-xs text-amber-400">⚠️ Últimas {item.estoque}</span>
-                  )}
+              <div className="flex items-end justify-between gap-2 flex-wrap">
+                <div>
+                  {item.descricao && <p className="text-xs text-slate-400 line-clamp-2">{item.descricao}</p>}
+                  <div className="mt-1 flex items-center gap-2 flex-wrap">
+                    {item.precoPromocional > 0 && item.precoPromocional < item.preco ? (
+                      <>
+                        <span className="text-xs text-slate-500 line-through">R$ {parseFloat(item.preco).toFixed(2)}</span>
+                        <span className="text-base font-black" style={{ color: '#34d399' }}>R$ {parseFloat(item.precoPromocional).toFixed(2)}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#34d39920', color: '#34d399' }}>PROMO</span>
+                      </>
+                    ) : (
+                      <span className="text-base font-black" style={{ color: '#fb923c' }}>R$ {parseFloat(item.preco || 0).toFixed(2)}</span>
+                    )}
+                    {item.estoque != null && item.estoque <= 5 && item.estoque > 0 && (
+                      <span className="text-xs text-amber-400">⚠️ Últimas {item.estoque}</span>
+                    )}
+                  </div>
                 </div>
                 <button onClick={() => item.linkLoja ? window.open(item.linkLoja, '_blank') : onNavLoja?.()}
-                  className="mt-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
+                  className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-90 flex-shrink-0"
                   style={{ background: `linear-gradient(135deg, #fb923c, #f97316)`, color: '#fff' }}>
                   Comprar
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
