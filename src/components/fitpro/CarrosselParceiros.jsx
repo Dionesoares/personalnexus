@@ -82,14 +82,14 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
         style={{ background: `linear-gradient(135deg, ${corBg}18, #080d1a)`, border: `1px solid ${cor}25` }}>
 
         {/* Conteúdo do slide */}
-        <div className="flex items-stretch">
-          {/* Imagem / Emoji */}
-          <div className="flex-shrink-0 w-28 min-h-[140px] overflow-hidden flex items-center justify-center"
-            style={{ background: `${cor}15`, borderRight: `1px solid ${cor}20` }}>
+        <div className="flex items-start gap-3 p-4">
+          {/* Imagem / Emoji — tamanho fixo menor */}
+          <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center"
+            style={{ background: `${cor}15`, border: `1px solid ${cor}20` }}>
             {item.imagemUrl ? (
-              <img src={item.imagemUrl} alt={item.nome} className="w-full h-full object-cover" style={{ minHeight: 140 }} />
+              <img src={item.imagemUrl} alt={item.nome} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-5xl">
+              <span className="text-3xl">
                 {isParceiro
                   ? (ESPECIALIDADE_EMOJI[item.especialidade] || '🏥')
                   : (CATEGORIA_EMOJI[item.categoria] || '🛒')}
@@ -97,34 +97,34 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
             )}
           </div>
 
-          {/* Info */}
-          <div className="flex-1 min-w-0 p-4">
+          {/* Info — ocupa o resto e não estoura */}
+          <div className="flex-1 min-w-0">
             <span className="inline-block text-xs px-2 py-0.5 rounded-full mb-1 font-semibold"
               style={{ background: `${cor}20`, color: cor, border: `1px solid ${cor}30` }}>
               {isParceiro ? (item.especialidade || 'Parceiro') : (item.categoria || 'Produto')}
             </span>
 
-            <h4 className="text-base font-black text-white leading-tight">{item.nome}</h4>
+            <h4 className="text-sm font-black text-white leading-snug break-words">{item.nome}</h4>
 
             {isParceiro ? (
               <>
-                {item.descricao && <p className="text-xs text-slate-400 mt-1 line-clamp-2">{item.descricao}</p>}
+                {item.descricao && <p className="text-xs text-slate-400 mt-1 line-clamp-2 break-words">{item.descricao}</p>}
                 {item.valorConsulta > 0 && (
-                  <div className="mt-1 flex items-center gap-2">
+                  <div className="mt-1 flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-bold" style={{ color: '#34d399' }}>R$ {parseFloat(item.valorConsulta).toFixed(2)}</span>
                     <span className="text-xs text-slate-500">/ consulta</span>
                   </div>
                 )}
-                {item.disponibilidade && <p className="text-xs text-slate-500 mt-0.5">📅 {item.disponibilidade}</p>}
+                {item.disponibilidade && <p className="text-xs text-slate-500 mt-0.5 break-words">📅 {item.disponibilidade}</p>}
                 <button onClick={() => onNavServicos?.()}
-                  className="mt-2 px-4 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
+                  className="mt-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
                   style={{ background: `linear-gradient(135deg, #60a5fa, #3b82f6)`, color: '#fff' }}>
                   Contratar
                 </button>
               </>
             ) : (
               <>
-                {item.descricao && <p className="text-xs text-slate-400 mt-1 line-clamp-2">{item.descricao}</p>}
+                {item.descricao && <p className="text-xs text-slate-400 mt-1 line-clamp-2 break-words">{item.descricao}</p>}
                 <div className="mt-1 flex items-center gap-2 flex-wrap">
                   {item.precoPromocional > 0 && item.precoPromocional < item.preco ? (
                     <>
@@ -140,7 +140,7 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
                   )}
                 </div>
                 <button onClick={() => item.linkLoja ? window.open(item.linkLoja, '_blank') : onNavLoja?.()}
-                  className="mt-2 px-4 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
+                  className="mt-2 px-3 py-1.5 rounded-xl text-xs font-bold transition-all hover:opacity-90"
                   style={{ background: `linear-gradient(135deg, #fb923c, #f97316)`, color: '#fff' }}>
                   Comprar
                 </button>
@@ -153,14 +153,14 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
         {total > 1 && (
           <>
             <button onClick={() => go(-1)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110"
+              className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center transition-all hover:scale-110"
               style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <ChevronLeft size={14} color="#fff" />
+              <ChevronLeft size={12} color="#fff" />
             </button>
             <button onClick={() => go(1)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110"
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center transition-all hover:scale-110"
               style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <ChevronRight size={14} color="#fff" />
+              <ChevronRight size={12} color="#fff" />
             </button>
           </>
         )}
