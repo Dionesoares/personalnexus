@@ -102,35 +102,35 @@ export default function DashboardProfessor({ onNav }) {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #c084fc, transparent)' }} />
         </div>
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-lg">💪</span>
               <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: '#34d39915', color: '#34d399', border: '1px solid #34d39925' }}>PROFESSOR ATIVO</span>
             </div>
-            <h2 className="text-2xl font-black text-white">Olá, {user?.nome?.split(' ')[0]}! 🏆</h2>
-            <p className="text-slate-400 text-sm mt-1">
+            <h2 className="text-xl font-black text-white truncate">Olá, {user?.nome?.split(' ')[0]}! 🏆</h2>
+            <p className="text-slate-400 text-sm mt-1 leading-snug">
               {meusAlunos.length > 0 ? `Você tem ${meusAlunos.length} aluno${meusAlunos.length > 1 ? 's' : ''} sob sua orientação` : 'Comece cadastrando seu primeiro aluno'}
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-shrink-0">
             <button onClick={() => setShowEditarPerfil(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
               style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399' }}>
-              <Settings size={14} />Meu Perfil
+              <Settings size={13} />Perfil
             </button>
-            <button onClick={() => setShowLinkModal(true)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
+            <button onClick={() => setShowLinkModal(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
               style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)', color: '#38bdf8' }}>
-              <Share2 size={14} />Convidar Aluno
+              <Share2 size={13} />Convidar
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-3 mt-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-6">
           {stats.map((s, i) => (
-            <div key={i} className="rounded-xl p-3 text-center" style={{ background: 'rgba(255,255,255,0.03)' }}>
-              <div className="text-lg">{s.icon}</div>
-              <div className="text-xl font-bold text-white">{s.value}</div>
-              <div className="text-xs text-slate-500">{s.label}</div>
+            <div key={i} className="rounded-xl p-3 text-center overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div className="text-base">{s.icon}</div>
+              <div className="text-lg font-bold text-white leading-tight">{s.value}</div>
+              <div className="text-xs text-slate-500 truncate">{s.label}</div>
             </div>
           ))}
         </div>
@@ -223,14 +223,14 @@ export default function DashboardProfessor({ onNav }) {
       {/* Quick Actions */}
       <div className="rounded-2xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
         <h3 className="font-semibold text-white mb-4">Ações Rápidas</h3>
-        <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
           {quickActions.map((action, i) => (
             <button key={i} onClick={() => onNav(action.view)}
-              className="flex flex-col items-center gap-2 p-3 rounded-xl transition-all hover:scale-105 cursor-pointer"
+              className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all hover:scale-105 cursor-pointer overflow-hidden"
               style={{ background: `${action.color}08`, border: `1px solid ${action.color}20` }}>
-              <span className="text-xl">{action.emoji}</span>
-              <span className="text-xs font-semibold text-white">{action.label}</span>
-              <span className="text-xs text-slate-500 text-center">{action.desc}</span>
+              <span className="text-lg">{action.emoji}</span>
+              <span className="text-xs font-semibold text-white text-center leading-tight w-full truncate">{action.label}</span>
+              <span className="text-xs text-slate-500 text-center leading-tight w-full truncate hidden sm:block">{action.desc}</span>
             </button>
           ))}
         </div>
