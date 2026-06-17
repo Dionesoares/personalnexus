@@ -85,7 +85,7 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
         <div className="flex flex-col">
           {/* Imagem quadrada padrão e-commerce */}
           <div className="w-full overflow-hidden flex items-center justify-center"
-            style={{ background: `${cor}10`, borderBottom: `1px solid ${cor}20`, height: 180 }}>
+            style={{ background: `${cor}10`, borderBottom: `1px solid ${cor}20`, height: 260 }}>
             {item.imagemUrl ? (
               <img src={item.imagemUrl} alt={item.nome} className="w-full h-full object-contain p-2" />
             ) : (
