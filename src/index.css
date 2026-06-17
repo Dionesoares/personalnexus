@@ -2,7 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* FitPro dark theme */
+/* FitPro dark theme — Personal FitUp brand colors */
+:root {
+  --brand-blue: #00AAFF;
+  --brand-green: #00E87A;
+  --brand-blue-dim: rgba(0,170,255,0.15);
+  --brand-green-dim: rgba(0,232,122,0.15);
+  --brand-blue-border: rgba(0,170,255,0.3);
+  --brand-green-border: rgba(0,232,122,0.3);
+}
+
 body {
   background: #0a0e1a;
   color: #f8fafc;

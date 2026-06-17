@@ -54,8 +54,8 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
   const item = slide.data;
 
   // Cores por tipo
-  const cor = isParceiro ? '#60a5fa' : '#fb923c';
-  const corBg = isParceiro ? '#60a5fa' : '#fb923c';
+  const cor = isParceiro ? '#00AAFF' : '#fb923c';
+  const corBg = isParceiro ? '#00AAFF' : '#fb923c';
 
   return (
     <div className="rounded-2xl overflow-hidden relative select-none"
@@ -120,7 +120,7 @@ export default function CarrosselParceiros({ parceiros = [], produtos = [], onNa
                 </div>
                 <button onClick={() => onNavServicos?.()}
                   className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-90 flex-shrink-0"
-                  style={{ background: `linear-gradient(135deg, #60a5fa, #3b82f6)`, color: '#fff' }}>
+                  style={{ background: `linear-gradient(135deg, #00AAFF, #0077cc)`, color: '#fff' }}>
                   Contratar
                 </button>
               </div>

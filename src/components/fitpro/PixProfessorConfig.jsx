@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { QrCode, Save, Copy, Eye, X } from 'lucide-react';
+
+// Brand colors
+const BRAND_GREEN = '#00E87A';
+const BRAND_BLUE = '#00AAFF';
 import { base44 } from '@/api/base44Client';
 
 const CARD = '#0d1525';
@@ -111,7 +115,7 @@ export default function PixProfessorConfig({ professorId }) {
           {!editando && pixDadosSalvos?.chave && (
             <button onClick={() => { setPixForm(pixDadosSalvos); setEditando(true); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
-              style={{ background: '#fbbf2415', color: '#fbbf24', border: '1px solid #fbbf2425' }}>
+              style={{ background: '#00AAFF15', color: '#00AAFF', border: '1px solid #00AAFF25' }}>
               <Save size={12} />Alterar PIX
             </button>
           )}
@@ -189,7 +193,7 @@ export default function PixProfessorConfig({ professorId }) {
             <div className="flex gap-2">
               <button onClick={salvar}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+                style={{ background: '#00E87A20', color: '#00E87A', border: '1px solid #00E87A30' }}>
                 <Save size={14} />{pixSaved ? '✓ Salvo!' : 'Salvar Dados PIX'}
               </button>
               {editando && pixDadosSalvos?.chave && (

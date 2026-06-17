@@ -106,7 +106,7 @@ export default function DashboardProfessor({ onNav }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-lg">💪</span>
-              <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: '#34d39915', color: '#34d399', border: '1px solid #34d39925' }}>PROFESSOR ATIVO</span>
+              <span className="text-xs px-2 py-0.5 rounded-full font-semibold"               style={{ background: '#00E87A15', color: '#00E87A', border: '1px solid #00E87A25' }}>PROFESSOR ATIVO</span>
             </div>
             <h2 className="text-xl font-black text-white truncate">Olá, {user?.nome?.split(' ')[0]}! 🏆</h2>
             <p className="text-slate-400 text-sm mt-1 leading-snug">
@@ -116,11 +116,11 @@ export default function DashboardProfessor({ onNav }) {
           <div className="flex gap-2 flex-shrink-0">
             <button onClick={() => setShowEditarPerfil(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399' }}>
+              style={{ background: 'rgba(0,232,122,0.1)', border: '1px solid rgba(0,232,122,0.3)', color: '#00E87A' }}>
               <Settings size={13} />Perfil
             </button>
             <button onClick={() => setShowLinkModal(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.3)', color: '#38bdf8' }}>
+              style={{ background: 'rgba(0,170,255,0.1)', border: '1px solid rgba(0,170,255,0.3)', color: '#00AAFF' }}>
               <Share2 size={13} />Convidar
             </button>
           </div>
@@ -204,7 +204,7 @@ export default function DashboardProfessor({ onNav }) {
                   </div>
                   <button onClick={() => { navigator.clipboard.writeText(payload); setPixCopied(true); setTimeout(() => setPixCopied(false), 2000); }}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                    style={{ background: pixCopied ? '#34d39920' : '#1e2a3a', color: pixCopied ? '#34d399' : '#94a3b8', border: `1px solid ${pixCopied ? '#34d39930' : 'rgba(255,255,255,0.08)'}` }}>
+                    style={{ background: pixCopied ? '#00E87A20' : '#1e2a3a', color: pixCopied ? '#00E87A' : '#94a3b8', border: `1px solid ${pixCopied ? '#00E87A30' : 'rgba(255,255,255,0.08)'}` }}>
                     <Copy size={14} />{pixCopied ? '✓ Código Copiado!' : 'Copiar código PIX (copia e cola)'}
                   </button>
                 </>
@@ -275,7 +275,7 @@ export default function DashboardProfessor({ onNav }) {
           {meusAlunos.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-slate-500 text-sm mb-3">Nenhum aluno cadastrado ainda</p>
-              <button onClick={() => setShowLinkModal(true)} className="text-xs px-3 py-1.5 rounded-xl" style={{ background: '#38bdf815', color: '#38bdf8', border: '1px solid #38bdf825' }}>
+              <button onClick={() => setShowLinkModal(true)} className="text-xs px-3 py-1.5 rounded-xl" style={{ background: '#00AAFF15', color: '#00AAFF', border: '1px solid #00AAFF25' }}>
                 Convidar alunos
               </button>
             </div>
@@ -321,12 +321,12 @@ export default function DashboardProfessor({ onNav }) {
               <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <span className="text-xs text-slate-300 flex-1 truncate">{linkCadastro}</span>
                 <button onClick={() => copiar('link')} className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold transition-all"
-                  style={{ background: copied === 'link' ? '#4ade8020' : '#38bdf815', color: copied === 'link' ? '#4ade80' : '#38bdf8' }}>
+                  style={{ background: copied === 'link' ? '#00E87A20' : '#00AAFF15', color: copied === 'link' ? '#00E87A' : '#00AAFF' }}>
                   {copied === 'link' ? <><CheckCircle2 size={12} />Copiado!</> : <><Copy size={12} />Copiar</>}
                 </button>
               </div>
             </div>
-            <div className="p-3 rounded-xl text-xs mb-4" style={{ background: '#38bdf808', border: '1px solid #38bdf820' }}>
+            <div className="p-3 rounded-xl text-xs mb-4" style={{ background: '#00AAFF08', border: '1px solid #00AAFF20' }}>
               <p className="text-slate-400 mb-2">Enviar convite pelo WhatsApp</p>
               <p className="text-slate-300">{`🏋️ FitPro - Cadastre-se como meu aluno!\n\nAcesse: ${linkCadastro}`}</p>
               <div className="flex gap-2 mt-3">

@@ -81,7 +81,7 @@ export default function DashboardAluno({ onNav }) {
     { label: 'Avaliações', icon: Activity, value: minhasAvaliacoes.length, color: '#fb923c', view: 'avaliacoes' },
     { label: 'Treinos', icon: Dumbbell, value: meusTreinos.length, color: '#f472b6', view: 'treinos' },
     { label: 'Evolução', icon: Calendar, value: minhasPeriodizacoes.length, color: '#fbbf24', view: 'evolucao' },
-    { label: 'Saúde', icon: Stethoscope, value: parceiros.length, color: '#60a5fa', view: 'servicos' },
+    { label: 'Saúde', icon: Stethoscope, value: parceiros.length, color: '#00AAFF', view: 'servicos' },
   ];
 
   return (
@@ -98,7 +98,7 @@ export default function DashboardAluno({ onNav }) {
             <div className="flex flex-wrap gap-2 mt-2">
               <button onClick={() => setShowSolicitarVinculo(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-                style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399', border: '1px solid rgba(52,211,153,0.3)' }}>
+                style={{ background: 'rgba(0,232,122,0.15)', color: '#00E87A', border: '1px solid rgba(0,232,122,0.3)' }}>
                 <UserCheck size={13} />Solicitar Professor
               </button>
               {professor?.telefone && (
@@ -261,8 +261,8 @@ export default function DashboardAluno({ onNav }) {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: '% Gordura', value: ultimaAvaliacao.percentualGordura != null ? `${ultimaAvaliacao.percentualGordura?.toFixed(1)}%` : null, color: '#fb923c' },
-                  { label: 'Massa Magra', value: ultimaAvaliacao.massaMagra != null ? `${ultimaAvaliacao.massaMagra?.toFixed(1)}kg` : null, color: '#34d399' },
-                  { label: 'IMC', value: ultimaAvaliacao.imc != null ? ultimaAvaliacao.imc?.toFixed(1) : null, color: '#60a5fa' },
+                  { label: 'Massa Magra', value: ultimaAvaliacao.massaMagra != null ? `${ultimaAvaliacao.massaMagra?.toFixed(1)}kg` : null, color: '#00E87A' },
+                  { label: 'IMC', value: ultimaAvaliacao.imc != null ? ultimaAvaliacao.imc?.toFixed(1) : null, color: '#00AAFF' },
                   { label: 'Classificação', value: ultimaAvaliacao.classificacaoGordura || null, color: '#a78bfa' },
                 ].filter(it => it.value).map((item, i) => (
                   <div key={i} className="p-3 rounded-xl" style={{ background: `${item.color}08`, border: `1px solid ${item.color}20` }}>
@@ -289,7 +289,7 @@ export default function DashboardAluno({ onNav }) {
       {/* Minha Evolução */}
       {minhasAvaliacoes.length > 1 && (
         <div className="rounded-2xl p-5" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
-          <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><TrendingUp size={16} color="#34d399" />Minha Evolução</h3>
+          <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><TrendingUp size={16} color="#00E87A" />Minha Evolução</h3>
           <div className="space-y-3">
             {minhasAvaliacoes.slice(0, 3).map((av, i) => (
               <div key={av.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5">
@@ -297,7 +297,7 @@ export default function DashboardAluno({ onNav }) {
                 <div className="text-xs text-slate-400">{new Date(av.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</div>
                 <div className="flex gap-2 ml-auto">
                   {av.percentualGordura != null && <span className="text-xs font-bold" style={{ color: '#fb923c' }}>{av.percentualGordura?.toFixed(1)}%</span>}
-                  {av.massaMagra != null && <span className="text-xs font-bold" style={{ color: '#34d399' }}>{av.massaMagra?.toFixed(1)}kg</span>}
+                  {av.massaMagra != null && <span className="text-xs font-bold" style={{ color: '#00E87A' }}>{av.massaMagra?.toFixed(1)}kg</span>}
                 </div>
               </div>
             ))}

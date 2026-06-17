@@ -9,7 +9,7 @@ import ModalCheckoutPagBank from '../../components/fitpro/ModalCheckoutPagBank';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
-const STATUS_COLOR = { pago: '#34d399', pendente: '#fbbf24', vencido: '#ef4444', cancelado: '#64748b' };
+const STATUS_COLOR = { pago: '#00E87A', pendente: '#fbbf24', vencido: '#ef4444', cancelado: '#64748b' };
 const STATUS_LABEL = { pago: 'Pago', pendente: 'Pendente', vencido: 'Vencido', cancelado: 'Cancelado' };
 const STATUS_ICON = { pago: CheckCircle2, pendente: Clock, vencido: AlertCircle, cancelado: X };
 const TIPOS = ['Mensalidade', 'Avaliação', 'Plano de Treino', 'Consulta Parceiro', 'Produto', 'Outro'];
@@ -253,7 +253,7 @@ export default function FinanceiroView() {
         </div>
         <button onClick={() => { setForm(emptyTransacao()); setShowForm(true); }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-          style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+          style={{ background: '#00E87A20', color: '#00E87A', border: '1px solid #00E87A30' }}>
           <Plus size={14} />Nova Transação
         </button>
       </div>
@@ -261,8 +261,8 @@ export default function FinanceiroView() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Saldo', value: saldo, color: saldo >= 0 ? '#34d399' : '#ef4444', icon: DollarSign },
-          { label: 'Recebido', value: totalPago, color: '#34d399', icon: TrendingUp },
+          { label: 'Saldo', value: saldo, color: saldo >= 0 ? '#00E87A' : '#ef4444', icon: DollarSign },
+          { label: 'Recebido', value: totalPago, color: '#00E87A', icon: TrendingUp },
           { label: 'Pendente', value: totalPendente, color: '#fbbf24', icon: Clock },
           { label: 'Vencido', value: totalVencido, color: '#ef4444', icon: AlertCircle },
         ].map((k, i) => {
@@ -392,7 +392,7 @@ export default function FinanceiroView() {
                             onClick={() => confirmarRecebido(t.id)}
                             disabled={confirmando === t.id}
                             className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-                            style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+                            style={{ background: '#00E87A20', color: '#00E87A', border: '1px solid #00E87A30' }}>
                             <CheckCircle2 size={10} />
                             {confirmando === t.id ? '...' : 'Recebido'}
                           </button>
@@ -491,7 +491,7 @@ export default function FinanceiroView() {
                             onClick={() => confirmarRecebido(mens.id)}
                             disabled={confirmando === mens.id}
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-                            style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+                            style={{ background: '#00E87A20', color: '#00E87A', border: '1px solid #00E87A30' }}>
                             <CheckCircle2 size={11} />
                             {confirmando === mens.id ? '...' : 'Recebido'}
                           </button>
@@ -729,7 +729,7 @@ export default function FinanceiroView() {
               )}
             </div>
             <button onClick={handleSave} className="w-full mt-4 py-3 rounded-xl font-semibold text-sm text-white"
-              style={{ background: saved ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #34d399, #059669)' }}>
+              style={{ background: saved ? 'linear-gradient(135deg, #00E87A, #059669)' : 'linear-gradient(135deg, #00E87A, #00AAFF)' }}>
               {saved ? '✓ Salvo!' : editId ? 'Salvar Alterações' : 'Salvar Transação'}
             </button>
           </div>

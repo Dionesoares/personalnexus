@@ -9,49 +9,49 @@ import {
 import { useAuth } from '../../context/FitProContext';
 
 export const adminNav = [
-  { icon: LayoutDashboard, label: 'Dashboard', color: '#00d4ff', view: 'dashboard' },
+  { icon: LayoutDashboard, label: 'Dashboard', color: '#00AAFF', view: 'dashboard' },
   { icon: Users, label: 'Alunos', color: '#a78bfa', view: 'alunos' },
-  { icon: UserCheck, label: 'Professores', color: '#34d399', view: 'professores' },
-  { icon: Stethoscope, label: 'Especialistas', color: '#60a5fa', view: 'especialistas' },
+  { icon: UserCheck, label: 'Professores', color: '#00E87A', view: 'professores' },
+  { icon: Stethoscope, label: 'Especialistas', color: '#00AAFF', view: 'especialistas' },
   { icon: BookOpen, label: 'Biblioteca', color: '#f472b6', view: 'biblioteca' },
   { icon: ShoppingBag, label: 'Produtos', color: '#fb923c', view: 'shop' },
   { icon: ClipboardList, label: 'Pedidos', color: '#f472b6', view: 'pedidos' },
   { icon: BarChart2, label: 'Relatórios', color: '#fbbf24', view: 'relatorios' },
-  { icon: DollarSign, label: 'Financeiro', color: '#34d399', view: 'financeiro' },
+  { icon: DollarSign, label: 'Financeiro', color: '#00E87A', view: 'financeiro' },
   { icon: Settings, label: 'Usuários', color: '#e879f9', view: 'usuarios' },
 ];
 
 export const professorNav = [
-  { icon: LayoutDashboard, label: 'Dashboard', color: '#00d4ff', view: 'dashboard' },
+  { icon: LayoutDashboard, label: 'Dashboard', color: '#00AAFF', view: 'dashboard' },
   { icon: Users, label: 'Meus Alunos', color: '#a78bfa', view: 'alunos' },
   { icon: Activity, label: 'Avaliações', color: '#fb923c', view: 'avaliacao' },
   { icon: Dumbbell, label: 'Meus Treinos', color: '#f472b6', view: 'treinos' },
   { icon: Calendar, label: 'Periodização', color: '#fbbf24', view: 'periodizacao' },
   { icon: CalendarDays, label: 'Agenda', color: '#a78bfa', view: 'agenda' },
-  { icon: Footprints, label: 'Consultoria de Corrida', color: '#34d399', view: 'consultoria-corrida' },
+  { icon: Footprints, label: 'Consultoria de Corrida', color: '#00E87A', view: 'consultoria-corrida' },
   { icon: FolderOpen, label: 'Treinos Personalizados', color: '#a78bfa', view: 'biblioteca-treinos' },
-  { icon: Stethoscope, label: 'Parceiros', color: '#34d399', view: 'parceiros' },
-  { icon: ClipboardList, label: 'Meus Pedidos', color: '#60a5fa', view: 'meus-pedidos' },
-  { icon: DollarSign, label: 'Financeiro', color: '#60a5fa', view: 'financeiro' },
+  { icon: Stethoscope, label: 'Parceiros', color: '#00E87A', view: 'parceiros' },
+  { icon: ClipboardList, label: 'Meus Pedidos', color: '#00AAFF', view: 'meus-pedidos' },
+  { icon: DollarSign, label: 'Financeiro', color: '#00AAFF', view: 'financeiro' },
   { icon: ShoppingBag, label: 'Loja', color: '#fb923c', view: 'loja' },
 ];
 
 export const alunoNav = [
-  { icon: LayoutDashboard, label: 'Dashboard', color: '#00d4ff', view: 'dashboard' },
+  { icon: LayoutDashboard, label: 'Dashboard', color: '#00AAFF', view: 'dashboard' },
   { icon: Activity, label: 'Minhas Avaliações', color: '#fb923c', view: 'avaliacoes' },
   { icon: Dumbbell, label: 'Meus Treinos', color: '#f472b6', view: 'treinos' },
-  { icon: Footprints, label: 'Treino de Corrida', color: '#34d399', view: 'treino-corrida' },
+  { icon: Footprints, label: 'Treino de Corrida', color: '#00E87A', view: 'treino-corrida' },
   { icon: Calendar, label: 'Periodização', color: '#fbbf24', view: 'periodizacao-aluno' },
   { icon: TrendingUp, label: 'Minha Evolução', color: '#a78bfa', view: 'evolucao' },
-  { icon: Stethoscope, label: 'Serviços Parceiros', color: '#60a5fa', view: 'servicos' },
-  { icon: ClipboardList, label: 'Meus Pedidos', color: '#60a5fa', view: 'meus-pedidos' },
+  { icon: Stethoscope, label: 'Serviços Parceiros', color: '#00AAFF', view: 'servicos' },
+  { icon: ClipboardList, label: 'Meus Pedidos', color: '#00AAFF', view: 'meus-pedidos' },
   { icon: ShoppingBag, label: 'Loja', color: '#fb923c', view: 'loja' },
 ];
 
 function SidebarContent({ navItems, activeView, onNav, isMobile, onClose }) {
   const { user, logout } = useAuth();
   const role = user?.role;
-  const roleColor = role === 'admin' ? '#00d4ff' : role === 'professor' ? '#34d399' : '#a78bfa';
+  const roleColor = role === 'admin' ? '#00AAFF' : role === 'professor' ? '#00E87A' : '#a78bfa';
   const roleLabel = role === 'admin' ? 'Administrador' : role === 'professor' ? 'Professor' : 'Aluno';
   const RoleIcon = role === 'admin' ? Shield : role === 'professor' ? UserCheck : Users;
 
