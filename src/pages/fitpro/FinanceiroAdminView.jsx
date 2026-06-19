@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save, Copy, Eye, Edit2 } from 'lucide-react';
-import ModalIntegracaoPagBank from '../../components/fitpro/ModalIntegracaoPagBank';
+import ModalIntegracaoStripe from '../../components/fitpro/ModalIntegracaoStripe';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -337,7 +337,7 @@ export default function FinanceiroAdminView() {
           { id: 'professores', label: `👨‍🏫 Professores${countsPorStatus.vencido > 0 ? ` (${countsPorStatus.vencido} vencido${countsPorStatus.vencido > 1 ? 's' : ''})` : countsPorStatus.pendente > 0 ? ` (${countsPorStatus.pendente} vence hoje)` : ''}` },
           { id: 'transacoes', label: '💳 Transações' },
           { id: 'pix', label: '🔳 Configurar PIX' },
-          { id: 'pagbank', label: '🏦 PagBank' },
+          { id: 'pagbank', label: '💳 Stripe' },
         ].map(a => (
           <button key={a.id} onClick={() => setAbaAtiva(a.id)}
             className="flex-1 py-2 rounded-lg text-xs font-semibold transition-all"
@@ -698,24 +698,24 @@ export default function FinanceiroAdminView() {
         <div className="space-y-4">
           {(() => {
             let cfg = {};
-            try { cfg = JSON.parse(localStorage.getItem('fitpro_pagbank_config')) || {}; } catch {}
-            const conectado = !!(cfg.email && cfg.token);
+            try { cfg = JSON.parse(localStorage.getItem('fitpro_stripe_config')) || {}; } catch {}
+            const conectado = !!(cfg.publishableKey && cfg.secretKey);
             return (
-              <div className="p-5 rounded-2xl" style={{ background: '#0d1525', border: conectado ? '1px solid rgba(0,185,74,0.3)' : '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="p-5 rounded-2xl" style={{ background: '#0d1525', border: conectado ? '1px solid rgba(99,91,255,0.35)' : '1px solid rgba(255,255,255,0.07)' }}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-                      style={{ background: 'linear-gradient(135deg, #00b94a15, #0066cc15)', border: '1px solid rgba(0,185,74,0.2)' }}>
-                      🏦
+                      style={{ background: 'linear-gradient(135deg, #635bff20, #00AAFF20)', border: '1px solid rgba(99,91,255,0.3)' }}>
+                      💳
                     </div>
                     <div>
-                      <h3 className="font-bold text-white">PagBank / PagSeguro</h3>
-                      <p className="text-xs text-slate-500">Gateway de pagamento integrado</p>
+                      <h3 className="font-bold text-white">Stripe</h3>
+                      <p className="text-xs text-slate-500">Checkout Sessions · API v1</p>
                     </div>
                   </div>
                   {conectado
-                    ? <span className="text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1.5" style={{ background: '#34d39915', color: '#34d399', border: '1px solid #34d39930' }}>
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />Conectado
+                    ? <span className="text-xs px-2 py-1 rounded-full font-semibold flex items-center gap-1.5" style={{ background: '#00E87A15', color: '#00E87A', border: '1px solid #00E87A30' }}>
+                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#00E87A' }} />Conectado
                       </span>
                     : <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: '#64748b', border: '1px solid rgba(255,255,255,0.08)' }}>Não configurado</span>
                   }
@@ -724,11 +724,11 @@ export default function FinanceiroAdminView() {
                 {conectado && (
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
-                      { label: 'Ambiente', value: cfg.ambiente === 'producao' ? '🚀 Produção' : '🧪 Sandbox' },
+                      { label: 'Ambiente', value: cfg.ambiente === 'producao' ? '🚀 Produção' : '🧪 Teste' },
                       { label: 'Métodos', value: `${(cfg.metodos || []).length} ativos` },
                       { label: 'Parcelas', value: `Até ${cfg.parcelasMax || 12}x` },
                     ].map(k => (
-                      <div key={k.label} className="p-2.5 rounded-xl text-center" style={{ background: '#00b94a08', border: '1px solid #00b94a20' }}>
+                      <div key={k.label} className="p-2.5 rounded-xl text-center" style={{ background: '#635bff08', border: '1px solid #635bff20' }}>
                         <div className="text-sm font-bold text-white">{k.value}</div>
                         <div className="text-xs text-slate-500">{k.label}</div>
                       </div>
@@ -737,14 +737,14 @@ export default function FinanceiroAdminView() {
                 )}
 
                 <div className="flex flex-wrap gap-2 mb-4 text-xs">
-                  {['💳 Cartão', '🔳 PIX', '📄 Boleto', '🔄 Recorrência', '🔔 Webhooks', '↩️ Estorno'].map(r => (
-                    <span key={r} className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(0,185,74,0.08)', color: '#00b94a', border: '1px solid rgba(0,185,74,0.2)' }}>{r}</span>
+                  {['💳 Cartão', '🔳 PIX', '📄 Boleto', '🔄 Checkout Session', '🔔 Webhooks', '↩️ Estorno'].map(r => (
+                    <span key={r} className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(99,91,255,0.08)', color: '#a5b4fc', border: '1px solid rgba(99,91,255,0.2)' }}>{r}</span>
                   ))}
                 </div>
 
                 <button onClick={() => setShowPagBank(true)}
                   className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all"
-                  style={{ background: conectado ? 'linear-gradient(135deg, #1e2a3a, #253545)' : 'linear-gradient(135deg, #00b94a, #008f38)', color: conectado ? '#94a3b8' : '#fff' }}>
+                  style={{ background: conectado ? 'linear-gradient(135deg, #1e2a3a, #253545)' : 'linear-gradient(135deg, #635bff, #00AAFF)', color: conectado ? '#94a3b8' : '#fff' }}>
                   {conectado ? '⚙️ Editar Configuração' : '🔗 Configurar Integração'}
                 </button>
               </div>
@@ -753,8 +753,8 @@ export default function FinanceiroAdminView() {
         </div>
       )}
 
-      {/* Modal PagBank */}
-      {showPagBank && <ModalIntegracaoPagBank onClose={() => setShowPagBank(false)} />}
+      {/* Modal Stripe */}
+      {showPagBank && <ModalIntegracaoStripe onClose={() => setShowPagBank(false)} />}
 
       {/* Modal QR Code PIX expandido */}
       {showPixModal && pixQrUrl && (
