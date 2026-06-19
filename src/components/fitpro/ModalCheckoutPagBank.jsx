@@ -9,7 +9,7 @@ function formatValidade(v) {
   return v.replace(/\D/g, '').replace(/^(\d{2})(\d)/, '$1/$2').substring(0, 5);
 }
 
-export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSucesso }) {
+export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSucesso }) {
   const [cartao, setCartao] = useState({
     numero: '',
     nomeTitular: '',
@@ -24,10 +24,17 @@ export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSuce
     telefone: aluno?.telefone || '',
   });
   const [loading, setLoading] = useState(false);
-  const [resultado, setResultado] = useState(null); // null | {ok, mensagem, novoStatus}
+  const [resultado, setResultado] = useState(null);
   const [erro, setErro] = useState('');
 
   const valor = parseFloat(transacao?.valor || 0);
+
+  const maxParcelas = (() => {
+    try {
+      const cfg = JSON.parse(localStorage.getItem('fitpro_stripe_config')) || {};
+      return parseInt(cfg.parcelasMax) || 12;
+    } catch { return 12; }
+  })();
 
   const handlePagar = async () => {
     if (!cartao.numero || !cartao.nomeTitular || !cartao.validade || !cartao.cvv) {
@@ -68,13 +75,6 @@ export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSuce
     }
   };
 
-  const maxParcelas = (() => {
-    try {
-      const cfg = JSON.parse(localStorage.getItem('fitpro_pagbank_config')) || {};
-      return parseInt(cfg.parcelasMax) || 12;
-    } catch { return 12; }
-  })();
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.88)' }}
@@ -87,12 +87,12 @@ export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSuce
           style={{ background: '#080d1a', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: '#00b94a20', border: '1px solid #00b94a30' }}>
-              <CreditCard size={16} color="#00b94a" />
+              style={{ background: '#635bff20', border: '1px solid #635bff40' }}>
+              <CreditCard size={16} color="#a5b4fc" />
             </div>
             <div>
               <h3 className="font-bold text-white text-sm">Pagar com Cartão</h3>
-              <p className="text-xs text-slate-500">Processado via PagBank · Seguro</p>
+              <p className="text-xs text-slate-500">Processado via Stripe · Seguro</p>
             </div>
           </div>
           {!loading && <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/5"><X size={16} color="#6b7280" /></button>}
@@ -104,12 +104,12 @@ export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSuce
             {resultado.novoStatus === 'pago' ? (
               <>
                 <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-                  style={{ background: '#34d39920', border: '2px solid #34d399' }}>
-                  <CheckCircle2 size={32} color="#34d399" />
+                  style={{ background: '#00E87A20', border: '2px solid #00E87A' }}>
+                  <CheckCircle2 size={32} color="#00E87A" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">Pagamento Aprovado!</h3>
                 <p className="text-slate-400 text-sm mb-2">{resultado.mensagem}</p>
-                <p className="text-2xl font-black" style={{ color: '#34d399' }}>
+                <p className="text-2xl font-black" style={{ color: '#00E87A' }}>
                   R$ {valor.toFixed(2)}
                 </p>
                 <p className="text-xs text-slate-500 mt-2">ID: {resultado.chargeId}</p>
@@ -126,7 +126,7 @@ export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSuce
             )}
             <button onClick={onClose}
               className="mt-6 px-6 py-2.5 rounded-xl font-semibold text-sm text-white"
-              style={{ background: resultado.novoStatus === 'pago' ? 'linear-gradient(135deg, #34d399, #059669)' : 'linear-gradient(135deg, #475569, #334155)' }}>
+              style={{ background: resultado.novoStatus === 'pago' ? 'linear-gradient(135deg, #00E87A, #059669)' : 'linear-gradient(135deg, #475569, #334155)' }}>
               Fechar
             </button>
           </div>
@@ -134,12 +134,12 @@ export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSuce
           <div className="overflow-y-auto flex-1 p-5 space-y-4">
             {/* Resumo */}
             <div className="p-3 rounded-xl flex items-center justify-between"
-              style={{ background: '#00b94a10', border: '1px solid #00b94a25' }}>
+              style={{ background: '#635bff10', border: '1px solid #635bff25' }}>
               <div>
                 <p className="text-xs text-slate-400">{transacao?.descricao}</p>
                 <p className="text-xs text-slate-500">{aluno?.nome}</p>
               </div>
-              <p className="text-lg font-black" style={{ color: '#00b94a' }}>R$ {valor.toFixed(2)}</p>
+              <p className="text-lg font-black" style={{ color: '#a5b4fc' }}>R$ {valor.toFixed(2)}</p>
             </div>
 
             {/* Dados do comprador */}
@@ -197,7 +197,6 @@ export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSuce
                     style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }} />
                 </div>
 
-                {/* Parcelas */}
                 {maxParcelas > 1 && (
                   <select value={cartao.parcelas} onChange={e => setCartao(c => ({ ...c, parcelas: e.target.value }))}
                     className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
@@ -211,7 +210,6 @@ export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSuce
               </div>
             </div>
 
-            {/* Erro */}
             {erro && (
               <div className="flex items-center gap-2 p-3 rounded-xl"
                 style={{ background: '#ef444415', border: '1px solid #ef444430' }}>
@@ -220,20 +218,18 @@ export default function ModalCheckoutPagBank({ transacao, aluno, onClose, onSuce
               </div>
             )}
 
-            {/* Segurança */}
             <div className="flex items-center gap-2 justify-center text-xs text-slate-600">
               <Lock size={11} />
-              <span>Pagamento seguro — criptografado via PagBank</span>
+              <span>Pagamento seguro — criptografado via Stripe</span>
             </div>
           </div>
         )}
 
-        {/* Botão pagar */}
         {!resultado && (
           <div className="px-5 pb-5 flex-shrink-0">
             <button onClick={handlePagar} disabled={loading}
               className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg, #00b94a, #008f38)' }}>
+              style={{ background: 'linear-gradient(135deg, #635bff, #00AAFF)' }}>
               {loading ? <><Loader2 size={16} className="animate-spin" />Processando...</> : <><CreditCard size={16} />Pagar R$ {valor.toFixed(2)}</>}
             </button>
           </div>
