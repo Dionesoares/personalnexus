@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save, Copy, Eye, Edit2 } from 'lucide-react';
+import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save, Copy, Eye, Edit2, CreditCard } from 'lucide-react';
 import ModalIntegracaoStripe from '../../components/fitpro/ModalIntegracaoStripe';
+import ModalCheckoutStripe from '../../components/fitpro/ModalCheckoutPagBank';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -155,6 +156,7 @@ export default function FinanceiroAdminView() {
   const [form, setForm] = useState(emptyCobrancaProf());
   const [saved, setSaved] = useState(false);
   const [confirmando, setConfirmando] = useState(null);
+  const [checkoutTransacao, setCheckoutTransacao] = useState(null);
 
   // PIX config
   const pixDadosDefault = { chave: '', nome: '', cidade: '', banco: '', tipochave: 'cpf' };
@@ -489,14 +491,22 @@ export default function FinanceiroAdminView() {
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {(statusVisual === 'pendente' || statusVisual === 'vencido' || statusVisual === 'a_vencer') && t.status !== 'pago' && (
-                        <button
-                          onClick={() => confirmarRecebido(t.id)}
-                          disabled={confirmando === t.id}
-                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
-                          style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
-                          <CheckCircle2 size={11} />
-                          {confirmando === t.id ? '...' : 'Recebido'}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setCheckoutTransacao(t)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90"
+                            style={{ background: '#635bff15', color: '#a5b4fc', border: '1px solid #635bff30' }}>
+                            <CreditCard size={11} />Cartão
+                          </button>
+                          <button
+                            onClick={() => confirmarRecebido(t.id)}
+                            disabled={confirmando === t.id}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+                            style={{ background: '#34d39920', color: '#34d399', border: '1px solid #34d39930' }}>
+                            <CheckCircle2 size={11} />
+                            {confirmando === t.id ? '...' : 'Recebido'}
+                          </button>
+                        </>
                       )}
                       <button
                         onClick={() => abrirEdicao(t)}
@@ -755,6 +765,19 @@ export default function FinanceiroAdminView() {
 
       {/* Modal Stripe */}
       {showPagBank && <ModalIntegracaoStripe onClose={() => setShowPagBank(false)} />}
+
+      {/* Checkout Stripe para mensalidade de professor */}
+      {checkoutTransacao && (
+        <ModalCheckoutStripe
+          transacao={checkoutTransacao}
+          aluno={professores.find(p => p.id === checkoutTransacao.professorId)}
+          onClose={() => setCheckoutTransacao(null)}
+          onSucesso={() => {
+            updateTransacao(checkoutTransacao.id, { status: 'pago' });
+            setCheckoutTransacao(null);
+          }}
+        />
+      )}
 
       {/* Modal QR Code PIX expandido */}
       {showPixModal && pixQrUrl && (
