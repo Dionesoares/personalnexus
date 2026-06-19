@@ -299,42 +299,34 @@ export default function ModalIntegracaoStripe({ onClose }) {
           {/* ABA: WEBHOOK */}
           {aba === 'webhook' && (
             <>
+              {/* Passo a passo */}
               <div className="p-4 rounded-xl space-y-3"
                 style={{ background: '#0a1628', border: '1px solid rgba(99,91,255,0.25)' }}>
                 <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5"><Info size={13} />Como configurar o Webhook no Stripe:</p>
                 <ol className="space-y-2 text-xs text-slate-400">
-                  <li className="flex gap-2">
-                    <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">1</span>
-                    Acesse <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noreferrer"
-                      className="underline text-indigo-400 hover:text-indigo-300">dashboard.stripe.com/webhooks</a>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">2</span>
-                    Clique em <strong className="text-slate-300">+ Adicionar endpoint</strong> e cole a URL abaixo
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">3</span>
-                    Selecione os eventos: <strong className="text-slate-300">checkout.session.completed</strong>, <strong className="text-slate-300">payment_intent.succeeded</strong>, <strong className="text-slate-300">payment_intent.payment_failed</strong>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">4</span>
-                    Copie o <strong className="text-slate-300">Signing secret</strong> gerado (<code className="text-indigo-300">whsec_...</code>) e cole na aba Credenciais
-                  </li>
+                  {[
+                    <>Acesse <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noreferrer" className="underline text-indigo-400 hover:text-indigo-300">dashboard.stripe.com/webhooks</a></>,
+                    <>Clique em <strong className="text-slate-300">+ Adicionar endpoint</strong> e cole a URL do endpoint abaixo</>,
+                    <>Selecione os eventos: <code className="text-indigo-300">payment_intent.succeeded</code>, <code className="text-indigo-300">payment_method.attached</code>, <code className="text-indigo-300">checkout.session.completed</code>, <code className="text-indigo-300">charge.refunded</code></>,
+                    <>Copie o <strong className="text-slate-300">Signing secret</strong> (<code className="text-indigo-300">whsec_...</code>) e cole na aba <strong className="text-slate-300">Credenciais</strong></>,
+                  ].map((step, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold flex-shrink-0 text-[10px]">{i+1}</span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
                 </ol>
               </div>
 
+              {/* URL do endpoint */}
               <div>
-                <label className="text-xs text-slate-400 block mb-1">URL do Webhook (cole no painel Stripe)</label>
+                <label className="text-xs text-slate-400 block mb-1">URL do Endpoint (cole no painel Stripe)</label>
                 <div className="relative">
-                  <input
-                    readOnly
-                    value={WEBHOOK_URL}
+                  <input readOnly value={WEBHOOK_URL}
                     className="w-full px-3 pr-24 py-3 rounded-xl text-xs outline-none font-mono cursor-text select-all"
                     style={{ background: '#0a1a12', border: '1px solid rgba(0,232,122,0.3)', color: '#00E87A' }}
-                    onClick={e => e.target.select()}
-                  />
-                  <button
-                    onClick={copiarWebhook}
+                    onClick={e => e.target.select()} />
+                  <button onClick={copiarWebhook}
                     className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all"
                     style={{ background: copied ? '#00E87A20' : '#1e2a3a', color: copied ? '#00E87A' : '#94a3b8' }}>
                     <Copy size={12} />{copied ? 'Copiado!' : 'Copiar'}
@@ -342,19 +334,72 @@ export default function ModalIntegracaoStripe({ onClose }) {
                 </div>
               </div>
 
+              {/* Estrutura do handler — baseada no código oficial Stripe */}
+              <div>
+                <p className="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
+                  <Zap size={11} color="#a5b4fc" />Estrutura do handler de webhook (lógica interna)
+                </p>
+                <div className="rounded-xl overflow-hidden" style={{ background: '#060c18', border: '1px solid rgba(99,91,255,0.2)' }}>
+                  {/* verificação de assinatura */}
+                  <div className="px-4 py-2 text-[10px] font-mono" style={{ background: '#0a1022', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#64748b' }}>
+                    # 1 — Verificação de assinatura (Stripe::Webhook.construct_event)
+                  </div>
+                  <div className="px-4 py-3 space-y-1 text-[10px] font-mono leading-relaxed">
+                    <div><span style={{ color: '#a5b4fc' }}>payload</span> <span className="text-slate-500">= request.body.read</span></div>
+                    <div><span style={{ color: '#a5b4fc' }}>signature</span> <span className="text-slate-500">= request.env[</span><span style={{ color: '#00E87A' }}>'HTTP_STRIPE_SIGNATURE'</span><span className="text-slate-500">]</span></div>
+                    <div className="mt-1"><span style={{ color: '#a5b4fc' }}>event</span> <span className="text-slate-500">= Stripe::Webhook.construct_event(</span></div>
+                    <div className="pl-4 text-slate-500">payload, signature, <span style={{ color: '#00E87A' }}>endpoint_secret</span></div>
+                    <div className="text-slate-500">)</div>
+                  </div>
+
+                  {/* eventos tratados */}
+                  <div className="px-4 py-2 text-[10px] font-mono" style={{ background: '#0a1022', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#64748b' }}>
+                    # 2 — Eventos tratados (case event.type)
+                  </div>
+                  <div className="px-4 py-3 space-y-2 text-[10px] font-mono">
+                    {[
+                      { event: 'payment_intent.succeeded', obj: 'payment_intent', action: 'Transação → pago', color: '#00E87A' },
+                      { event: 'payment_method.attached', obj: 'payment_method', action: 'Método vinculado', color: '#00AAFF' },
+                      { event: 'checkout.session.completed', obj: 'session', action: 'Checkout concluído → pago', color: '#00E87A' },
+                      { event: 'charge.refunded', obj: 'charge', action: 'Estorno → cancelado', color: '#ef4444' },
+                    ].map(({ event, obj, action, color }) => (
+                      <div key={event} className="flex items-center gap-2">
+                        <span style={{ color: '#a5b4fc' }}>when</span>
+                        <span style={{ color: '#fbbf24' }}>'{event}'</span>
+                        <span className="text-slate-600 flex-1 text-right">→</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold" style={{ background: `${color}18`, color }}>{action}</span>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 mt-1 pt-1" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      <span style={{ color: '#a5b4fc' }}>else</span>
+                      <span className="text-slate-500 flex-1">puts "Unhandled event: " + event.type</span>
+                    </div>
+                  </div>
+
+                  {/* resposta */}
+                  <div className="px-4 py-2 text-[10px] font-mono" style={{ background: '#0a1022', borderTop: '1px solid rgba(255,255,255,0.05)', color: '#64748b' }}>
+                    # 3 — Retorna HTTP 200 para confirmar recebimento
+                  </div>
+                  <div className="px-4 py-3 text-[10px] font-mono">
+                    <span style={{ color: '#a5b4fc' }}>status</span> <span style={{ color: '#fbbf24' }}>200</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Eventos necessários */}
               <div className="p-3 rounded-xl space-y-2"
                 style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <p className="text-xs font-semibold text-slate-400">Eventos Stripe recomendados para Checkout Sessions:</p>
+                <p className="text-xs font-semibold text-slate-400">Eventos a selecionar no painel Stripe:</p>
                 {[
-                  { emoji: '✅', label: 'checkout.session.completed', desc: 'Pagamento concluído → Pago' },
-                  { emoji: '💳', label: 'payment_intent.succeeded', desc: 'Intenção aprovada → Pago' },
-                  { emoji: '❌', label: 'payment_intent.payment_failed', desc: 'Falha no pagamento → Pendente' },
-                  { emoji: '🔄', label: 'charge.refunded', desc: 'Estorno → Cancelado' },
+                  { emoji: '💳', label: 'payment_intent.succeeded', desc: '→ Pago' },
+                  { emoji: '🔗', label: 'payment_method.attached', desc: '→ Método vinculado' },
+                  { emoji: '✅', label: 'checkout.session.completed', desc: '→ Pago' },
+                  { emoji: '🔄', label: 'charge.refunded', desc: '→ Cancelado' },
                 ].map(item => (
-                  <div key={item.label} className="flex items-start gap-2 text-xs">
-                    <span className="mt-0.5">{item.emoji}</span>
+                  <div key={item.label} className="flex items-center gap-2 text-xs">
+                    <span>{item.emoji}</span>
                     <code className="text-indigo-300 flex-1">{item.label}</code>
-                    <span className="text-slate-500 text-right">{item.desc}</span>
+                    <span className="text-slate-500">{item.desc}</span>
                   </div>
                 ))}
               </div>
