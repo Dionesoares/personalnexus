@@ -14,29 +14,46 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { transacaoId, cartao, comprador } = body;
+    const { transacaoId, cartao, comprador, metodo } = body;
 
     if (!transacaoId || !cartao) {
       return Response.json({ error: 'transacaoId e cartao são obrigatórios' }, { status: 400 });
     }
 
-    // Busca config Stripe salva (reutilizando entidade ConfiguracaoPagBank: email=publishableKey, token=secretKey)
+    // Busca config Stripe salva (token = secretKey)
     const configs = await base44.asServiceRole.entities.ConfiguracaoPagBank.filter({});
     const cfg = configs[0];
-
     if (!cfg || !cfg.token) {
       return Response.json({ error: 'Stripe não configurado. Acesse Financeiro > Stripe e salve suas credenciais.' }, { status: 400 });
     }
 
-    // Busca a transação
-    const transacao = await base44.asServiceRole.entities.Transacao.get(transacaoId);
-    if (!transacao) {
-      return Response.json({ error: 'Transação não encontrada' }, { status: 404 });
+    // Busca a transação — pode ser virtual (parceiro) sem registro no banco
+    let valorTransacao = 0;
+    let descricaoTransacao = 'Pagamento FitPro';
+    let transacaoNoBanco = null;
+
+    // IDs de parceiro não existem no banco — extrai valor do transacaoId ou ignora
+    if (!transacaoId.startsWith('parceiro_')) {
+      transacaoNoBanco = await base44.asServiceRole.entities.Transacao.get(transacaoId);
+      if (!transacaoNoBanco) {
+        return Response.json({ error: 'Transação não encontrada' }, { status: 404 });
+      }
+      valorTransacao = parseFloat(transacaoNoBanco.valor);
+      descricaoTransacao = transacaoNoBanco.descricao || 'Pagamento FitPro';
+    } else {
+      // Para parceiros: extrai o valor do payload de cartao (enviado pelo modal)
+      valorTransacao = parseFloat(cartao.valor || 0);
+      descricaoTransacao = cartao.descricao || 'Consulta parceiro FitPro';
+    }
+
+    if (!valorTransacao || valorTransacao <= 0) {
+      return Response.json({ error: 'Valor inválido para cobrança.' }, { status: 400 });
     }
 
     const stripe = new Stripe(cfg.token, { apiVersion: '2023-10-16' });
-    const valorCentavos = Math.round(parseFloat(transacao.valor) * 100);
+    const valorCentavos = Math.round(valorTransacao * 100);
     const parcelas = parseInt(cartao.parcelas) || 1;
+    const tipoCartao = metodo === 'debito' ? 'debit' : 'credit';
 
     // Cria PaymentMethod com os dados do cartão
     const paymentMethod = await stripe.paymentMethods.create({
@@ -53,27 +70,29 @@ Deno.serve(async (req) => {
       },
     });
 
+    // Monta opções de parcelamento (crédito)
+    const paymentMethodOptions = {};
+    if (metodo !== 'debito' && parcelas > 1) {
+      paymentMethodOptions.card = {
+        installments: { enabled: true },
+        request_three_d_secure: 'automatic',
+      };
+    }
+
     // Cria e confirma o PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: valorCentavos,
       currency: 'brl',
       payment_method: paymentMethod.id,
       confirm: true,
-      description: transacao.descricao || 'Pagamento FitPro',
+      description: descricaoTransacao,
       metadata: {
         transacaoId,
         alunoNome: comprador?.nome || '',
         cpf: comprador?.cpf || '',
+        metodo: metodo || 'credito',
       },
-      // Parcelamento via installments (disponível para contas BR)
-      ...(parcelas > 1 ? {
-        payment_method_options: {
-          card: {
-            installments: { enabled: true },
-            request_three_d_secure: 'automatic',
-          },
-        },
-      } : {}),
+      ...(Object.keys(paymentMethodOptions).length > 0 ? { payment_method_options: paymentMethodOptions } : {}),
       return_url: 'https://app.base44.com',
     });
 
@@ -82,14 +101,16 @@ Deno.serve(async (req) => {
     // Mapeia status Stripe → status interno
     let novoStatus = 'pendente';
     if (paymentIntent.status === 'succeeded') novoStatus = 'pago';
-    else if (paymentIntent.status === 'canceled' || paymentIntent.status === 'requires_payment_method') novoStatus = 'cancelado';
+    else if (['canceled', 'requires_payment_method'].includes(paymentIntent.status)) novoStatus = 'cancelado';
 
-    // Atualiza transação no banco
-    await base44.asServiceRole.entities.Transacao.update(transacaoId, {
-      status: novoStatus,
-      stripePaymentIntentId: paymentIntent.id,
-      dataAtualizacaoStripe: new Date().toISOString(),
-    });
+    // Atualiza transação no banco (somente se existe)
+    if (transacaoNoBanco) {
+      await base44.asServiceRole.entities.Transacao.update(transacaoId, {
+        status: novoStatus,
+        stripePaymentIntentId: paymentIntent.id,
+        dataAtualizacaoStripe: new Date().toISOString(),
+      });
+    }
 
     return Response.json({
       ok: true,
@@ -104,11 +125,10 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Stripe error:', error.message);
-    // Erro de cartão recusado da Stripe vem como StripeCardError
-    const msg = error.type === 'StripeCardError'
+    console.error('Stripe error:', error.type, error.message);
+    const msg = (error.type === 'StripeCardError' || error.type === 'StripeInvalidRequestError')
       ? error.message
-      : 'Erro ao processar pagamento. Tente novamente.';
+      : 'Erro ao processar pagamento. Verifique os dados e tente novamente.';
     return Response.json({ error: msg }, { status: 400 });
   }
 });
