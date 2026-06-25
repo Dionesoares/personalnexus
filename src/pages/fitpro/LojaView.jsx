@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ShoppingCart, Search, Star, X, Plus, Minus, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, Search, X, Plus, Minus, CheckCircle2, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp, useAuth } from '../../context/FitProContext';
 import { generateId } from '../../lib/fitpro-storage';
+import ModalCheckoutStripe from '../../components/fitpro/ModalCheckoutStripe';
 
 const CARD = '#0d1525';
 const BORDER = 'rgba(255,255,255,0.07)';
@@ -23,7 +24,8 @@ export default function LojaView() {
   const [carrinho, setCarrinho] = useState([]);
   const [showCarrinho, setShowCarrinho] = useState(false);
   const [showSucesso, setShowSucesso] = useState(false);
-  const [formaPagamento, setFormaPagamento] = useState('pix');
+  const [showStripe, setShowStripe] = useState(false);
+  const [transacaoStripe, setTransacaoStripe] = useState(null);
 
   const listaProdutos = (produtos || []).filter(p => p.ativo !== false);
   const categorias = [...new Set(listaProdutos.map(p => p.categoria).filter(Boolean))];
@@ -51,21 +53,44 @@ export default function LojaView() {
   const totalCarrinho = carrinho.reduce((acc, i) => acc + i.preco * i.quantidade, 0);
   const qtdItens = carrinho.reduce((acc, i) => acc + i.quantidade, 0);
 
-  const finalizarPedido = () => {
+  const alunoAtual = alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase());
+
+  const abrirCheckoutStripe = () => {
     if (carrinho.length === 0) return;
-    const alunoAtual = alunos.find(a => a.email?.toLowerCase() === user?.email?.toLowerCase());
-    const novoPedido = {
-      id: generateId(), alunoId: alunoAtual?.id || '', itens: carrinho.map(i => ({ id: i.id, produtoId: i.produtoId, quantidade: i.quantidade })),
-      status: 'pendente', formaPagamento, total: totalCarrinho, dataPedido: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString(),
-    };
-    const novos = [novoPedido, ...pedidos];
-    setPedidos(novos);
-    localStorage.setItem('fitpro_pedidos', JSON.stringify(novos));
-    if (alunoAtual) {
-      addTransacao({ descricao: `Compra na loja — ${carrinho.length} item(s)`, tipo: 'Produto', valor: totalCarrinho, data: new Date().toISOString().split('T')[0], status: 'pendente', alunoId: alunoAtual.id, categoria: 'receita' });
-    }
-    setCarrinho([]);
+    const descricao = carrinho.length === 1
+      ? `Compra: ${carrinho[0].nome}`
+      : `Compra na loja — ${carrinho.length} item(s)`;
+    // Transação virtual — será criada no banco após pagamento confirmado
+    setTransacaoStripe({ id: `loja_${Date.now()}`, descricao, valor: totalCarrinho });
     setShowCarrinho(false);
+    setShowStripe(true);
+  };
+
+  const finalizarPedidoAposPagamento = () => {
+    const descricao = carrinho.length === 1
+      ? `Compra: ${carrinho[0].nome}`
+      : `Compra na loja — ${carrinho.length} item(s)`;
+    // Registra transação paga no banco
+    addTransacao({
+      descricao,
+      tipo: 'Produto',
+      valor: totalCarrinho,
+      data: new Date().toISOString().split('T')[0],
+      status: 'pago',
+      alunoId: alunoAtual?.id || '',
+      categoria: 'receita',
+    });
+    const novoPedido = {
+      id: generateId(), alunoId: alunoAtual?.id || '',
+      itens: carrinho.map(i => ({ id: i.id, produtoId: i.produtoId, quantidade: i.quantidade })),
+      status: 'confirmado', formaPagamento: 'stripe', total: totalCarrinho,
+      dataPedido: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString(),
+    };
+    setPedidos(prev => [novoPedido, ...prev]);
+    localStorage.setItem('fitpro_pedidos', JSON.stringify([novoPedido, ...pedidos]));
+    setCarrinho([]);
+    setShowStripe(false);
+    setTransacaoStripe(null);
     setShowSucesso(true);
     setTimeout(() => setShowSucesso(false), 3000);
   };
@@ -236,19 +261,22 @@ export default function LojaView() {
                 <span className="text-xl font-bold text-green-400">R$ {totalCarrinho.toFixed(2)}</span>
               </div>
             </div>
-            <div className="mb-3">
-              <label className="text-xs text-slate-400 block mb-1">Forma de Pagamento</label>
-              <select value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none" style={{ background: '#1e2a3a', border: '1px solid rgba(255,255,255,0.08)' }}>
-                {['pix','cartão de crédito','cartão de débito','dinheiro','boleto'].map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-            <button onClick={finalizarPedido} className="w-full py-3 rounded-xl font-semibold text-sm text-white"
-              style={{ background: 'linear-gradient(135deg, #fb923c, #ea580c)' }}>
-              Finalizar Pedido — R$ {totalCarrinho.toFixed(2)}
+            <button onClick={abrirCheckoutStripe}
+              className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
+              style={{ background: 'linear-gradient(135deg, #635bff, #00AAFF)' }}>
+              <CreditCard size={15} />Pagar com Stripe — R$ {totalCarrinho.toFixed(2)}
             </button>
           </div>
         </div>
+      )}
+      {/* Checkout Stripe */}
+      {showStripe && transacaoStripe && (
+        <ModalCheckoutStripe
+          transacao={transacaoStripe}
+          aluno={alunoAtual}
+          onClose={() => { setShowStripe(false); setTransacaoStripe(null); }}
+          onSucesso={finalizarPedidoAposPagamento}
+        />
       )}
     </div>
   );
