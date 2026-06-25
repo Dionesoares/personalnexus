@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DollarSign, Plus, X, TrendingUp, Clock, AlertCircle, CheckCircle2, UserCheck, Zap, Ban, Trash2, QrCode, Save, Copy, Eye, Edit2, CreditCard } from 'lucide-react';
 import ModalIntegracaoStripe from '../../components/fitpro/ModalIntegracaoStripe';
-import ModalCheckoutStripe from '../../components/fitpro/ModalCheckoutPagBank';
+import ModalCheckoutStripe from '../../components/fitpro/ModalCheckoutStripe';
 import { motion } from 'framer-motion';
 import { useApp } from '../../context/FitProContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';

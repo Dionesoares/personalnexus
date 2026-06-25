@@ -31,12 +31,10 @@ export default function ModalCheckoutStripe({ transacao, aluno, onClose, onSuces
     catch { return 12; }
   })();
 
-  // PIX payload fixo — integração real futura via Stripe
   const pixCode = `00020126580014BR.GOV.BCB.PIX0136fitpro@pagamento.com.br5204000053039865802BR5913FitPro Saude6009SAO PAULO62070503***6304ABCD`;
 
   const handlePagar = async () => {
     if (metodo === 'pix') {
-      // PIX: confirma manualmente (aguarda pagamento externo)
       setLoading(true);
       setTimeout(() => {
         setLoading(false);
